@@ -1,194 +1,156 @@
-<!--
- * @Author: hui.chenn
- * @Description: 
- * @Date: 2026-03-18 20:04:58
- * @LastEditTime: 2026-03-18 20:42:16
- * @LastEditors: hui.chenn
--->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
   <title>悬浮球</title>
   <style>
     body {
       margin: 0;
-      padding: 0;
       overflow: hidden;
       user-select: none;
     }
-    .floating-ball-box{
+
+    .floating-ball-box {
       width: 100px;
       height: 100px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
+
     .floating-ball {
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      cursor: move;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      transition: transform 0.2s, box-shadow 0.2s;
-      overflow: hidden;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      cursor: grab;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: transform 0.2s;
+      -webkit-app-region: drag;
     }
-    .floating-ball:hover {
-      transform: scale(1.1);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+
+    .floating-ball:active {
+      cursor: grabbing;
+      transform: scale(1.05);
     }
-    .floating-ball img {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      object-fit: cover;
+    svg {
+      -webkit-app-region: no-drag;
     }
   </style>
 </head>
+
 <body>
   <div class="floating-ball-box">
-    <div class="floating-ball" id="floatingBall">
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
-      <circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.8)"/>
-      <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" fill="#667eea"/>
-    </svg>
+    <div class="floating-ball" id="ball">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="white">
+        <circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.9)" />
+        <circle cx="12" cy="12" r="4" fill="#667eea" />
+      </svg>
+    </div>
   </div>
-  </div>
+
   <script>
     const { ipcRenderer } = require('electron');
-    
-    const floatingBall = document.getElementById('floatingBall');
+
+    const ball = document.getElementById('ball');
+
     let isDragging = false;
-    let startX, startY;
-    let windowX, windowY;
-    let lastX = 0, lastY = 0;
-    let lastMouseX, lastMouseY;
-    let debounceTimer = null;
-    
-    // 初始化获取窗口位置
-    ipcRenderer.invoke('getWindowPosition').then((pos) => {
-      windowX = pos.x;
-      windowY = pos.y;
-      lastX = pos.x;
-      lastY = pos.y;
-    });
-    
-    // 获取屏幕尺寸
+
+    let startMouseX = 0;
+    let startMouseY = 0;
+
+    let startWinX = 0;
+    let startWinY = 0;
+
+    let pending = false;
+
     let screenWidth = window.screen.width;
     let screenHeight = window.screen.height;
-    
-    // 开始拖拽
-    floatingBall.addEventListener('mousedown', (e) => {
+
+    const WIN_SIZE = 100;
+
+    // 鼠标按下
+    ball.addEventListener('mousedown', async (e) => {
       isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
-      
-      // 确保窗口位置已获取
-      if (windowX === undefined || windowY === undefined) {
-        ipcRenderer.invoke('getWindowPosition').then((pos) => {
-          windowX = pos.x;
-          windowY = pos.y;
-          lastX = pos.x;
-          lastY = pos.y;
-        });
-      }
-      
-      // 阻止默认行为，防止拖动时选中文本
+
+      const pos = await ipcRenderer.invoke('getWindowPosition');
+
+      startWinX = pos.x;
+      startWinY = pos.y;
+
+      startMouseX = e.clientX;
+      startMouseY = e.clientY;
+
       e.preventDefault();
     });
-    
-    // 拖拽中
+
+    // 鼠标移动（核心：requestAnimationFrame）
     document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      
-      // 计算鼠标移动距离
-      const mouseDeltaX = e.clientX - lastMouseX;
-      const mouseDeltaY = e.clientY - lastMouseY;
-      
-      // 只有当鼠标移动超过阈值时才处理
-      if (Math.abs(mouseDeltaX) < 1 && Math.abs(mouseDeltaY) < 1) {
-        e.preventDefault();
-        return;
-      }
-      
-      // 更新鼠标位置
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
-      
-      // 防抖处理，避免频繁更新
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        updatePosition(e.clientX, e.clientY);
-      }, 10);
-      
-      // 阻止默认行为
-      e.preventDefault();
-    });
-    
-    // 更新位置函数
-    function updatePosition(clientX, clientY) {
-      if (!isDragging) return;
-      
-      const deltaX = clientX - startX;
-      const deltaY = clientY - startY;
-      
-      // 计算新位置
-      let newX = windowX + deltaX;
-      let newY = windowY + deltaY;
-      
-      // 边界检查，确保窗口不会超出屏幕
-      newX = Math.max(0, Math.min(newX, screenWidth - 100)); // 100是窗口宽度
-      newY = Math.max(0, Math.min(newY, screenHeight - 100)); // 100是窗口高度
-      
-      // 避免微小的抖动
-      if (Math.abs(newX - lastX) < 1 && Math.abs(newY - lastY) < 1) {
-        return;
-      }
-      
-      // 更新窗口位置
-      ipcRenderer.send('updateWindowPosition', {
-        x: newX,
-        y: newY
+      if (!isDragging || pending) return;
+
+      pending = true;
+
+      requestAnimationFrame(() => {
+        const deltaX = e.clientX - startMouseX;
+        const deltaY = e.clientY - startMouseY;
+
+        let newX = startWinX + deltaX;
+        let newY = startWinY + deltaY;
+
+        // 限制边界
+        newX = Math.max(0, Math.min(newX, screenWidth - WIN_SIZE));
+        newY = Math.max(0, Math.min(newY, screenHeight - WIN_SIZE));
+
+        ipcRenderer.send('updateWindowPosition', {
+          x: Math.round(newX),
+          y: Math.round(newY),
+        });
+
+        pending = false;
       });
-      
-      // 更新上次位置
-      lastX = newX;
-      lastY = newY;
-      
-      // 实时更新起始坐标，使拖拽更平滑
-      startX = clientX;
-      startY = clientY;
-      windowX = newX;
-      windowY = newY;
-    }
-    
-    // 结束拖拽
+    });
+
+    // 鼠标松开（吸边）
     document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+
       isDragging = false;
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-        debounceTimer = null;
-      }
+
+      // 获取当前位置再吸边
+      ipcRenderer.invoke('getWindowPosition').then((pos) => {
+        let { x, y } = pos;
+
+        const middle = screenWidth / 2;
+
+        // 左右吸附
+        if (x < middle) {
+          x = 0;
+        } else {
+          x = screenWidth - WIN_SIZE;
+        }
+
+        ipcRenderer.send('updateWindowPosition', {
+          x,
+          y,
+        });
+      });
     });
-    
-    // 结束拖拽（鼠标离开窗口）
-    document.addEventListener('mouseleave', () => {
-      isDragging = false;
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-        debounceTimer = null;
-      }
+
+    // 点击（避免拖拽误触）
+    let moved = false;
+
+    document.addEventListener('mousemove', () => {
+      if (isDragging) moved = true;
     });
-    
-    // 点击悬浮球
-    floatingBall.addEventListener('click', () => {
+
+    ball.addEventListener('click', () => {
+      if (moved) {
+        moved = false;
+        return;
+      }
+
       ipcRenderer.send('toggleMainWindow');
     });
   </script>
