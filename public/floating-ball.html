@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description: 
  * @Date: 2026-03-18 20:04:58
- * @LastEditTime: 2026-03-18 20:34:22
+ * @LastEditTime: 2026-03-18 20:42:16
  * @LastEditors: hui.chenn
 -->
 <!DOCTYPE html>
@@ -66,8 +66,9 @@
     let isDragging = false;
     let startX, startY;
     let windowX, windowY;
-    let lastMoveTime = 0;
     let lastX = 0, lastY = 0;
+    let lastMouseX, lastMouseY;
+    let debounceTimer = null;
     
     // 初始化获取窗口位置
     ipcRenderer.invoke('getWindowPosition').then((pos) => {
@@ -77,11 +78,17 @@
       lastY = pos.y;
     });
     
+    // 获取屏幕尺寸
+    let screenWidth = window.screen.width;
+    let screenHeight = window.screen.height;
+    
     // 开始拖拽
     floatingBall.addEventListener('mousedown', (e) => {
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
       
       // 确保窗口位置已获取
       if (windowX === undefined || windowY === undefined) {
@@ -101,17 +108,44 @@
     document.addEventListener('mousemove', (e) => {
       if (!isDragging) return;
       
-      const now = Date.now();
-      // 限制更新频率，避免过于频繁的IPC通信
-      if (now - lastMoveTime < 16) return; // 约60fps
-      lastMoveTime = now;
+      // 计算鼠标移动距离
+      const mouseDeltaX = e.clientX - lastMouseX;
+      const mouseDeltaY = e.clientY - lastMouseY;
       
-      const deltaX = e.clientX - startX;
-      const deltaY = e.clientY - startY;
+      // 只有当鼠标移动超过阈值时才处理
+      if (Math.abs(mouseDeltaX) < 1 && Math.abs(mouseDeltaY) < 1) {
+        e.preventDefault();
+        return;
+      }
+      
+      // 更新鼠标位置
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      
+      // 防抖处理，避免频繁更新
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        updatePosition(e.clientX, e.clientY);
+      }, 10);
+      
+      // 阻止默认行为
+      e.preventDefault();
+    });
+    
+    // 更新位置函数
+    function updatePosition(clientX, clientY) {
+      if (!isDragging) return;
+      
+      const deltaX = clientX - startX;
+      const deltaY = clientY - startY;
       
       // 计算新位置
-      const newX = windowX + deltaX;
-      const newY = windowY + deltaY;
+      let newX = windowX + deltaX;
+      let newY = windowY + deltaY;
+      
+      // 边界检查，确保窗口不会超出屏幕
+      newX = Math.max(0, Math.min(newX, screenWidth - 100)); // 100是窗口宽度
+      newY = Math.max(0, Math.min(newY, screenHeight - 100)); // 100是窗口高度
       
       // 避免微小的抖动
       if (Math.abs(newX - lastX) < 1 && Math.abs(newY - lastY) < 1) {
@@ -129,23 +163,28 @@
       lastY = newY;
       
       // 实时更新起始坐标，使拖拽更平滑
-      startX = e.clientX;
-      startY = e.clientY;
+      startX = clientX;
+      startY = clientY;
       windowX = newX;
       windowY = newY;
-      
-      // 阻止默认行为
-      e.preventDefault();
-    });
+    }
     
     // 结束拖拽
     document.addEventListener('mouseup', () => {
       isDragging = false;
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+      }
     });
     
     // 结束拖拽（鼠标离开窗口）
     document.addEventListener('mouseleave', () => {
       isDragging = false;
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+      }
     });
     
     // 点击悬浮球
