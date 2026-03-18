@@ -15,8 +15,7 @@
       "output": "dist_electron"
     },
     "win": {
-      "target": "nsis",
-      "icon": "public/favicon.ico"
+      "target": "nsis"
     },
     "nsis": {
       "oneClick": false,

@@ -162,7 +162,6 @@ export default {
       try {
         await sendChatMessage({
           message: text,
-          userName: 'hui.chenn',
           fileUrls: fileUrls
         })
       } catch (error) {
