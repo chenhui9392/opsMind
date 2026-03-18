@@ -178,7 +178,7 @@ export default {
     handleServerResponse(response) {
       if (response && response.code === 200 && response.data && response.data.message) {
         const messageData = response.data.message
-        let content = messageData.reasonerContent
+        let content = messageData.content
 
         // 如果 reasonerContent 没有内容，显示系统维修中提示
         if (!content || content.trim() === '') {
