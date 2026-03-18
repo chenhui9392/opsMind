@@ -9,6 +9,13 @@
           class="search-input"
           placeholder="搜索会话..."
         />
+        <button 
+          v-if="searchQuery" 
+          class="search-clear-button" 
+          @click="clearSearch"
+        >
+          <SvgIcon name="clear" width="14" height="14" />
+        </button>
       </div>
     </div>
     <div class="back-to-current" v-if="!isCurrentChatSelected" @click="$emit('back-to-current')">
@@ -93,6 +100,9 @@ export default {
           contactsList.scrollTop = contactsList.scrollHeight
         }
       }, 100)
+    },
+    clearSearch() {
+      this.searchQuery = ''
     }
   }
 }
@@ -128,11 +138,12 @@ export default {
 
 .search-container {
   width: 100%;
+  position: relative;
 }
 
 .search-input {
   width: 100%;
-  padding: 10px 16px;
+  padding: 10px 40px 10px 16px;
   border: none;
   border-radius: 20px;
   font-size: 14px;
@@ -144,6 +155,29 @@ export default {
 
 .search-input:focus {
   background-color: rgba(255, 255, 255, 0.3);
+}
+
+.search-clear-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.search-clear-button:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-50%) scale(1.1);
 }
 
 .search-input::placeholder {

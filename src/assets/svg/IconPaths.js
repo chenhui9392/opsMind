@@ -36,5 +36,14 @@ export const IconPaths = {
       'M21 15 16 10 5 21'
     ],
     viewBox: '0 0 24 24'
+  },
+  
+  // 清除图标（用于搜索框）
+  clear: {
+    paths: [
+      'M18 6 6 18',
+      'M6 6l12 12'
+    ],
+    viewBox: '0 0 24 24'
   }
 };

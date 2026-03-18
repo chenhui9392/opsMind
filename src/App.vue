@@ -6,21 +6,16 @@
  * @LastEditors: hui.chenn
 -->
 <template>
-  <div>
-    <SvgIcons />
-    <MainApp />
-  </div>
+  <MainApp />
 </template>
 
 <script>
 import MainApp from './components/MainApp.vue'
-import SvgIcons from './components/SvgIcons.vue'
 
 export default {
   name: 'App',
   components: {
-    MainApp,
-    SvgIcons
+    MainApp
   }
 }
 </script>

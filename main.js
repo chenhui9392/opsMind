@@ -1,5 +1,6 @@
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
+const { createMenu } = require('./src/utils/menu')
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -15,6 +16,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow()
+  createMenu()
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
