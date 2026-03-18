@@ -9,6 +9,7 @@ import { API_BASE_URL, CHAT_API_BASE_URL } from '../config/env'
 export const uploadImage = async (file) => {
   const formData = new FormData()
   formData.append('file', file)
+  formData.append('bucket', 'CSS-01')
 
   const data = await upload(`${API_BASE_URL}/gateway/fileServer/v4/upload/single`, formData)
   if (data.success) {

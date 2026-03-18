@@ -47,6 +47,54 @@ export const contacts = [
     status: 'processing',
     statusText: '处理中',
     lastMessage: '需要开具增值税专用发票'
+  },
+  {
+    id: 7,
+    name: '发票开具申请',
+    time: '2023-11-13 13:40',
+    status: 'processing',
+    statusText: '处理中',
+    lastMessage: '需要开具增值税专用发票'
+  },
+  {
+    id: 8,
+    name: '发票开具申请',
+    time: '2023-11-13 13:40',
+    status: 'processing',
+    statusText: '处理中',
+    lastMessage: '需要开具增值税专用发票'
+  },
+  {
+    id: 9,
+    name: '发票开具申请',
+    time: '2023-11-13 13:40',
+    status: 'processing',
+    statusText: '处理中',
+    lastMessage: '需要开具增值税专用发票'
+  },
+  {
+    id: 10,
+    name: '发票开具申请',
+    time: '2023-11-13 13:40',
+    status: 'processing',
+    statusText: '处理中',
+    lastMessage: '需要开具增值税专用发票'
+  },
+  {
+    id: 11,
+    name: '发票开具申请',
+    time: '2023-11-13 13:40',
+    status: 'processing',
+    statusText: '处理中',
+    lastMessage: '需要开具增值税专用发票'
+  },
+  {
+    id: 12,
+    name: '发票开具申请',
+    time: '2023-11-13 13:40',
+    status: 'processing',
+    statusText: '处理中',
+    lastMessage: '需要开具增值税专用发票'
   }
 ]
 
@@ -63,6 +111,6 @@ export const initialMessages = [
 // 模拟回复消息
 export const mockReply = {
   sender: 'bot',
-  text: '网络错误或服务异常，请稍后再试。',
+  text: '网络错误或服务异常，请稍后再试......',
   images: []
 }

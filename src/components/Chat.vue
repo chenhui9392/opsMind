@@ -2,34 +2,44 @@
   <div class="chat">
     <div class="chat-header">
       <div class="chat-title">
-        <span class="chat-name">智能客服助手</span>
-        <span class="chat-status">在线</span>
+        <div class="avatar">
+          <div class="avatar-icon">🤖</div>
+        </div>
+        <div class="header-info">
+          <span class="chat-name">智能助手</span>
+          <span class="chat-status">在线</span>
+        </div>
+        <div class="user-info">
+          <span class="user-name">hui.chenn</span>
+        </div>
       </div>
     </div>
     <div class="chat-messages" ref="chatMessages">
-      <div 
-        v-for="(message, index) in messages" 
+      <div
+        v-for="(message, index) in messages"
         :key="index"
         class="message"
         :class="{ 'message-user': message.sender === 'user', 'message-bot': message.sender === 'bot' }"
       >
+        <div class="message-avatar" v-if="message.sender === 'bot'">
+          <div class="avatar-icon">🤖</div>
+        </div>
         <div class="message-content">
           <div v-if="message.text" class="message-text">{{ message.text }}</div>
           <div v-if="message.images && message.images.length > 0" class="message-images">
-            <img 
-              v-for="(image, imgIndex) in message.images" 
+            <img
+              v-for="(image, imgIndex) in message.images"
               :key="imgIndex"
               :src="image"
               class="message-image"
               @click="openImagePreview(image, message.images, imgIndex)"
             />
           </div>
+          <div class="message-time">{{ message.time }}</div>
         </div>
-        <div class="message-time">{{ message.time }}</div>
-        <div class="message-sender">{{ message.sender === 'user' ? 'hui.chenn' : '智能助手' }}</div>
       </div>
     </div>
-    <ChatInput @send="handleSend" />
+    <ChatInput v-if="showInput" @send="handleSend" />
   </div>
 </template>
 
@@ -45,6 +55,10 @@ export default {
     messages: {
       type: Array,
       default: () => []
+    },
+    showInput: {
+      type: Boolean,
+      default: true
     }
   },
   methods: {
@@ -99,23 +113,62 @@ export default {
 .chat-header {
   padding: 16px;
   border-bottom: 1px solid #e0e0e0;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
 .chat-title {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.avatar {
+  margin-right: 12px;
+}
+
+.avatar-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .chat-name {
   font-weight: bold;
-  color: #333;
-  margin-right: 12px;
+  color: white;
+  margin-right: 0;
+  margin-bottom: 4px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+}
+
+.user-name {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  padding: 4px 12px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
 }
 
 .chat-status {
-  font-size: 14px;
-  color: #4caf50;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
 }
@@ -140,32 +193,47 @@ export default {
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
-  max-width: 80%;
 }
 
 .message-user {
   align-self: flex-end;
+  flex-direction: row-reverse;
+  align-items: flex-end;
 }
 
 .message-bot {
   align-self: flex-start;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.message-avatar {
+  margin-right: 10px;
+  margin-top: 4px;
 }
 
 .message-content {
   padding: 12px 16px;
   border-radius: 18px;
   margin-bottom: 4px;
-}
-
-.message-user .message-content {
-  background-color: #e3f2fd;
-  border-bottom-right-radius: 4px;
+  max-width: 80%;
+  word-wrap: break-word;
 }
 
 .message-bot .message-content {
   background-color: #ffffff;
   border: 1px solid #e0e0e0;
   border-bottom-left-radius: 4px;
+}
+
+.message-user .message-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.message-user .message-text {
+  color: #ffffff;
 }
 
 .message-text {
@@ -179,6 +247,10 @@ export default {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+}
+
+.message-user .message-images {
+  justify-content: flex-end;
 }
 
 .message-image {
@@ -197,14 +269,16 @@ export default {
 .message-time {
   font-size: 12px;
   color: #999;
-  align-self: flex-end;
-  margin-top: 4px;
+  margin-top: 8px;
+  text-align: right;
 }
 
-.message-sender {
-  font-size: 12px;
-  color: #666;
-  align-self: flex-end;
-  margin-top: 2px;
+.message-user .message-time {
+  text-align: right;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.message-bot .message-time {
+  text-align: left;
 }
 </style>

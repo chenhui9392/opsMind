@@ -1,21 +1,29 @@
 <template>
   <div class="app">
     <!-- 左侧联系人列表 -->
-    <Contacts 
-      :contacts="contacts" 
-      :selectedContact="selectedContact"
-      @select="selectContact"
-    />
+    <div class="contacts-container" :style="{ width: contactsWidth + 'px' }">
+      <Contacts
+        ref="contactsComponent"
+        :contacts="contacts"
+        :selectedContact="selectedContact"
+        :currentChatSession="currentChatSession"
+        @select="selectContact"
+        @back-to-current="backToCurrentChat"
+      />
+      <div class="resize-handle" @mousedown="startResizing"></div>
+    </div>
 
     <!-- 右侧聊天区域 -->
-    <Chat 
+    <Chat
+      ref="chatComponent"
       :messages="messages"
+      :showInput="showInput"
       @send="handleSendMessage"
       @preview-image="handlePreviewImage"
     />
 
     <!-- 图片预览模态框 -->
-    <ImagePreview 
+    <ImagePreview
       :show="imagePreview.show"
       :images="imagePreview.images"
       :currentIndex="imagePreview.currentIndex"
@@ -43,12 +51,19 @@ export default {
     return {
       contacts: mockContacts,
       selectedContact: 1,
+      currentChatSession: null, // 当前正在进行的聊天会话
       messages: initialMessages,
+      messageStore: {}, // 存储每个会话的消息
+      showInput: true, // 是否显示聊天输入框
       imagePreview: {
         show: false,
         images: [],
         currentIndex: 0
-      }
+      },
+      contactsWidth: 300, // 初始宽度
+      isResizing: false,
+      isLoading: false, // 发送消息加载状态
+      loadingMessageId: null // 加载消息的ID
     }
   },
   methods: {
@@ -57,52 +72,74 @@ export default {
      * @param {number} contactId - 联系人ID
      */
     selectContact(contactId) {
+      // 保存当前会话的消息
+      if (this.currentChatSession) {
+        this.messageStore[this.currentChatSession] = [...this.messages]
+      }
+
       this.selectedContact = contactId
-      // 这里可以根据联系人ID加载对应的聊天记录
+      this.currentChatSession = null // 点击历史会话时，清除当前聊天会话状态
+      this.showInput = false // 点击历史会话时不显示输入框
+
+      // 加载对应会话的消息，如果没有则使用默认消息
+      if (this.messageStore[contactId]) {
+        this.messages = [...this.messageStore[contactId]]
+      } else {
+        // 模拟加载历史会话消息
+        this.messages = [
+          {
+            sender: 'bot',
+            text: `您好！欢迎咨询关于"${this.contacts.find(c => c.id === contactId)?.name}"的问题。`,
+            time: new Date().toLocaleString('zh-CN'),
+            images: []
+          }
+        ]
+        // 保存到消息存储
+        this.messageStore[contactId] = [...this.messages]
+      }
     },
     /**
      * 处理发送消息
      * @param {Object} data - 消息数据
      */
     async handleSendMessage(data) {
-      const { text, files } = data
-      
-      if (!text && files.length === 0) return
+      const { text, images } = data
 
-      const message = this.createMessage(text)
-      await this.uploadImages(files, message)
+      if (!text && images.length === 0) return
+
+      const message = this.createMessage(text, images)
       this.addMessageToChat(message)
-      await this.sendToServer(text, message.images)
+
+      // 添加加载状态消息
+      this.isLoading = true
+      const loadingMessage = {
+        sender: 'bot',
+        text: '正在尝试思考您的问题...',
+        time: new Date().toLocaleString('zh-CN'),
+        images: [],
+        isLoading: true
+      }
+      this.messages.push(loadingMessage)
+      this.loadingMessageId = this.messages.length - 1
+
+      // 滚动会话列表到底部
+      this.scrollContactsToBottom()
+
+      await this.sendToServer(text, images)
       this.simulateReply()
     },
     /**
      * 创建消息对象
      * @param {string} text - 消息内容
+     * @param {Array} images - 图片URL数组
      * @returns {Object} - 消息对象
      */
-    createMessage(text) {
+    createMessage(text, images) {
       return {
         sender: 'user',
         text: text,
         time: new Date().toLocaleString('zh-CN'),
-        images: []
-      }
-    },
-    /**
-     * 上传图片
-     * @param {Array} files - 文件数组
-     * @param {Object} message - 消息对象
-     */
-    async uploadImages(files, message) {
-      if (files.length > 0) {
-        for (const file of files) {
-          try {
-            const imageUrl = await uploadImage(file)
-            message.images.push(imageUrl)
-          } catch (error) {
-            console.error('图片上传失败:', error)
-          }
-        }
+        images: images
       }
     },
     /**
@@ -111,6 +148,10 @@ export default {
      */
     addMessageToChat(message) {
       this.messages.push(message)
+      // 如果是当前聊天会话，保存到消息存储
+      if (this.currentChatSession) {
+        this.messageStore[this.currentChatSession] = [...this.messages]
+      }
     },
     /**
      * 发送消息到服务器
@@ -146,7 +187,19 @@ export default {
         time: new Date().toLocaleString('zh-CN')
       }
 
-      this.messages.push(responseMessage)
+      // 替换加载状态消息
+      if (this.isLoading && this.loadingMessageId !== null) {
+        this.messages.splice(this.loadingMessageId, 1, responseMessage)
+        this.isLoading = false
+        this.loadingMessageId = null
+      } else {
+        this.messages.push(responseMessage)
+      }
+
+      // 如果是当前聊天会话，保存到消息存储
+      if (this.currentChatSession) {
+        this.messageStore[this.currentChatSession] = [...this.messages]
+      }
     },
     /**
      * 处理图片预览
@@ -172,7 +225,65 @@ export default {
      */
     handleNavigateImage(index) {
       this.imagePreview.currentIndex = index
+    },
+    /**
+     * 回到当前聊天会话
+     */
+    backToCurrentChat() {
+      if (this.currentChatSession) {
+        this.selectedContact = this.currentChatSession
+        this.messages = [...this.messageStore[this.currentChatSession]]
+        this.showInput = true
+      } else {
+        // 如果没有当前聊天会话，创建一个新的
+        this.currentChatSession = 0 // 使用0作为当前聊天会话的ID
+        this.selectedContact = 0
+        this.messages = initialMessages
+        this.showInput = true
+      }
+    },
+    /**
+     * 开始调整宽度
+     * @param {Event} event - 鼠标事件
+     */
+    startResizing(event) {
+      this.isResizing = true
+      document.addEventListener('mousemove', this.onResizing)
+      document.addEventListener('mouseup', this.stopResizing)
+    },
+    /**
+     * 调整宽度中
+     * @param {Event} event - 鼠标事件
+     */
+    onResizing(event) {
+      if (!this.isResizing) return
+      const newWidth = event.clientX - this.$el.getBoundingClientRect().left
+      if (newWidth >= 200 && newWidth <= 500) {
+        this.contactsWidth = newWidth
+      }
+    },
+    /**
+     * 停止调整宽度
+     */
+    stopResizing() {
+      this.isResizing = false
+      document.removeEventListener('mousemove', this.onResizing)
+      document.removeEventListener('mouseup', this.stopResizing)
+    },
+    /**
+     * 滚动会话列表到底部
+     */
+    scrollContactsToBottom() {
+      const chatComponent = this.$refs.chatComponent
+      if (chatComponent && chatComponent.scrollToBottom) {
+        chatComponent.scrollToBottom()
+      }
     }
+  },
+  mounted() {
+    // 初始化当前聊天会话
+    this.currentChatSession = 0
+    this.messageStore[0] = initialMessages
   }
 }
 </script>
@@ -182,5 +293,31 @@ export default {
   display: flex;
   height: 100vh;
   font-family: Arial, sans-serif;
+  position: relative;
+}
+
+.contacts-container {
+  position: relative;
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  background-color: transparent;
+  z-index: 10;
+}
+
+.resize-handle:hover {
+  background-color: rgba(103, 58, 183, 0.3);
+}
+
+.resize-handle:active {
+  background-color: rgba(103, 58, 183, 0.5);
 }
 </style>
