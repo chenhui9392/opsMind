@@ -1,23 +1,9 @@
 <template>
   <div class="contacts">
-    <div class="contacts-header">
-      <h2>历史会话</h2>
-      <div class="search-container">
-        <input
-          type="text"
-          v-model="searchQuery"
-          class="search-input"
-          placeholder="搜索会话..."
-        />
-        <button 
-          v-if="searchQuery" 
-          class="search-clear-button" 
-          @click="clearSearch"
-        >
-          <SvgIcon name="clear" width="14" height="14" />
-        </button>
-      </div>
-    </div>
+    <ContactsHeader 
+      @search="handleSearch"
+      @clear-search="clearSearch"
+    />
     <div class="back-to-current" v-if="!isCurrentChatSelected" @click="$emit('back-to-current')">
       <div class="back-to-current-text">回到当前聊天</div>
       <div class="back-to-current-icon">
@@ -32,9 +18,9 @@
         :class="{ active: selectedContact === contact.id }"
         @click="selectContact(contact.id)"
       >
-<!--        <div class="contact-avatar">-->
-<!--          <div class="avatar-icon">👤</div>-->
-<!--        </div>-->
+<!--        <div class="contact-avatar">-->  
+<!--          <div class="avatar-icon">👤</div>-->  
+<!--        </div>-->  
         <div class="contact-content">
           <div class="contact-info">
             <div class="contact-name">{{ contact.name }}</div>
@@ -49,11 +35,13 @@
 
 <script>
 import SvgIcon from '../assets/svg/SvgIcon.vue'
+import ContactsHeader from './ContactsHeader.vue'
 
 export default {
   name: 'Contacts',
   components: {
-    SvgIcon
+    SvgIcon,
+    ContactsHeader
   },
   props: {
     contacts: {
@@ -90,9 +78,16 @@ export default {
     }
   },
   methods: {
+    /**
+     * 选择联系人
+     * @param {number} contactId - 联系人ID
+     */
     selectContact(contactId) {
       this.$emit('select', contactId)
     },
+    /**
+     * 滚动到底部
+     */
     scrollToBottom() {
       setTimeout(() => {
         const contactsList = this.$refs.contactsList
@@ -101,8 +96,18 @@ export default {
         }
       }, 100)
     },
+    /**
+     * 清除搜索
+     */
     clearSearch() {
       this.searchQuery = ''
+    },
+    /**
+     * 处理搜索
+     * @param {string} query - 搜索关键词
+     */
+    handleSearch(query) {
+      this.searchQuery = query
     }
   }
 }
@@ -118,71 +123,7 @@ export default {
   height: 100%;
 }
 
-.contacts-header {
-  padding: 16px;
-  border-bottom: 1px solid #e0e0e0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
 
-.contacts-header h2 {
-  margin: 0;
-  font-size: 18px;
-  color: white;
-  font-weight: 600;
-}
-
-.search-container {
-  width: 100%;
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 40px 10px 16px;
-  border: none;
-  border-radius: 20px;
-  font-size: 14px;
-  outline: none;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  transition: background-color 0.3s ease;
-}
-
-.search-input:focus {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-.search-clear-button {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.3);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.search-clear-button:hover {
-  background-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-50%) scale(1.1);
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
 
 .back-to-current {
   display: flex;

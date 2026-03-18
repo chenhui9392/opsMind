@@ -126,7 +126,6 @@ export default {
       this.scrollContactsToBottom()
 
       await this.sendToServer(text, images)
-      this.simulateReply()
     },
     /**
      * 创建消息对象
@@ -160,45 +159,111 @@ export default {
      */
     async sendToServer(text, fileUrls) {
       try {
-        await sendChatMessage({
+        const response = await sendChatMessage({
           message: text,
           fileUrls: fileUrls
         })
+        // 处理服务器响应
+        this.handleServerResponse(response)
       } catch (error) {
         console.error('发送消息失败:', error)
+        // 错误处理：显示错误消息
+        this.receiveErrorMessage('发送消息失败，请稍后重试')
       }
     },
     /**
-     * 模拟收到回复
+     * 处理服务器响应
+     * @param {Object} response - 服务器响应数据
      */
-    simulateReply() {
-      setTimeout(() => {
-        this.receiveMessage()
-      }, 1000)
+    handleServerResponse(response) {
+      if (response && response.code === 200 && response.data && response.data.message) {
+        const messageData = response.data.message
+        let content = messageData.reasonerContent
+
+        // 如果 reasonerContent 没有内容，显示系统维修中提示
+        if (!content || content.trim() === '') {
+          content = '稍后再试，系统正在全力维修中....'
+        }
+
+        // 尝试解析 content 字段（如果是 JSON 字符串）
+        try {
+          const parsedContent = JSON.parse(content)
+          if (parsedContent.input) {
+            content = parsedContent.input
+          }
+        } catch (parseError) {
+          // 如果解析失败，使用原始 content
+          console.log('Content is not JSON:', content)
+        }
+
+        // 创建响应消息
+        const responseMessage = {
+          sender: 'bot',
+          text: content,
+          time: new Date().toLocaleString('zh-CN'),
+          images: []
+        }
+
+        // 替换加载状态消息
+        if (this.isLoading && this.loadingMessageId !== null) {
+          this.messages.splice(this.loadingMessageId, 1, responseMessage)
+          this.isLoading = false
+          this.loadingMessageId = null
+        } else {
+          this.messages.push(responseMessage)
+        }
+
+        // 如果是当前聊天会话，保存到消息存储
+        if (this.currentChatSession) {
+          this.messageStore[this.currentChatSession] = [...this.messages]
+        }
+      } else {
+        // 响应格式不正确
+        console.error('Invalid response format:', response)
+        this.receiveErrorMessage(response?.message || '服务器响应格式不正确')
+      }
     },
     /**
-     * 接收消息
+     * 接收错误消息
+     * @param {string} errorText - 错误信息
      */
-    async receiveMessage() {
-      // 模拟收到消息
-      const responseMessage = {
-        ...mockReply,
-        time: new Date().toLocaleString('zh-CN')
+    receiveErrorMessage(errorText) {
+      const errorMessage = {
+        sender: 'bot',
+        text: errorText,
+        time: new Date().toLocaleString('zh-CN'),
+        images: []
       }
 
       // 替换加载状态消息
       if (this.isLoading && this.loadingMessageId !== null) {
-        this.messages.splice(this.loadingMessageId, 1, responseMessage)
+        this.messages.splice(this.loadingMessageId, 1, errorMessage)
         this.isLoading = false
         this.loadingMessageId = null
       } else {
-        this.messages.push(responseMessage)
+        this.messages.push(errorMessage)
       }
-
-      // 如果是当前聊天会话，保存到消息存储
-      if (this.currentChatSession) {
-        this.messageStore[this.currentChatSession] = [...this.messages]
-      }
+    },
+    /**
+     * 模拟收到回复（保留用于测试）
+     */
+    simulateReply() {
+      setTimeout(() => {
+        // 模拟响应
+        const mockResponse = {
+          code: 200,
+          data: {
+            conversationId: '2034196054756937729',
+            message: {
+              content: '{\n  "input" : "11"\n}',
+              reasonerContent: '',
+              role: 'assistant'
+            }
+          },
+          message: 'success'
+        }
+        this.handleServerResponse(mockResponse)
+      }, 1000)
     },
     /**
      * 处理图片预览
