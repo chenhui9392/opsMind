@@ -28,6 +28,18 @@
                 @click="openImagePreview(image, message.images, imgIndex)"
             />
           </div>
+          
+          <!-- 文件 -->
+          <div v-if="message.files && message.files.length > 0" class="message-files">
+            <div
+              v-for="(file, fileIndex) in message.files"
+              :key="'file_' + fileIndex"
+              class="file-item"
+            >
+              <div class="file-icon">📄</div>
+              <div class="file-name">{{ file.name }}</div>
+            </div>
+          </div>
           <!-- 时间 -->
           <div class="message-time">{{ message.time }}</div>
         </div>
@@ -290,6 +302,52 @@ export default {
 
 .message-image:hover {
   transform: scale(1.05);
+}
+
+/* 文件消息 */
+.message-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.message-user .message-files {
+  justify-content: flex-end;
+}
+
+.message-bot .message-files {
+  justify-content: flex-start;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+}
+
+.file-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.file-name {
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
 }
 
 .message-time {

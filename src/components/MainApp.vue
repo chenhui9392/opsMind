@@ -107,11 +107,11 @@ export default {
      * @param {Object} data - 消息数据
      */
     async handleSendMessage(data) {
-      const { text, images } = data
+      const { text, images, files } = data
 
-      if (!text && images.length === 0) return
+      if (!text && images.length === 0 && files.length === 0) return
 
-      const message = this.createMessage(text, images)
+      const message = this.createMessage(text, images, files)
       this.addMessageToChat(message)
 
       // 添加加载状态消息
@@ -129,7 +129,7 @@ export default {
       // 滚动会话列表到底部
       this.scrollContactsToBottom()
 
-      await this.sendToServer(text, images)
+      await this.sendToServer(text, images, files)
     },
     /**
      * 创建消息对象
@@ -137,12 +137,13 @@ export default {
      * @param {Array} images - 图片URL数组
      * @returns {Object} - 消息对象
      */
-    createMessage(text, images) {
+    createMessage(text, images, files = []) {
       return {
         sender: 'user',
         text: text,
         time: new Date().toLocaleString('zh-CN'),
-        images: images
+        images: images,
+        files: files
       }
     },
     /**
@@ -161,12 +162,21 @@ export default {
      * @param {string} text - 消息内容
      * @param {Array} fileUrls - 图片URL数组
      */
-    async sendToServer(text, fileUrls) {
+    async sendToServer(text, fileUrls, files = []) {
       try {
+        // 合并图片URL和非图片文件URL
+        const allFileUrls = [...fileUrls];
+        
+        // 提取非图片文件的URL并加入到allFileUrls中
+        if (files && files.length > 0) {
+          const fileUrlsFromFiles = files.map(file => file.url);
+          allFileUrls.push(...fileUrlsFromFiles);
+        }
+        
         // 准备参数，如果当前是新会话，则添加isNewSession参数
         const params = {
           message: text,
-          fileUrls: fileUrls
+          fileUrls: allFileUrls
         }
         
         // 如果是新会话，添加isNewSession参数
