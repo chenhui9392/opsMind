@@ -12,12 +12,14 @@
 
     <!-- 输入区域 -->
     <div class="chat-input-wrapper">
-      <input
-        type="text"
+      <textarea
         v-model="inputMessage"
         class="chat-input"
         placeholder="输入消息..."
         @keydown.enter.prevent="handleEnterKey"
+        @input="autoResize"
+        rows="1"
+        :style="{ maxHeight: '500px' }"
       />
       <div class="input-actions">
         <input
@@ -55,6 +57,10 @@ export default {
       uploadedImages: [],
       isUploading: false
     }
+  },
+  mounted() {
+    // 初始化textarea高度
+    this.autoResize()
   },
   computed: {
     charCount() {
@@ -112,6 +118,8 @@ export default {
       this.inputMessage = ''
       this.uploadedImages = []
       this.$refs.fileInput.value = ''
+      // 重置textarea高度
+      this.resetResize()
     },
     /**
      * 删除图片
@@ -119,6 +127,31 @@ export default {
      */
     deleteImage(index) {
       this.uploadedImages.splice(index, 1)
+    },
+
+    /**
+     * 重置textarea高度
+     */
+    resetResize() {
+      const textarea = this.$el.querySelector('.chat-input')
+      if (textarea) {
+        // 重置高度，以便正确计算
+        textarea.style.height = '54px'
+      }
+    },
+
+    /**
+     * 自动调整textarea高度
+     */
+    autoResize() {
+      const textarea = this.$el.querySelector('.chat-input')
+      if (textarea) {
+        // 重置高度，以便正确计算
+        textarea.style.height = '54px'
+        // 设置新高度，不超过最大高度
+        const newHeight = Math.min(textarea.scrollHeight, 500)
+        textarea.style.height = `${newHeight}px`
+      }
     }
   }
 }
@@ -189,11 +222,14 @@ export default {
   padding: 16px;
   background-color: #ffffff;
   border-top: 1px solid #e0e0e0;
+  min-height: 88px;
+  display: flex;
+  align-items: center;
 }
 
 .chat-input {
   width: 100%;
-  padding: 16px 16px 16px 56px;
+  padding: 16px 100px 16px 56px;
   border: 1px solid #e0e0e0;
   border-radius: 28px;
   font-size: 14px;
@@ -202,6 +238,9 @@ export default {
   background-color: #f5f5f5;
   min-height: 56px;
   box-sizing: border-box;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.4;
 }
 
 .chat-input:focus {
@@ -211,12 +250,13 @@ export default {
 
 .input-actions {
   position: absolute;
-  right: 24px;
-  top: 50%;
+  right: 36px;
+  bottom: 4px;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
+  z-index: 10;
 }
 
 .file-input {

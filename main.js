@@ -1,7 +1,10 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu } = require('electron')
 const path = require('path')
 const os = require('os')
-const { createMenu } = require('./src/utils/menu')
+
+// 构建正确的menu模块路径
+const menuPath = path.join(__dirname, 'src', 'utils', 'menu.js')
+const { createMenu } = require(menuPath)
 
 // 获取系统用户名
 const getSystemUsername = () => {
@@ -18,27 +21,61 @@ let tray = null
 let floatingBallWindow = null
 
 function createWindow() {
+  // 创建窗口
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       devTools: true
-    }
+    },
+    show: true,
+    alwaysOnTop: true, // 确保窗口在最前面
+    transparent: false, // 确保窗口不透明
+    frame: true // 确保窗口有边框
   })
 
   // 检查是否为开发模式
   const isDev = !app.isPackaged
+  console.log('Is dev mode:', isDev)
   
   if (isDev) {
     // 开发模式：加载Vite开发服务器
-    mainWindow.loadURL('http://localhost:5174')
+    console.log('Loading Vite dev server at http://localhost:5175')
+    mainWindow.loadURL('http://localhost:5175')
   } else {
     // 生产模式：加载静态文件
+    console.log('Loading static file at dist/index.html')
     mainWindow.loadFile('dist/index.html')
   }
-  // 关闭自动打开开发者工具
-  // mainWindow.webContents.openDevTools()
+  
+  // 只在开发模式下打开开发者工具
+  if (isDev) {
+    // 打开开发者工具，方便调试，并调整位置
+    const devTools = mainWindow.webContents.openDevTools({ mode: 'detach' })
+  }
+  
+  // 监听页面加载事件
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('Page loaded successfully')
+    console.log('Window visible:', mainWindow.isVisible())
+    console.log('Window position:', mainWindow.getPosition())
+    console.log('Window size:', mainWindow.getSize())
+    
+    // 确保窗口在最前面
+    mainWindow.setAlwaysOnTop(true)
+    mainWindow.focus()
+    
+    // 延迟取消alwaysOnTop，避免遮挡其他窗口
+    setTimeout(() => {
+      mainWindow.setAlwaysOnTop(false)
+    }, 2000)
+  })
+
+  // 监听页面加载失败事件
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Page load failed:', errorCode, errorDescription)
+  })
 
   // 关闭窗口时最小化到托盘
   mainWindow.on('close', (event) => {
@@ -49,6 +86,13 @@ function createWindow() {
       mainWindow.hide()
     }
   })
+  
+  // 确保窗口可见
+  setTimeout(() => {
+    mainWindow.show()
+    mainWindow.focus()
+    console.log('Window forced to show after timeout')
+  }, 1000)
 }
 
 function createTray() {

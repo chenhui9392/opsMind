@@ -72,15 +72,15 @@ function createMenu() {
             }
           }
         },
-        {
-          label: '开发者工具',
-          accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-          click: function(item, focusedWindow) {
-            if (focusedWindow) {
-              focusedWindow.webContents.toggleDevTools();
-            }
-          }
-        }
+        // {
+        //   label: '开发者工具',
+        //   accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+        //   click: function(item, focusedWindow) {
+        //     if (focusedWindow) {
+        //       focusedWindow.webContents.toggleDevTools();
+        //     }
+        //   }
+        // }
       ]
     },
     {

@@ -14,15 +14,37 @@
     "directories": {
       "output": "dist_electron"
     },
+    "defaultArch": "x64",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "electronLanguages": ["en-US", "zh-CN", "zh-TW"]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
-    }
+    },
+    "electronVersion": "41.0.2",
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js",
+      "src/utils/menu.js",
+      "public/**/*"
+    ],
+    "extraResources": [],
+    "asar": true,
+    "asarUnpack": [],
+    "electronDist": null,
+    "electronDownload": {
+      "mirror": "https://npmmirror.com/mirrors/electron/"
+    },
+    "compression": "maximum",
+    "removePackageScripts": true,
+    "removePackageKeywords": true,
+    "includePdb": false,
+    "detectUpdateChannel": false
   },
   "dependencies": {
     "marked": "^17.0.4",
@@ -32,6 +54,7 @@
     "@vitejs/plugin-vue": "^5.2.4",
     "electron": "^41.0.2",
     "electron-builder": "^26.8.1",
+    "terser": "^5.46.1",
     "vite": "^6.4.1"
   },
   "keywords": [],

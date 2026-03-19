@@ -1,6 +1,11 @@
 <template>
   <div class="contacts-header">
-    <h2>{{ title }}</h2>
+    <div class="header-top">
+      <h2>{{ title }}</h2>
+      <button class="new-session-button" @click="createNewSession">
+        + 新建会话
+      </button>
+    </div>
     <div class="search-container">
       <input
         type="text"
@@ -46,6 +51,9 @@ export default {
     clearSearch() {
       this.searchQuery = ''
       this.$emit('clear-search')
+    },
+    createNewSession() {
+      this.$emit('create-new-session')
     }
   },
   watch: {
@@ -68,11 +76,37 @@ export default {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .contacts-header h2 {
   margin: 0;
   font-size: 18px;
   color: white;
   font-weight: 600;
+}
+
+.new-session-button {
+  padding: 6px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  background-color: transparent;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.new-session-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .search-container {

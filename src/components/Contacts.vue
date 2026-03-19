@@ -1,9 +1,10 @@
 <template>
   <div class="contacts">
     <ContactsHeader 
-      @search="handleSearch"
-      @clear-search="clearSearch"
-    />
+    @search="handleSearch"
+    @clear-search="clearSearch"
+    @create-new-session="$emit('create-new-session')"
+  />
     <div class="back-to-current" v-if="!isCurrentChatSelected" @click="$emit('back-to-current')">
       <div class="back-to-current-text">回到当前聊天</div>
       <div class="back-to-current-icon">

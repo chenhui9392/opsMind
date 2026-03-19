@@ -9,6 +9,7 @@
         :currentChatSession="currentChatSession"
         @select="selectContact"
         @back-to-current="backToCurrentChat"
+        @create-new-session="createNewSession"
       />
       <div class="resize-handle" @mousedown="startResizing"></div>
     </div>
@@ -342,6 +343,36 @@ export default {
       if (chatComponent && chatComponent.scrollToBottom) {
         chatComponent.scrollToBottom()
       }
+    },
+    /**
+     * 创建新会话
+     */
+    createNewSession() {
+      // 保存当前会话的消息
+      if (this.currentChatSession) {
+        this.messageStore[this.currentChatSession] = [...this.messages]
+      }
+      
+      // 生成新的会话ID
+      const newSessionId = Date.now()
+      
+      // 更新当前会话和选中的联系人
+      this.currentChatSession = newSessionId
+      this.selectedContact = newSessionId
+      this.showInput = true
+      
+      // 初始化新会话的消息
+      this.messages = [
+        {
+          sender: 'bot',
+          text: '您好！我是智能助手，请问有什么可以帮助您的吗？',
+          time: new Date().toLocaleString('zh-CN'),
+          images: []
+        }
+      ]
+      
+      // 保存到消息存储
+      this.messageStore[newSessionId] = [...this.messages]
     }
   },
   mounted() {
