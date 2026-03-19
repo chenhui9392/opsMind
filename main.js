@@ -27,7 +27,16 @@ function createWindow() {
     }
   })
 
-  mainWindow.loadFile('dist/index.html')
+  // 检查是否为开发模式
+  const isDev = !app.isPackaged
+  
+  if (isDev) {
+    // 开发模式：加载Vite开发服务器
+    mainWindow.loadURL('http://localhost:5174')
+  } else {
+    // 生产模式：加载静态文件
+    mainWindow.loadFile('dist/index.html')
+  }
   // 关闭自动打开开发者工具
   // mainWindow.webContents.openDevTools()
 
