@@ -19,10 +19,8 @@
       ref="chatComponent"
       :messages="messages"
       :showInput="showInput"
-      :isSending="isLoading"
       @send="handleSendMessage"
       @preview-image="handlePreviewImage"
-      @stop="handleStopSending"
     />
 
     <!-- 图片预览模态框 -->
@@ -40,7 +38,7 @@
 import Contacts from './Contacts.vue'
 import Chat from './Chat.vue'
 import ImagePreview from './ImagePreview.vue'
-import { uploadImage, sendChatMessage, stopChat, abortChatRequest } from '../api'
+import { uploadImage, sendChatMessage } from '../api'
 import { contacts as mockContacts, initialMessages, mockReply } from '../mock/data'
 
 export default {
@@ -66,7 +64,8 @@ export default {
       contactsWidth: 300, // 初始宽度
       isResizing: false,
       isLoading: false, // 发送消息加载状态
-      loadingMessageId: null // 加载消息的ID
+      loadingMessageId: null, // 加载消息的ID
+      isNewSession: false // 标记是否为新会话
     }
   },
   methods: {
@@ -83,6 +82,8 @@ export default {
       this.selectedContact = contactId
       this.currentChatSession = null // 点击历史会话时，清除当前聊天会话状态
       this.showInput = false // 点击历史会话时不显示输入框
+      // 选择历史会话不是新会话
+      this.isNewSession = false
 
       // 加载对应会话的消息，如果没有则使用默认消息
       if (this.messageStore[contactId]) {
@@ -162,27 +163,26 @@ export default {
      */
     async sendToServer(text, fileUrls) {
       try {
-        const response = await sendChatMessage({
+        // 准备参数，如果当前是新会话，则添加isNewSession参数
+        const params = {
           message: text,
           fileUrls: fileUrls
-        })
+        }
+        
+        // 如果是新会话，添加isNewSession参数
+        if (this.isNewSession) {
+          params.isNewSession = true
+          // 发送完第一条消息后，将isNewSession设置为false
+          this.isNewSession = false
+        }
+        
+        const response = await sendChatMessage(params)
         // 处理服务器响应
         this.handleServerResponse(response)
       } catch (error) {
-        // 如果是用户主动中断的请求，不显示错误消息
-        if (error.name === 'AbortError') {
-          console.log('请求被用户中断')
-          // 确保加载状态被清除
-          if (this.isLoading && this.loadingMessageId !== null) {
-            this.messages.splice(this.loadingMessageId, 1)
-            this.isLoading = false
-            this.loadingMessageId = null
-          }
-        } else {
-          console.error('发送消息失败:', error)
-          // 错误处理：显示错误消息
-          this.receiveErrorMessage('发送消息失败，请稍后重试')
-        }
+        console.error('发送消息失败:', error)
+        // 错误处理：显示错误消息
+        this.receiveErrorMessage('发送消息失败，请稍后重试')
       }
     },
     /**
@@ -312,12 +312,16 @@ export default {
         this.selectedContact = this.currentChatSession
         this.messages = [...this.messageStore[this.currentChatSession]]
         this.showInput = true
+        // 回到当前聊天会话时，这不是一个新会话
+        this.isNewSession = false
       } else {
         // 如果没有当前聊天会话，创建一个新的
         this.currentChatSession = 0 // 使用0作为当前聊天会话的ID
         this.selectedContact = 0
         this.messages = initialMessages
         this.showInput = true
+        // 设置为新会话状态
+        this.isNewSession = true
       }
     },
     /**
@@ -373,6 +377,8 @@ export default {
       this.currentChatSession = newSessionId
       this.selectedContact = newSessionId
       this.showInput = true
+      // 标记为新会话
+      this.isNewSession = true
       
       // 初始化新会话的消息
       this.messages = [
@@ -386,33 +392,14 @@ export default {
       
       // 保存到消息存储
       this.messageStore[newSessionId] = [...this.messages]
-    },
-    /**
-     * 处理中断发送
-     */
-    async handleStopSending() {
-      // 1. 先中断正在进行的 fetch 请求
-      abortChatRequest()
-      
-      // 2. 调用后台中断接口
-      try {
-        await stopChat()
-      } catch (error) {
-        console.error('后台中断接口调用失败:', error)
-      }
-      
-      // 3. 移除加载状态消息
-      if (this.isLoading && this.loadingMessageId !== null) {
-        this.messages.splice(this.loadingMessageId, 1)
-        this.isLoading = false
-        this.loadingMessageId = null
-      }
     }
   },
   mounted() {
     // 初始化当前聊天会话
     this.currentChatSession = 0
     this.messageStore[0] = initialMessages
+    // 初始化时，设置为新会话状态
+    this.isNewSession = true
   }
 }
 </script>

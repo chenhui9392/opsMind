@@ -11,6 +11,7 @@
         <SvgIcon name="arrow" width="16" height="16" />
       </div>
     </div>
+    
     <div class="contacts-list" ref="contactsList">
       <div
         v-for="contact in filteredContacts"
@@ -28,6 +29,7 @@
         </div>
       </div>
     </div>
+   
   </div>
 </template>
 

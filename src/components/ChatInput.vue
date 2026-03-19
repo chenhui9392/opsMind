@@ -10,6 +10,17 @@
       </div>
     </div>
 
+    <!-- 文件预览区域（非图片文件） -->
+    <div v-if="uploadedFiles.length > 0" class="file-preview-container">
+      <div v-for="(file, index) in uploadedFiles" :key="index" class="file-preview-item">
+        <div class="file-icon">📄</div>
+        <div class="file-name">{{ file.name }}</div>
+        <button class="delete-button file-delete" @click="deleteFile(index)">
+          ×
+        </button>
+      </div>
+    </div>
+
     <!-- 输入区域 -->
     <div class="chat-input-wrapper">
       <textarea
@@ -26,7 +37,7 @@
           type="file"
           ref="fileInput"
           multiple
-          accept="image/*"
+          accept="image/*,.xlsx,.xls"
           class="file-input"
           @change="handleFileSelect"
         />
@@ -64,6 +75,7 @@ export default {
       inputMessage: '',
       selectedFiles: [],
       uploadedImages: [],
+      uploadedFiles: [], // 存储上传的非图片文件信息
       isUploading: false
     }
   },
@@ -101,11 +113,25 @@ export default {
         const filesArray = Array.from(files)
 
         for (const file of filesArray) {
+          // 判断文件类型
+          const isImage = file.type.startsWith('image/')
+          
           try {
-            const imageUrl = await uploadImage(file)
-            this.uploadedImages.push(imageUrl)
+            const fileUrl = await uploadImage(file)
+            
+            if (isImage) {
+              // 图片文件显示预览
+              this.uploadedImages.push(fileUrl)
+            } else {
+              // 非图片文件（Excel等）只显示文件名
+              this.uploadedFiles.push({
+                name: file.name,
+                url: fileUrl,
+                type: file.type
+              })
+            }
           } catch (error) {
-            console.error('图片上传失败:', error)
+            console.error('文件上传失败:', error)
           }
         }
 
@@ -116,16 +142,18 @@ export default {
      * 发送消息
      */
     sendMessage() {
-      if (!this.inputMessage && this.uploadedImages.length === 0) return
+      if (!this.inputMessage && this.uploadedImages.length === 0 && this.uploadedFiles.length === 0) return
 
       this.$emit('send', {
         text: this.inputMessage,
-        images: this.uploadedImages
+        images: this.uploadedImages,
+        files: this.uploadedFiles
       })
 
       // 清空输入和文件
       this.inputMessage = ''
       this.uploadedImages = []
+      this.uploadedFiles = []
       this.$refs.fileInput.value = ''
       // 重置textarea高度
       this.resetResize()
@@ -202,6 +230,60 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* 文件预览区域 */
+.file-preview-container {
+  padding: 12px 16px 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.file-preview-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 32px 8px 12px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+}
+
+.file-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.file-name {
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+}
+
+.file-delete {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background-color: #ff4757;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .delete-button {
