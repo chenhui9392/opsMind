@@ -31,10 +31,13 @@
           @change="handleFileSelect"
         />
         <button class="upload-button" @click="$refs.fileInput.click()" :disabled="isUploading">
-          <SvgIcon name="camera" width="20" height="20" />
+          <SvgIcon name="upload" width="20" height="20" />
         </button>
-        <button class="send-button" @click="sendMessage" :disabled="isUploading">
+        <button v-if="!isSending" class="send-button" @click="sendMessage" :disabled="isUploading">
           <SvgIcon name="send" width="18" height="18" color="white" />
+        </button>
+        <button v-else class="stop-button" @click="handleStop" title="中断">
+          <SvgIcon name="stop" width="18" height="18" color="white" />
         </button>
       </div>
     </div>
@@ -49,6 +52,12 @@ export default {
   name: 'ChatInput',
   components: {
     SvgIcon
+  },
+  props: {
+    isSending: {
+      type: Boolean,
+      default: false
+    }
   },
   data() {
     return {
@@ -152,6 +161,12 @@ export default {
         const newHeight = Math.min(textarea.scrollHeight, 500)
         textarea.style.height = `${newHeight}px`
       }
+    },
+    /**
+     * 处理中断请求
+     */
+    handleStop() {
+      this.$emit('stop')
     }
   }
 }
@@ -310,6 +325,27 @@ export default {
 .send-icon {
   width: 18px;
   height: 18px;
+}
+
+/* 中断按钮样式 */
+.stop-button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff4757, #ff6b81);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.stop-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* 禁用状态 */

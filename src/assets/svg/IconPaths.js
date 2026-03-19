@@ -45,5 +45,14 @@ export const IconPaths = {
       'M6 6l12 12'
     ],
     viewBox: '0 0 24 24'
+  },
+
+  // 中断/停止图标
+  stop: {
+    paths: [
+      'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
+      'M9 9h6v6H9z'
+    ],
+    viewBox: '0 0 24 24'
   }
 };

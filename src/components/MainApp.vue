@@ -19,8 +19,10 @@
       ref="chatComponent"
       :messages="messages"
       :showInput="showInput"
+      :isSending="isLoading"
       @send="handleSendMessage"
       @preview-image="handlePreviewImage"
+      @stop="handleStopSending"
     />
 
     <!-- 图片预览模态框 -->
@@ -38,7 +40,7 @@
 import Contacts from './Contacts.vue'
 import Chat from './Chat.vue'
 import ImagePreview from './ImagePreview.vue'
-import { uploadImage, sendChatMessage } from '../api'
+import { uploadImage, sendChatMessage, stopChat, abortChatRequest } from '../api'
 import { contacts as mockContacts, initialMessages, mockReply } from '../mock/data'
 
 export default {
@@ -167,9 +169,20 @@ export default {
         // 处理服务器响应
         this.handleServerResponse(response)
       } catch (error) {
-        console.error('发送消息失败:', error)
-        // 错误处理：显示错误消息
-        this.receiveErrorMessage('发送消息失败，请稍后重试')
+        // 如果是用户主动中断的请求，不显示错误消息
+        if (error.name === 'AbortError') {
+          console.log('请求被用户中断')
+          // 确保加载状态被清除
+          if (this.isLoading && this.loadingMessageId !== null) {
+            this.messages.splice(this.loadingMessageId, 1)
+            this.isLoading = false
+            this.loadingMessageId = null
+          }
+        } else {
+          console.error('发送消息失败:', error)
+          // 错误处理：显示错误消息
+          this.receiveErrorMessage('发送消息失败，请稍后重试')
+        }
       }
     },
     /**
@@ -373,6 +386,27 @@ export default {
       
       // 保存到消息存储
       this.messageStore[newSessionId] = [...this.messages]
+    },
+    /**
+     * 处理中断发送
+     */
+    async handleStopSending() {
+      // 1. 先中断正在进行的 fetch 请求
+      abortChatRequest()
+      
+      // 2. 调用后台中断接口
+      try {
+        await stopChat()
+      } catch (error) {
+        console.error('后台中断接口调用失败:', error)
+      }
+      
+      // 3. 移除加载状态消息
+      if (this.isLoading && this.loadingMessageId !== null) {
+        this.messages.splice(this.loadingMessageId, 1)
+        this.isLoading = false
+        this.loadingMessageId = null
+      }
     }
   },
   mounted() {

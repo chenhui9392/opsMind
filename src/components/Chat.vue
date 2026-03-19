@@ -33,7 +33,7 @@
         </div>
       </div>
     </div>
-    <ChatInput v-if="showInput" @send="handleSend" />
+    <ChatInput v-if="showInput" :isSending="isSending" @send="handleSend" @stop="handleStop" />
   </div>
 </template>
 
@@ -57,6 +57,10 @@ export default {
     showInput: {
       type: Boolean,
       default: true
+    },
+    isSending: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -71,6 +75,12 @@ export default {
      */
     handleSend(data) {
       this.$emit('send', data)
+    },
+    /**
+     * 处理中断请求
+     */
+    handleStop() {
+      this.$emit('stop')
     },
     /**
      * 打开图片预览
