@@ -12,7 +12,7 @@
     "appId": "com.opsmind.app",
     "productName": "运维智能助手",
     "directories": {
-      "output": "dist_electron"
+      "output": "dist_electron_2"
     },
     "defaultArch": "x64",
     "win": {
