@@ -1,6 +1,6 @@
 <template>
   <div class="contacts">
-    <ContactsHeader 
+    <ContactsHeader
     @search="handleSearch"
     @clear-search="clearSearch"
     @create-new-session="$emit('create-new-session')"
@@ -19,9 +19,6 @@
         :class="{ active: selectedContact === contact.id }"
         @click="selectContact(contact.id)"
       >
-<!--        <div class="contact-avatar">-->  
-<!--          <div class="avatar-icon">👤</div>-->  
-<!--        </div>-->  
         <div class="contact-content">
           <div class="contact-info">
             <div class="contact-name">{{ contact.name }}</div>
