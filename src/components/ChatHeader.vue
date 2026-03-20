@@ -5,12 +5,12 @@
         <div class="avatar-icon">🤖</div>
       </div>
       <div class="header-info">
-        <div class="chat-name-container">
-          <span class="chat-name">{{ title }}</span>
-          <button class="new-session-button" @click="createNewSession">
-            + 新建会话
-          </button>
-        </div>
+<!--        <div class="chat-name-container">-->
+<!--          <span class="chat-name">{{ title }}</span>-->
+<!--          <button class="new-session-button" @click="createNewSession">-->
+<!--            + 新建会话-->
+<!--          </button>-->
+<!--        </div>-->
         <span class="chat-status">{{ status }}</span>
       </div>
       <div class="user-info" v-if="userName">

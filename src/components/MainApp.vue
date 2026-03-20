@@ -1,6 +1,6 @@
 <template>
   <div class="app">
-    <!-- 左侧联系人列表 (已隐藏)
+    <!-- 左侧联系人列表 (已隐藏) -->
     <div class="contacts-container" :style="{ width: contactsWidth + 'px' }">
       <Contacts
         ref="contactsComponent"
@@ -13,7 +13,6 @@
       />
       <div class="resize-handle" @mousedown="startResizing"></div>
     </div>
-    -->
 
     <!-- 右侧聊天区域 -->
     <Chat
