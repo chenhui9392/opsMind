@@ -1,6 +1,6 @@
 /*
  * @Author: hui.chenn
- * @Description: 
+ * @Description:
  * @Date: 2026-03-17 18:17:56
  * @LastEditTime: 2026-03-19 10:23:45
  * @LastEditors: hui.chenn
@@ -11,6 +11,10 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   base: './',
+  server: {
+    port: 9090, // 自定义端口号（比如改为 8080/3000 等）
+    strictPort: true, // 可选：端口被占用时直接报错，而非自动切换端口
+  },
   build: {
     minify: 'terser',
     terserOptions: {
@@ -37,6 +41,6 @@ export default defineConfig({
       }
     },
     sourcemap: false,
-    target: 'es2015'
+    target: 'es2015',
   }
 })

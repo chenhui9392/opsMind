@@ -56,34 +56,34 @@ function createWindow() {
   // 检查是否为开发模式
   const isDev = !app.isPackaged
   console.log('Is dev mode:', isDev)
-  
+
   if (isDev) {
     // 开发模式：加载Vite开发服务器
-    console.log('Loading Vite dev server at http://localhost:5177')
-    mainWindow.loadURL('http://localhost:5177')
+    console.log('Loading Vite dev server at http://localhost:9090')
+    mainWindow.loadURL('http://localhost:9090')
   } else {
     // 生产模式：加载静态文件
     console.log('Loading static file at dist/index.html')
     mainWindow.loadFile('dist/index.html')
   }
-  
+
   // 只在开发模式下打开开发者工具
   if (isDev) {
     // 打开开发者工具，方便调试，并调整位置
     const devTools = mainWindow.webContents.openDevTools({ mode: 'detach' })
   }
-  
+
   // 监听页面加载事件
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('Page loaded successfully')
     console.log('Window visible:', mainWindow.isVisible())
     console.log('Window position:', mainWindow.getPosition())
     console.log('Window size:', mainWindow.getSize())
-    
+
     // 确保窗口在最前面
     mainWindow.setAlwaysOnTop(true)
     mainWindow.focus()
-    
+
     // 延迟取消alwaysOnTop，避免遮挡其他窗口
     setTimeout(() => {
       mainWindow.setAlwaysOnTop(false)
@@ -104,7 +104,7 @@ function createWindow() {
       mainWindow.hide()
     }
   })
-  
+
   // 确保窗口可见
   setTimeout(() => {
     mainWindow.show()
@@ -119,7 +119,7 @@ function createTray() {
     let iconPath
     const fs = require('fs')
     const { nativeImage } = require('electron')
-    
+
     // 首先尝试使用app.png
     if (app.isPackaged) {
       // 生产环境：使用应用根目录下的public文件夹
@@ -132,9 +132,9 @@ function createTray() {
       // 开发环境：使用项目根目录下的public文件夹
       iconPath = path.join(__dirname, 'public', 'app.png')
     }
-    
+
     console.log('Trying tray icon path (PNG):', iconPath)
-    
+
     // 尝试使用PNG文件
     try {
       if (fs.existsSync(iconPath)) {
@@ -161,9 +161,9 @@ function createTray() {
         } else {
           iconPath = path.join(__dirname, 'public', 'app.ico')
         }
-        
+
         console.log('Trying tray icon path (ICO):', iconPath)
-        
+
         if (fs.existsSync(iconPath)) {
           console.log('ICO tray icon file exists, trying to load...')
           // 尝试使用nativeImage.createFromPath()方法加载图标
