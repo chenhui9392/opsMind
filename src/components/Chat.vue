@@ -1,6 +1,6 @@
 <template>
   <div class="chat">
-    <ChatHeader :userName="userName" />
+    <ChatHeader :userName="userName" @create-new-session="handleCreateNewSession" />
     <div class="chat-messages" ref="chatMessages">
       <div
         v-for="(message, index) in messages"
@@ -15,8 +15,7 @@
           <!-- 消息内容 -->
           <div class="message-content" v-if="message.text">
             <!-- 文本 -->
-            <div class="message-text" v-if="message.sender === 'user'" v-html="renderMarkdown(message.text)"></div>
-            <div class="message-text markdown-body" v-else v-html="renderMarkdown(message.text)"></div>
+            <div class="message-text markdown-body" v-html="renderMarkdown(message.text)"></div>
           </div>
           <!-- 图片 -->
           <div v-if="message.images && message.images.length > 0" class="message-images">
@@ -28,7 +27,7 @@
                 @click="openImagePreview(image, message.images, imgIndex)"
             />
           </div>
-          
+
           <!-- 文件 -->
           <div v-if="message.files && message.files.length > 0" class="message-files">
             <div
@@ -45,7 +44,7 @@
         </div>
       </div>
     </div>
-    <ChatInput v-if="showInput" @send="handleSend" />
+    <ChatInput v-if="showInput" @send="handleSend" @stop="handleStop" :isSending="isSending" />
   </div>
 </template>
 
@@ -54,6 +53,13 @@ import ChatInput from './ChatInput.vue'
 import ChatHeader from './ChatHeader.vue'
 import { getSystemUsername } from '../utils/system'
 import { marked } from 'marked'
+
+// 配置 marked 选项
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+  sanitize: false // 允许HTML标签，但marked会自动转义
+})
 
 export default {
   name: 'Chat',
@@ -69,6 +75,10 @@ export default {
     showInput: {
       type: Boolean,
       default: true
+    },
+    isSending: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -83,6 +93,12 @@ export default {
      */
     handleSend(data) {
       this.$emit('send', data)
+    },
+    /**
+     * 处理新建会话
+     */
+    handleCreateNewSession() {
+      this.$emit('create-new-session');
     },
     /**
      * 打开图片预览
@@ -116,7 +132,24 @@ export default {
      * @returns {string} - 渲染后的HTML
      */
     renderMarkdown(text) {
-      return marked(text)
+      // 对包含<符号的内容进行处理，确保被正确渲染
+      if (!text) return ''
+
+      // 将文本转换为字符串
+      const textStr = String(text)
+
+      // 对<符号进行转义，确保marked库不会将其解释为HTML标签
+      // 先将<转换为&lt;，然后使用marked渲染
+      const escapedText = textStr.replace(/</g, '&lt;')
+
+      return marked(escapedText)
+    },
+
+    /**
+     * 处理中断请求
+     */
+    handleStop() {
+      this.$emit('stop')
     }
   },
   watch: {

@@ -1,6 +1,6 @@
 <template>
   <div class="app">
-    <!-- 左侧联系人列表 -->
+    <!-- 左侧联系人列表 (已隐藏)
     <div class="contacts-container" :style="{ width: contactsWidth + 'px' }">
       <Contacts
         ref="contactsComponent"
@@ -13,14 +13,17 @@
       />
       <div class="resize-handle" @mousedown="startResizing"></div>
     </div>
+    -->
 
     <!-- 右侧聊天区域 -->
     <Chat
       ref="chatComponent"
       :messages="messages"
       :showInput="showInput"
+      :isSending="isLoading"
       @send="handleSendMessage"
       @preview-image="handlePreviewImage"
+      @stop="handleStopSending"
     />
 
     <!-- 图片预览模态框 -->
@@ -38,7 +41,7 @@
 import Contacts from './Contacts.vue'
 import Chat from './Chat.vue'
 import ImagePreview from './ImagePreview.vue'
-import { uploadImage, sendChatMessage } from '../api'
+import { uploadImage, sendChatMessage, abortChatRequest, stopChat } from '../api'
 import { contacts as mockContacts, initialMessages, mockReply } from '../mock/data'
 
 export default {
@@ -152,6 +155,7 @@ export default {
      */
     addMessageToChat(message) {
       this.messages.push(message)
+      console.info('Added message to chat:', message)
       // 如果是当前聊天会话，保存到消息存储
       if (this.currentChatSession) {
         this.messageStore[this.currentChatSession] = [...this.messages]
@@ -166,26 +170,26 @@ export default {
       try {
         // 合并图片URL和非图片文件URL
         const allFileUrls = [...fileUrls];
-        
+
         // 提取非图片文件的URL并加入到allFileUrls中
         if (files && files.length > 0) {
           const fileUrlsFromFiles = files.map(file => file.url);
           allFileUrls.push(...fileUrlsFromFiles);
         }
-        
+
         // 准备参数，如果当前是新会话，则添加isNewSession参数
         const params = {
           message: text,
           fileUrls: allFileUrls
         }
-        
+
         // 如果是新会话，添加isNewSession参数
         if (this.isNewSession) {
           params.isNewSession = true
           // 发送完第一条消息后，将isNewSession设置为false
           this.isNewSession = false
         }
-        
+
         const response = await sendChatMessage(params)
         // 处理服务器响应
         this.handleServerResponse(response)
@@ -379,17 +383,17 @@ export default {
       if (this.currentChatSession) {
         this.messageStore[this.currentChatSession] = [...this.messages]
       }
-      
+
       // 生成新的会话ID
       const newSessionId = Date.now()
-      
+
       // 更新当前会话和选中的联系人
       this.currentChatSession = newSessionId
       this.selectedContact = newSessionId
       this.showInput = true
       // 标记为新会话
       this.isNewSession = true
-      
+
       // 初始化新会话的消息
       this.messages = [
         {
@@ -399,9 +403,36 @@ export default {
           images: []
         }
       ]
-      
+
       // 保存到消息存储
       this.messageStore[newSessionId] = [...this.messages]
+    },
+
+    /**
+     * 处理停止发送消息
+     */
+    async handleStopSending() {
+      // 中断API请求
+      abortChatRequest()
+
+      // 调用停止聊天接口
+      // try {
+      //   await stopChat()
+      //   console.log('停止聊天接口调用成功')
+      // } catch (error) {
+      //   console.error('停止聊天接口调用失败:', error)
+      // }
+
+      // 设置加载状态为false
+      this.isLoading = false
+
+      // 移除加载消息
+      if (this.loadingMessageId !== null) {
+        this.messages.splice(this.loadingMessageId, 1)
+        this.loadingMessageId = null
+      }
+
+      console.log('发送消息已中断')
     }
   },
   mounted() {

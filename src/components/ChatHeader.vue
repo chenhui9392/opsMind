@@ -5,7 +5,12 @@
         <div class="avatar-icon">🤖</div>
       </div>
       <div class="header-info">
-        <span class="chat-name">{{ title }}</span>
+        <div class="chat-name-container">
+          <span class="chat-name">{{ title }}</span>
+          <button class="new-session-button" @click="createNewSession">
+            + 新建会话
+          </button>
+        </div>
         <span class="chat-status">{{ status }}</span>
       </div>
       <div class="user-info" v-if="userName">
@@ -30,6 +35,11 @@ export default {
     userName: {
       type: String,
       default: ''
+    }
+  },
+  methods: {
+    createNewSession() {
+      this.$emit('create-new-session');
     }
   }
 }
@@ -76,6 +86,31 @@ export default {
   color: white;
   margin-right: 0;
   margin-bottom: 4px;
+}
+
+.chat-name-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.new-session-button {
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  background-color: transparent;
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.new-session-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .user-info {

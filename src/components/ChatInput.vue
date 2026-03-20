@@ -41,14 +41,17 @@
           class="file-input"
           @change="handleFileSelect"
         />
-        <button class="upload-button" @click="$refs.fileInput.click()" :disabled="isUploading">
+        <button class="upload-button" @click="$refs.fileInput.click()" :disabled="isUploading" title="上传">
           <SvgIcon name="upload" width="20" height="20" />
+          <span class="button-text">上传</span>
         </button>
-        <button v-if="!isSending" class="send-button" @click="sendMessage" :disabled="isUploading">
+        <button v-if="!isSending" class="send-button" @click="sendMessage" :disabled="isUploading" title="发送">
           <SvgIcon name="send" width="18" height="18" color="white" />
+          <span class="button-text">发送</span>
         </button>
-        <button v-else class="stop-button" @click="handleStop" title="中断">
+        <button v-else class="stop-button" @click="handleStop" title="暂停">
           <SvgIcon name="stop" width="18" height="18" color="white" />
+          <span class="button-text">暂停</span>
         </button>
       </div>
     </div>
@@ -76,7 +79,8 @@ export default {
       selectedFiles: [],
       uploadedImages: [],
       uploadedFiles: [], // 存储上传的非图片文件信息
-      isUploading: false
+      isUploading: false,
+      isInCodeBlock: false // 标记是否在代码块内
     }
   },
   mounted() {
@@ -90,12 +94,22 @@ export default {
   },
   methods: {
     /**
+     * 检查是否在代码块内
+     */
+    checkIfInCodeBlock() {
+      const codeBlockMarkers = (this.inputMessage.match(/```/g) || []).length
+      this.isInCodeBlock = codeBlockMarkers % 2 === 1
+    },
+
+    /**
      * 处理回车键事件
      * @param {Event} event - 键盘事件
      */
     handleEnterKey(event) {
-      if (event.shiftKey) {
-        // Shift + Enter 换行
+      this.checkIfInCodeBlock()
+
+      if (event.shiftKey || this.isInCodeBlock) {
+        // Shift + Enter 或在代码块内时换行
         this.inputMessage += '\n'
       } else {
         // Enter 发送消息
@@ -115,10 +129,10 @@ export default {
         for (const file of filesArray) {
           // 判断文件类型
           const isImage = file.type.startsWith('image/')
-          
+
           try {
             const fileUrl = await uploadImage(file)
-            
+
             if (isImage) {
               // 图片文件显示预览
               this.uploadedImages.push(fileUrl)
@@ -155,6 +169,8 @@ export default {
       this.uploadedImages = []
       this.uploadedFiles = []
       this.$refs.fileInput.value = ''
+      // 重置代码块状态
+      this.isInCodeBlock = false
       // 重置textarea高度
       this.resetResize()
     },
@@ -372,6 +388,7 @@ export default {
   justify-content: center;
   transition: all 0.2s;
   color: #666;
+  position: relative;
 }
 
 .upload-button:hover {
@@ -397,6 +414,7 @@ export default {
   justify-content: center;
   transition: all 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  position: relative;
 }
 
 .send-button:hover {
@@ -423,6 +441,7 @@ export default {
   justify-content: center;
   transition: all 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  position: relative;
 }
 
 .stop-button:hover {
@@ -435,5 +454,31 @@ export default {
 .send-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.button-text {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
+  color: #666;
+  background-color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.upload-button:hover .button-text,
+.send-button:hover .button-text,
+.stop-button:hover .button-text {
+  opacity: 1;
+  visibility: visible;
 }
 </style>

@@ -11,7 +11,7 @@
         <SvgIcon name="arrow" width="16" height="16" />
       </div>
     </div>
-    
+
     <div class="contacts-list" ref="contactsList">
       <div
         v-for="contact in filteredContacts"
@@ -29,7 +29,7 @@
         </div>
       </div>
     </div>
-   
+
   </div>
 </template>
 
@@ -233,10 +233,13 @@ export default {
 .contact-message {
   font-size: 14px;
   color: #666;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
 }
 
 /* 滚动条样式 */
