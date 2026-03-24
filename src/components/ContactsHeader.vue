@@ -2,9 +2,9 @@
   <div class="contacts-header">
     <div class="header-top">
       <h2>{{ title }}</h2>
-      <button class="new-session-button" @click="createNewSession">
-        + 新建会话
-      </button>
+<!--      <button class="new-session-button" @click="createNewSession">-->
+<!--        + 新建会话-->
+<!--      </button>-->
     </div>
     <div class="search-container">
       <input
@@ -13,9 +13,9 @@
         class="search-input"
         :placeholder="placeholder"
       />
-      <button 
-        v-if="searchQuery" 
-        class="search-clear-button" 
+      <button
+        v-if="searchQuery"
+        class="search-clear-button"
         @click="clearSearch"
       >
         <SvgIcon name="clear" width="14" height="14" />
@@ -35,11 +35,11 @@ export default {
   props: {
     title: {
       type: String,
-      default: '历史会话'
+      default: '历史工单'
     },
     placeholder: {
       type: String,
-      default: '搜索会话...'
+      default: '搜索工单...'
     }
   },
   data() {

@@ -2,10 +2,10 @@
  * @Author: hui.chenn
  * @Description: 
  * @Date: 2026-03-18 08:38:24
- * @LastEditTime: 2026-03-18 17:07:27
+ * @LastEditTime: 2026-03-23 15:42:36
  * @LastEditors: hui.chenn
  */
-import { upload, post } from '../utils/request'
+import { upload, post, get } from '../utils/request'
 import { API_BASE_URL, CHAT_API_BASE_URL } from '../config/env'
 import { getSystemUsername } from '../utils/system'
 
@@ -78,4 +78,16 @@ export const stopChat = async () => {
   return await post(`${CHAT_API_BASE_URL}/omp/api/agentChat/stop`, {
     userName: userName,
   })
+}
+
+/**
+ * 下载软件接口
+ * @param {string} id - 软件ID
+ * @returns {Promise<Object>} - 返回响应数据
+ */
+export const downloadSoftware = async (id) => {
+  const downloadUrl = `http://10.108.112.202:8080/api/software/download/${id}`
+  console.log('Calling download API:', downloadUrl)
+  // 发送POST请求
+  return await post(downloadUrl, {})
 }

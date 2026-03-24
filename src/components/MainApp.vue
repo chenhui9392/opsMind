@@ -23,6 +23,7 @@
       @send="handleSendMessage"
       @preview-image="handlePreviewImage"
       @stop="handleStopSending"
+      @navigate-to-session="handleNavigateToSession"
     />
 
     <!-- 图片预览模态框 -->
@@ -40,8 +41,9 @@
 import Contacts from './Contacts.vue'
 import Chat from './Chat.vue'
 import ImagePreview from './ImagePreview.vue'
-import { uploadImage, sendChatMessage, abortChatRequest, stopChat } from '../api'
+import { sendChatMessage, abortChatRequest, stopChat, downloadSoftware } from '../api'
 import { contacts as mockContacts, initialMessages, mockReply } from '../mock/data'
+import socketService from '../utils/socketService'
 
 export default {
   name: 'MainApp',
@@ -134,7 +136,7 @@ export default {
       await this.sendToServer(text, images, files)
     },
     /**
-     * 创建消息对象
+     * 创建用户消息对象
      * @param {string} text - 消息内容
      * @param {Array} images - 图片URL数组
      * @returns {Object} - 消息对象
@@ -146,18 +148,6 @@ export default {
         time: new Date().toLocaleString('zh-CN'),
         images: images,
         files: files
-      }
-    },
-    /**
-     * 添加消息到聊天记录
-     * @param {Object} message - 消息对象
-     */
-    addMessageToChat(message) {
-      this.messages.push(message)
-      console.info('Added message to chat:', message)
-      // 如果是当前聊天会话，保存到消息存储
-      if (this.currentChatSession) {
-        this.messageStore[this.currentChatSession] = [...this.messages]
       }
     },
     /**
@@ -190,6 +180,7 @@ export default {
         }
 
         const response = await sendChatMessage(params)
+        // const response = await downloadSoftware(33)
         // 处理服务器响应
         this.handleServerResponse(response)
       } catch (error) {
@@ -213,37 +204,33 @@ export default {
         }
 
         // 尝试解析 content 字段（如果是 JSON 字符串）
+        let isInstallType = false
+        let installId = null
         try {
           const parsedContent = JSON.parse(content)
           if (parsedContent.input) {
             content = parsedContent.input
+          }
+          // 检查是否为安装类型消息
+          if (parsedContent.type === 'install' && parsedContent.id) {
+            isInstallType = true
+            installId = parsedContent.id
           }
         } catch (parseError) {
           // 如果解析失败，使用原始 content
           console.log('Content is not JSON:', content)
         }
 
-        // 创建响应消息
-        const responseMessage = {
-          sender: 'bot',
-          text: content,
-          time: new Date().toLocaleString('zh-CN'),
-          images: []
+        // 如果是安装类型消息，调用下载接口并显示响应
+        if (isInstallType && installId) {
+          // 调用下载接口
+          this.handleDownloadSoftware(installId)
+          return
         }
 
-        // 替换加载状态消息
-        if (this.isLoading && this.loadingMessageId !== null) {
-          this.messages.splice(this.loadingMessageId, 1, responseMessage)
-          this.isLoading = false
-          this.loadingMessageId = null
-        } else {
-          this.messages.push(responseMessage)
-        }
-
-        // 如果是当前聊天会话，保存到消息存储
-        if (this.currentChatSession) {
-          this.messageStore[this.currentChatSession] = [...this.messages]
-        }
+        // 创建响应消息并添加到聊天
+        const responseMessage = this.createMessageObject(content)
+        this.addMessageToChat(responseMessage)
       } else {
         // 响应格式不正确
         console.error('Invalid response format:', response)
@@ -251,25 +238,46 @@ export default {
       }
     },
     /**
+     * 创建消息对象
+     * @param {string} text - 消息内容
+     * @param {string} sender - 发送者
+     * @param {Array} images - 图片数组
+     * @returns {Object} - 消息对象
+     */
+    createMessageObject(text, sender = 'bot', images = []) {
+      return {
+        sender: sender,
+        text: text,
+        time: new Date().toLocaleString('zh-CN'),
+        images: images
+      }
+    },
+    /**
+     * 添加消息到聊天
+     * @param {Object} message - 消息对象
+     */
+    addMessageToChat(message) {
+      // 替换加载状态消息
+      if (this.isLoading && this.loadingMessageId !== null) {
+        this.messages.splice(this.loadingMessageId, 1, message)
+        this.isLoading = false
+        this.loadingMessageId = null
+      } else {
+        this.messages.push(message)
+      }
+
+      // 如果是当前聊天会话，保存到消息存储
+      if (this.currentChatSession) {
+        this.messageStore[this.currentChatSession] = [...this.messages]
+      }
+    },
+    /**
      * 接收错误消息
      * @param {string} errorText - 错误信息
      */
     receiveErrorMessage(errorText) {
-      const errorMessage = {
-        sender: 'bot',
-        text: errorText,
-        time: new Date().toLocaleString('zh-CN'),
-        images: []
-      }
-
-      // 替换加载状态消息
-      if (this.isLoading && this.loadingMessageId !== null) {
-        this.messages.splice(this.loadingMessageId, 1, errorMessage)
-        this.isLoading = false
-        this.loadingMessageId = null
-      } else {
-        this.messages.push(errorMessage)
-      }
+      const errorMessage = this.createMessageObject(errorText)
+      this.addMessageToChat(errorMessage)
     },
     /**
      * 模拟收到回复（保留用于测试）
@@ -432,6 +440,93 @@ export default {
       }
 
       console.log('发送消息已中断')
+    },
+    /**
+     * 处理下载软件接口调用
+     * @param {string} id - 软件ID
+     */
+    async handleDownloadSoftware(id) {
+      try {
+        const response = await downloadSoftware(id)
+        console.log('Download API response:', response)
+
+        // 创建响应消息并添加到聊天
+        const responseMessage = this.createMessageObject(JSON.stringify(response, null, 2))
+        this.addMessageToChat(responseMessage)
+      } catch (error) {
+        console.error('下载软件失败:', error)
+        // 显示错误消息
+        this.receiveErrorMessage(`下载软件失败: ${error.message}`)
+      }
+    },
+    /**
+     * 处理导航到会话
+     * @param {number} sessionId - 会话 ID
+     */
+    handleNavigateToSession(sessionId) {
+      console.log('导航到会话:', sessionId)
+      // 选择对应的会话
+      this.selectContact(sessionId)
+    },
+    /**
+     * 初始化 Socket 服务
+     */
+    initSocketService() {
+      // 连接 Socket 服务
+      socketService.connect().then(() => {
+        console.log('Socket 服务连接成功')
+      }).catch(error => {
+        console.error('Socket 服务连接失败:', error)
+        this.receiveErrorMessage('Socket 连接失败，请稍后重试')
+      })
+
+      // 添加消息监听器
+      socketService.on('message', this.handleSocketMessage)
+      socketService.on('error', this.handleSocketError)
+    },
+    /**
+     * 处理 Socket 消息
+     * @param {Object} message - 消息对象
+     */
+    handleSocketMessage(message) {
+      console.log('收到 Socket 消息:', message)
+      
+      // 过滤掉连接成功的提示消息，不显示在会话列表中
+      if (message.type === 'connected' && message.message === 'WebSocket 连接成功') {
+        console.log('Socket 连接成功，不显示在会话列表中')
+        return
+      }
+      
+      // 创建消息对象并添加到聊天
+      const responseMessage = this.createMessageObject(JSON.stringify(message, null, 2))
+      this.addMessageToChat(responseMessage)
+    },
+    /**
+     * 处理 Socket 错误
+     * @param {Object} error - 错误对象
+     */
+    handleSocketError(error) {
+      console.error('Socket 错误:', error)
+      this.receiveErrorMessage(`Socket 错误: ${error.type || '未知错误'}`)
+    },
+    /**
+     * 发送消息到 Socket 服务器
+     * @param {Object} message - 消息对象
+     */
+    sendSocketMessage(message) {
+      socketService.send(message).then(() => {
+        console.log('Socket 消息已发送:', message)
+      }).catch(error => {
+        console.error('发送 Socket 消息失败:', error)
+        this.receiveErrorMessage('发送消息失败，请稍后重试')
+      })
+    },
+    /**
+     * 关闭 Socket 服务
+     */
+    closeSocketService() {
+      socketService.disconnect()
+      console.log('Socket 服务已关闭')
     }
   },
   mounted() {
@@ -440,6 +535,12 @@ export default {
     this.messageStore[0] = initialMessages
     // 初始化时，设置为新会话状态
     this.isNewSession = true
+    // 初始化 Socket 服务
+    this.initSocketService()
+  },
+  beforeDestroy() {
+    // 关闭 Socket 服务
+    this.closeSocketService()
   }
 }
 </script>

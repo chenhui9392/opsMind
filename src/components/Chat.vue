@@ -1,6 +1,6 @@
 <template>
   <div class="chat">
-    <ChatHeader :userName="userName" @create-new-session="handleCreateNewSession" />
+    <ChatHeader :userName="userName" @create-new-session="handleCreateNewSession" @navigate-to-session="handleNavigateToSession" />
     <div class="chat-messages" ref="chatMessages">
       <div
         v-for="(message, index) in messages"
@@ -150,6 +150,13 @@ export default {
      */
     handleStop() {
       this.$emit('stop')
+    },
+    /**
+     * 处理导航到会话
+     * @param {number} sessionId - 会话 ID
+     */
+    handleNavigateToSession(sessionId) {
+      this.$emit('navigate-to-session', sessionId)
     }
   },
   watch: {

@@ -13,7 +13,8 @@ export default defineConfig({
   base: './',
   server: {
     port: 9090, // 自定义端口号（比如改为 8080/3000 等）
-    strictPort: true, // 可选：端口被占用时直接报错，而非自动切换端口
+    strictPort: false, // 可选：端口被占用时自动切换端口
+    webSecurity: false, // 关闭跨域限制
   },
   build: {
     minify: 'terser',
