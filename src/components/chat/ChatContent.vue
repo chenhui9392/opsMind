@@ -1,6 +1,5 @@
 <template>
-  <div class="chat">
-    <ChatHeader :userName="userName" @create-new-session="handleCreateNewSession" @navigate-to-session="handleNavigateToSession" />
+  <div class="chat-content">
     <div class="chat-messages" ref="chatMessages">
       <!-- 空状态提示 -->
       <div class="empty-state" v-if="messages.length === 0">
@@ -54,15 +53,30 @@
         </div>
       </div>
     </div>
-    <ChatInput v-if="showInput" @send="handleSend" @stop="handleStop" :isSending="isSending" />
+
+    <!-- 消息发送区 -->
+    <ChatInput
+      v-if="showInput"
+      @send="handleSend"
+      @stop="handleStop"
+      :isSending="isSending"
+    />
+
+    <!-- 图片预览模态框 -->
+    <ImagePreview
+      :show="imagePreview.show"
+      :images="imagePreview.images"
+      :currentIndex="imagePreview.currentIndex"
+      @close="closeImagePreview"
+      @navigate="handleNavigateImage"
+    />
   </div>
 </template>
 
 <script>
 import ChatInput from './ChatInput.vue'
-import ChatHeader from './ChatHeader.vue'
-import SvgIcon from '../assets/svg/SvgIcon.vue'
-import { getSystemUsername } from '../utils/system'
+import SvgIcon from '../../assets/svg/SvgIcon.vue'
+import ImagePreview from '../common/ImagePreview.vue'
 import { marked } from 'marked'
 
 // 配置 marked 选项
@@ -73,11 +87,11 @@ marked.setOptions({
 })
 
 export default {
-  name: 'Chat',
+  name: 'ChatContent',
   components: {
     ChatInput,
-    ChatHeader,
-    SvgIcon
+    SvgIcon,
+    ImagePreview
   },
   props: {
     messages: {
@@ -95,7 +109,11 @@ export default {
   },
   data() {
     return {
-      userName: ''
+      imagePreview: {
+        show: false,
+        images: [],
+        currentIndex: 0
+      }
     }
   },
   methods: {
@@ -107,36 +125,52 @@ export default {
       this.$emit('send', data)
     },
     /**
-     * 处理新建会话
-     */
-    handleCreateNewSession() {
-      this.$emit('create-new-session');
-    },
-    /**
      * 打开图片预览
      * @param {string} image - 当前图片
      * @param {Array} images - 图片数组
      * @param {number} index - 当前索引
      */
     openImagePreview(image, images, index) {
-      this.$emit('preview-image', { image, images, index })
+      this.imagePreview = {
+        show: true,
+        images: images,
+        currentIndex: index
+      }
+    },
+    /**
+     * 关闭图片预览
+     */
+    closeImagePreview() {
+      this.imagePreview.show = false
+    },
+    /**
+     * 导航图片
+     * @param {number} index - 图片索引
+     */
+    handleNavigateImage(index) {
+      this.imagePreview.currentIndex = index
     },
     /**
      * 滚动到底部
      */
     scrollToBottom() {
-      setTimeout(() => {
+      // 使用requestAnimationFrame确保滚动在浏览器的动画帧中执行，使滚动更加平滑
+      this.$nextTick(() => {
         const chatMessages = this.$refs.chatMessages
         if (chatMessages) {
-          chatMessages.scrollTop = chatMessages.scrollHeight
+          // 计算滚动位置，确保滚动到最底部
+          const scrollHeight = chatMessages.scrollHeight
+          const clientHeight = chatMessages.clientHeight
+
+          // 只有当内容高度大于可视高度时才执行滚动
+          if (scrollHeight > clientHeight) {
+            // 使用requestAnimationFrame确保滚动平滑
+            window.requestAnimationFrame(() => {
+              chatMessages.scrollTop = scrollHeight
+            })
+          }
         }
-      }, 100)
-    },
-    /**
-     * 获取系统用户名
-     */
-    async getUserName() {
-      this.userName = await getSystemUsername()
+      })
     },
     /**
      * 渲染Markdown
@@ -162,13 +196,6 @@ export default {
      */
     handleStop() {
       this.$emit('stop')
-    },
-    /**
-     * 处理导航到会话
-     * @param {number} sessionId - 会话 ID
-     */
-    handleNavigateToSession(sessionId) {
-      this.$emit('navigate-to-session', sessionId)
     }
   },
   watch: {
@@ -177,91 +204,18 @@ export default {
     }
   },
   mounted() {
-    this.getUserName()
     this.scrollToBottom()
   }
 }
 </script>
 
 <style scoped>
-.chat {
-  flex: 1;
+.chat-content {
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
   height: 100%;
-}
-
-.chat-header {
-  padding: 16px;
-  border-bottom: 1px solid #e0e0e0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.chat-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.avatar {
-  margin-right: 12px;
-}
-
-.avatar-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-}
-
-.header-info {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.chat-name {
-  font-weight: bold;
-  color: white;
-  margin-right: 0;
-  margin-bottom: 4px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-}
-
-.user-name {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
-  padding: 4px 12px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-}
-
-.chat-status {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-}
-
-.chat-status::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  background-color: #4caf50;
-  border-radius: 50%;
-  margin-right: 4px;
+  position: relative;
 }
 
 .chat-messages {
@@ -269,6 +223,16 @@ export default {
   padding: 20px;
   overflow-y: auto;
   background-color: #fafafa;
+  padding-bottom: 100px; /* 为输入框预留空间 */
+}
+
+/* 确保输入框固定在底部 */
+.chat-input-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
 }
 
 .empty-state {

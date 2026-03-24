@@ -1,8 +1,8 @@
 <template>
   <div class="app">
-    <!-- 左侧联系人列表 (已隐藏) -->
+    <!-- 左侧历史工单列表 -->
     <div class="contacts-container" :style="{ width: contactsWidth + 'px' }">
-      <Contacts
+      <OrderList
         ref="contactsComponent"
         :contacts="contacts"
         :selectedContact="selectedContact"
@@ -22,90 +22,48 @@
       :showInput="showInput"
       :isSending="isLoading"
       @send="handleSendMessage"
-      @preview-image="handlePreviewImage"
       @stop="handleStopSending"
       @navigate-to-session="handleNavigateToSession"
-    />
-
-    <!-- 图片预览模态框 -->
-    <ImagePreview
-      :show="imagePreview.show"
-      :images="imagePreview.images"
-      :currentIndex="imagePreview.currentIndex"
-      @close="closeImagePreview"
-      @navigate="handleNavigateImage"
     />
   </div>
 </template>
 
 <script>
-import Contacts from './Contacts.vue'
-import Chat from './Chat.vue'
-import ImagePreview from './ImagePreview.vue'
-import { sendChatMessage, abortChatRequest, downloadSoftware, getHistoryOrderDetail } from '../api'
-import { contacts as mockContacts, initialMessages, mockReply } from '../mock/data'
-import socketService from '../utils/socketService'
+import OrderList from './order/OrderList.vue'
+import Chat from './chat/Chat.vue'
+import { contacts as mockContacts, initialMessages } from '../mock/data'
+import messageService from '../services/messageService'
+import { updateMessageStatus } from '../api/index'
 
 export default {
   name: 'MainApp',
   components: {
-    Contacts,
-    Chat,
-    ImagePreview
+    OrderList,
+    Chat
   },
   data() {
     return {
       contacts: mockContacts,
-      selectedContact: 1,
+      selectedContact: '',
       currentChatSession: null, // 当前正在进行的聊天会话
       messages: initialMessages,
-      messageStore: {}, // 存储每个会话的消息
       showInput: true, // 是否显示聊天输入框
-      imagePreview: {
-        show: false,
-        images: [],
-        currentIndex: 0
-      },
       contactsWidth: 300, // 初始宽度
       isResizing: false,
       isLoading: false, // 发送消息加载状态
-      loadingMessageId: null, // 加载消息的ID
-      isNewSession: false // 标记是否为新会话
+      loadingMessageId: null // 加载消息的ID
     }
   },
   methods: {
     /**
      * 选择联系人
-     * @param {number} contactId - 联系人ID
+     * @param {string} contactId - 联系人ID
      */
     selectContact(contactId) {
-      // 保存当前会话的消息
-      if (this.currentChatSession) {
-        this.messageStore[this.currentChatSession] = [...this.messages]
-      }
-
       this.selectedContact = contactId
-      this.currentChatSession = null // 点击历史会话时，清除当前聊天会话状态
       this.showInput = false // 点击历史会话时不显示输入框
-      // 选择历史会话不是新会话
-      this.isNewSession = false
-
-      // 加载对应会话的消息，如果没有则使用默认消息
-      if (this.messageStore[contactId]) {
-        this.messages = [...this.messageStore[contactId]]
-      } else {
-        // 模拟加载历史会话消息
-        this.messages = [
-          {
-            sender: 'bot',
-            text: `您好！欢迎咨询关于"${this.contacts.find(c => c.id === contactId)?.name}"的问题。`,
-            time: new Date().toLocaleString('zh-CN'),
-            images: []
-          }
-        ]
-        // 保存到消息存储
-        this.messageStore[contactId] = [...this.messages]
-      }
+      // 从消息服务获取消息
+      this.messages = messageService.selectContact(contactId, this.contacts)
     },
 
     /**
@@ -113,87 +71,10 @@ export default {
      * @param {Object} order - 工单对象
      */
     async selectOrder(order) {
-      console.log('选择工单:', order)
-
-      // 保存当前会话的消息
-      if (this.currentChatSession) {
-        this.messageStore[this.currentChatSession] = [...this.messages]
-      }
-
       this.selectedContact = order.id
-      this.currentChatSession = null
       this.showInput = false
-      this.isNewSession = false
-
-      // 获取工单详情
-      try {
-        const response = await getHistoryOrderDetail(order.conversationId)
-        debugger
-        if (response) {
-          // 将详情数据转换为消息格式
-          const messages = this.convertHistoryToMessages(response)
-          this.messages = messages
-          console.log('工单详情:', this.messages)
-          // 保存到消息存储
-          this.messageStore[order.id] = [...this.messages]
-        } else {
-          // 如果获取失败，显示默认消息
-          this.messages = [
-            {
-              sender: 'bot',
-              text: `无法加载工单"${order.orderTitle}"的历史记录。`,
-              time: new Date().toLocaleString('zh-CN'),
-              images: []
-            }
-          ]
-          this.messageStore[order.id] = [...this.messages]
-        }
-      } catch (error) {
-        console.error('获取工单详情失败:', error)
-        this.messages = [
-          {
-            sender: 'bot',
-            text: `加载工单"${order.orderTitle}"失败，请稍后重试。`,
-            time: new Date().toLocaleString('zh-CN'),
-            images: []
-          }
-        ]
-        this.messageStore[order.id] = [...this.messages]
-      }
-    },
-
-    /**
-     * 将历史记录转换为消息格式
-     * @param {Array} historyData - 历史记录数据
-     * @returns {Array} - 消息数组
-     */
-    convertHistoryToMessages(historyData) {
-      if (!Array.isArray(historyData)) {
-        return []
-      }
-
-      return historyData.map(item => {
-        // 解析 content 字段（如果是 JSON 字符串）
-        let content = item.content
-        try {
-          const parsedContent = JSON.parse(content)
-          if (parsedContent.questionContent) {
-            content = parsedContent.questionContent
-          } else if (parsedContent.input) {
-            content = parsedContent.input
-          }
-        } catch (parseError) {
-          // 如果解析失败，使用原始 content
-          console.log('Content is not JSON:', content)
-        }
-
-        return {
-          sender: item.messageType === 'user' ? 'user' : 'bot',
-          text: content,
-          time: item.createTime || new Date().toLocaleString('zh-CN'),
-          images: []
-        }
-      })
+      // 从消息服务获取工单消息
+      this.messages = await messageService.selectOrder(order)
     },
     /**
      * 处理发送消息
@@ -204,8 +85,15 @@ export default {
 
       if (!text && images.length === 0 && files.length === 0) return
 
-      const message = this.createMessage(text, images, files)
-      this.addMessageToChat(message)
+      // 添加用户消息
+      const message = {
+        sender: 'user',
+        text: text,
+        time: new Date().toLocaleString('zh-CN'),
+        images: images,
+        files: files
+      }
+      this.messages.push(message)
 
       // 添加加载状态消息
       this.isLoading = true
@@ -222,217 +110,36 @@ export default {
       // 滚动会话列表到底部
       this.scrollContactsToBottom()
 
-      await this.sendToServer(text, images, files)
-    },
-    /**
-     * 创建用户消息对象
-     * @param {string} text - 消息内容
-     * @param {Array} images - 图片URL数组
-     * @returns {Object} - 消息对象
-     */
-    createMessage(text, images, files = []) {
-      return {
-        sender: 'user',
-        text: text,
-        time: new Date().toLocaleString('zh-CN'),
-        images: images,
-        files: files
-      }
-    },
-    /**
-     * 发送消息到服务器
-     * @param {string} text - 消息内容
-     * @param {Array} fileUrls - 图片URL数组
-     */
-    async sendToServer(text, fileUrls, files = []) {
       try {
-        // 合并图片URL和非图片文件URL
-        const allFileUrls = [...fileUrls];
+        // 发送消息到服务器
+        const responseMessage = await messageService.handleSendMessage(data)
 
-        // 提取非图片文件的URL并加入到allFileUrls中
-        if (files && files.length > 0) {
-          const fileUrlsFromFiles = files.map(file => file.url);
-          allFileUrls.push(...fileUrlsFromFiles);
+        // 替换加载状态消息
+        if (this.isLoading && this.loadingMessageId !== null) {
+          this.messages.splice(this.loadingMessageId, 1, responseMessage)
+          this.isLoading = false
+          this.loadingMessageId = null
         }
-
-        // 准备参数，如果当前是新会话，则添加isNewSession参数
-        const params = {
-          message: text,
-          fileUrls: allFileUrls
-        }
-
-        // 如果是新会话，添加isNewSession参数
-        if (this.isNewSession) {
-          params.isNewSession = true
-          // 发送完第一条消息后，将isNewSession设置为false
-          this.isNewSession = false
-        }
-
-        const response = await sendChatMessage(params)
-        // const response = await downloadSoftware(33)
-        // 处理服务器响应
-        this.handleServerResponse(response)
       } catch (error) {
         console.error('发送消息失败:', error)
-        // 错误处理：显示错误消息
-        this.receiveErrorMessage('发送消息失败，请稍后重试')
-      }
-    },
-    /**
-     * 处理服务器响应
-     * @param {Object} response - 服务器响应数据
-     */
-    handleServerResponse(response) {
-      if (response && response.code === 200 && response.data && response.data.message) {
-        const messageData = response.data.message
-        let content = messageData.content
-
-        // 如果 reasonerContent 没有内容，显示系统维修中提示
-        if (!content || content.trim() === '') {
-          content = '稍后再试，系统正在全力维修中....'
+        // 错误处理：移除加载消息
+        if (this.isLoading && this.loadingMessageId !== null) {
+          this.messages.splice(this.loadingMessageId, 1)
+          this.isLoading = false
+          this.loadingMessageId = null
         }
-
-        // 尝试解析 content 字段（如果是 JSON 字符串）
-        let isInstallType = false
-        let installId = null
-        try {
-          const parsedContent = JSON.parse(content)
-          if (parsedContent.input) {
-            content = parsedContent.input
-          }
-          // 检查是否为安装类型消息
-          if (parsedContent.type === 'install' && parsedContent.id) {
-            isInstallType = true
-            installId = parsedContent.id
-          }
-        } catch (parseError) {
-          // 如果解析失败，使用原始 content
-          console.log('Content is not JSON:', content)
-        }
-
-        // 如果是安装类型消息，调用下载接口并显示响应
-        if (isInstallType && installId) {
-          // 调用下载接口
-          this.handleDownloadSoftware(installId)
-          return
-        }
-
-        // 创建响应消息并添加到聊天
-        const responseMessage = this.createMessageObject(content)
-        this.addMessageToChat(responseMessage)
-      } else {
-        // 响应格式不正确
-        console.error('Invalid response format:', response)
-        this.receiveErrorMessage(response?.message || '服务器响应格式不正确')
-      }
-    },
-    /**
-     * 创建消息对象
-     * @param {string} text - 消息内容
-     * @param {string} sender - 发送者
-     * @param {Array} images - 图片数组
-     * @returns {Object} - 消息对象
-     */
-    createMessageObject(text, sender = 'bot', images = []) {
-      return {
-        sender: sender,
-        text: text,
-        time: new Date().toLocaleString('zh-CN'),
-        images: images
-      }
-    },
-    /**
-     * 添加消息到聊天
-     * @param {Object} message - 消息对象
-     */
-    addMessageToChat(message) {
-      // 替换加载状态消息
-      if (this.isLoading && this.loadingMessageId !== null) {
-        this.messages.splice(this.loadingMessageId, 1, message)
-        this.isLoading = false
-        this.loadingMessageId = null
-      } else {
-        this.messages.push(message)
       }
 
-      // 如果是当前聊天会话，保存到消息存储
-      if (this.currentChatSession) {
-        this.messageStore[this.currentChatSession] = [...this.messages]
-      }
-    },
-    /**
-     * 接收错误消息
-     * @param {string} errorText - 错误信息
-     */
-    receiveErrorMessage(errorText) {
-      const errorMessage = this.createMessageObject(errorText)
-      this.addMessageToChat(errorMessage)
-    },
-    /**
-     * 模拟收到回复（保留用于测试）
-     */
-    simulateReply() {
-      setTimeout(() => {
-        // 模拟响应
-        const mockResponse = {
-          code: 200,
-          data: {
-            conversationId: '2034196054756937729',
-            message: {
-              content: '{\n  "input" : "11"\n}',
-              reasonerContent: '',
-              role: 'assistant'
-            }
-          },
-          message: 'success'
-        }
-        this.handleServerResponse(mockResponse)
-      }, 1000)
-    },
-    /**
-     * 处理图片预览
-     * @param {Object} data - 预览数据
-     */
-    handlePreviewImage(data) {
-      const { images, index } = data
-      this.imagePreview = {
-        show: true,
-        images: images,
-        currentIndex: index
-      }
-    },
-    /**
-     * 关闭图片预览
-     */
-    closeImagePreview() {
-      this.imagePreview.show = false
-    },
-    /**
-     * 导航图片
-     * @param {number} index - 图片索引
-     */
-    handleNavigateImage(index) {
-      this.imagePreview.currentIndex = index
     },
     /**
      * 回到当前聊天会话
      */
     backToCurrentChat() {
-      if (this.currentChatSession) {
-        this.selectedContact = this.currentChatSession
-        this.messages = [...this.messageStore[this.currentChatSession]]
-        this.showInput = true
-        // 回到当前聊天会话时，这不是一个新会话
-        this.isNewSession = false
-      } else {
-        // 如果没有当前聊天会话，创建一个新的
-        this.currentChatSession = 0 // 使用0作为当前聊天会话的ID
-        this.selectedContact = 0
-        this.messages = initialMessages
-        this.showInput = true
-        // 设置为新会话状态
-        this.isNewSession = true
-      }
+      const result = messageService.backToCurrentChat(initialMessages)
+      this.messages = result.messages
+      this.selectedContact = result.selectedContact
+      this.showInput = result.showInput
+      this.currentChatSession = result.selectedContact
     },
     /**
      * 开始调整宽度
@@ -475,41 +182,19 @@ export default {
      * 创建新会话
      */
     createNewSession() {
-      // 保存当前会话的消息
-      if (this.currentChatSession) {
-        this.messageStore[this.currentChatSession] = [...this.messages]
-      }
-
-      // 生成新的会话ID
-      const newSessionId = Date.now()
-
-      // 更新当前会话和选中的联系人
-      this.currentChatSession = newSessionId
-      this.selectedContact = newSessionId
-      this.showInput = true
-      // 标记为新会话
-      this.isNewSession = true
-
-      // 初始化新会话的消息
-      this.messages = [
-        {
-          sender: 'bot',
-          text: '您好！我是智能助手，请问有什么可以帮助您的吗？',
-          time: new Date().toLocaleString('zh-CN'),
-          images: []
-        }
-      ]
-
-      // 保存到消息存储
-      this.messageStore[newSessionId] = [...this.messages]
+      const result = messageService.createNewSession()
+      this.messages = result.messages
+      this.selectedContact = result.selectedContact
+      this.showInput = result.showInput
+      this.currentChatSession = result.selectedContact
     },
 
     /**
      * 处理停止发送消息
      */
-    async handleStopSending() {
-      // 中断API请求
-      abortChatRequest()
+    handleStopSending() {
+      // 调用消息服务处理停止发送
+      messageService.handleStopSending()
 
       // 设置加载状态为false
       this.isLoading = false
@@ -523,105 +208,45 @@ export default {
       console.log('发送消息已中断')
     },
     /**
-     * 处理下载软件接口调用
-     * @param {string} id - 软件ID
+     * 更新工单
+     * @param {Object} id - 工单id
      */
-    async handleDownloadSoftware(id) {
+    updateOrder(id) {
+      // 调用更新工单消息状态接口
       try {
-        const response = await downloadSoftware(id)
-        console.log('Download API response:', response)
-
-        // 创建响应消息并添加到聊天
-        const responseMessage = this.createMessageObject(JSON.stringify(response, null, 2))
-        this.addMessageToChat(responseMessage)
+        updateMessageStatus(id, 'READ')
+        console.log('工单消息状态更新成功:', id)
       } catch (error) {
-        console.error('下载软件失败:', error)
-        // 显示错误消息
-        this.receiveErrorMessage(`下载软件失败: ${error.message}`)
+        console.error('更新工单消息状态失败:', error)
       }
     },
     /**
      * 处理导航到会话
      * @param {number} sessionId - 会话 ID
      */
-    handleNavigateToSession(sessionId) {
-      console.log('导航到会话:', sessionId)
-      // 选择对应的会话
-      this.selectContact(sessionId)
+    async handleNavigateToSession(sessionId) {
+      // 从Contacts组件获取历史工单列表
+      const historyOrders = this.$refs.contactsComponent.$refs.orderItemList.historyOrders
+      // 调用消息服务处理导航
+      this.messages = await messageService.handleNavigateToSession(sessionId, historyOrders)
+      this.selectedContact = sessionId
+      this.showInput = false
+      this.updateOrder(sessionId)
+      
+      // 导航到历史工单列表时滚动到顶部
+      setTimeout(() => {
+        if (this.$refs.contactsComponent && this.$refs.contactsComponent.$refs.orderItemList) {
+          this.$refs.contactsComponent.$refs.orderItemList.scrollToTop()
+        }
+      }, 100)
     },
-    /**
-     * 初始化 Socket 服务
-     */
-    initSocketService() {
-      // 连接 Socket 服务
-      socketService.connect().then(() => {
-        console.log('Socket 服务连接成功')
-      }).catch(error => {
-        console.error('Socket 服务连接失败:', error)
-        this.receiveErrorMessage('Socket 连接失败，请稍后重试')
-      })
-
-      // 添加消息监听器
-      socketService.on('message', this.handleSocketMessage)
-      socketService.on('error', this.handleSocketError)
-    },
-    /**
-     * 处理 Socket 消息
-     * @param {Object} message - 消息对象
-     */
-    handleSocketMessage(message) {
-      console.log('收到 Socket 消息:', message)
-
-      // 过滤掉连接成功的提示消息，不显示在会话列表中
-      if (message.type === 'connected' && message.message === 'WebSocket 连接成功') {
-        console.log('Socket 连接成功，不显示在会话列表中')
-        return
-      }
-
-      // 创建消息对象并添加到聊天
-      const responseMessage = this.createMessageObject(JSON.stringify(message, null, 2))
-      this.addMessageToChat(responseMessage)
-    },
-    /**
-     * 处理 Socket 错误
-     * @param {Object} error - 错误对象
-     */
-    handleSocketError(error) {
-      console.error('Socket 错误:', error)
-      this.receiveErrorMessage(`Socket 错误: ${error.type || '未知错误'}`)
-    },
-    /**
-     * 发送消息到 Socket 服务器
-     * @param {Object} message - 消息对象
-     */
-    sendSocketMessage(message) {
-      socketService.send(message).then(() => {
-        console.log('Socket 消息已发送:', message)
-      }).catch(error => {
-        console.error('发送 Socket 消息失败:', error)
-        this.receiveErrorMessage('发送消息失败，请稍后重试')
-      })
-    },
-    /**
-     * 关闭 Socket 服务
-     */
-    closeSocketService() {
-      socketService.disconnect()
-      console.log('Socket 服务已关闭')
-    }
   },
   mounted() {
+    // 初始化消息服务
+    messageService.init(initialMessages)
     // 初始化当前聊天会话
     this.currentChatSession = 0
-    this.messageStore[0] = initialMessages
-    // 初始化时，设置为新会话状态
-    this.isNewSession = true
-    // 初始化 Socket 服务
-    // this.initSocketService()
-  },
-  beforeDestroy() {
-    // 关闭 Socket 服务
-    this.closeSocketService()
+    this.selectedContact = 0
   }
 }
 </script>

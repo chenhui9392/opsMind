@@ -14,13 +14,13 @@
         <span class="chat-status">{{ status }}</span>
       </div>
 
-      <div class="offline-session-box"  @mouseenter="showMessagePopup = true" @mouseleave="showMessagePopup = false" @click="navigateToSession">
+      <div class="offline-session-box"  @mouseenter="showMessagePopup = true" @mouseleave="showMessagePopup = false">
           <div class="offline-session-container"  >
           <span class="offline-session">【离线会话】</span>
           <div class="notification-dot" v-if="hasNotification"></div>
           <!-- 消息弹窗 -->
-          <MessagePopup 
-            v-if="showMessagePopup && messages.length > 0" 
+          <MessagePopup
+            v-if="showMessagePopup && messages.length > 0"
             :messages="messages"
             @click="navigateToSession"
           />
@@ -35,8 +35,8 @@
 </template>
 
 <script>
-import socketService from '../utils/socketService'
-import MessagePopup from './MessagePopup.vue'
+import socketService from '../../utils/socketService'
+import MessagePopup from '../common/MessagePopup.vue'
 
 export default {
   components: {
@@ -72,17 +72,17 @@ export default {
     handleSocketMessage(data) {
       console.log('收到 Socket 消息:', data)
       // 这里可以根据实际消息内容判断是否显示通知
-      this.hasNotification = true
       // 保存消息到列表
-      if (data.message) {
+      if (data.type === 'broadcast' && data.message) {
+        this.hasNotification = true
         const message = {
           id: Date.now(),
-          sessionId: data.sessionId || 1, // 默认会话 ID
+          sessionId: data.id || 1, // 默认会话 ID
           content: data.message,
           time: new Date().toLocaleString('zh-CN')
         }
         this.messages.unshift(message) // 添加到列表开头
-        // 限制消息列表长度
+        // 限制消息列表长度navigate-to-session
         if (this.messages.length > 5) {
           this.messages = this.messages.slice(0, 5)
         }
@@ -92,11 +92,18 @@ export default {
     navigateToSession(sessionId) {
       // 点击离线会话或消息项，定位到历史会话列表
       const targetSessionId = sessionId || this.recentSessionId
+      
+      // 先触发导航事件，定位到历史工单
       this.$emit('navigate-to-session', targetSessionId)
+      
       // 点击后隐藏弹窗
       this.showMessagePopup = false
-      // 清空通知状态
-      this.hasNotification = false
+      
+      // 从消息列表中删除对应的会话记录
+      this.messages = this.messages.filter(msg => msg.sessionId !== targetSessionId)
+      
+      // 检查是否还有离线会话数据
+      this.hasNotification = this.messages.length > 0
     }
   },
   mounted() {
@@ -104,7 +111,7 @@ export default {
     socketService.connect().catch(error => {
       console.error('Socket 连接失败:', error)
     })
-    
+
     // 添加消息监听器
     socketService.on('message', this.handleSocketMessage)
   },

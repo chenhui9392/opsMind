@@ -86,15 +86,15 @@ export const downloadSoftware = async (id) => {
  */
 export const getHistoryOrders = async (params = {}) => {
   try {
+    const userName = await getSystemUsername()
     // 默认请求参数
     const defaultParams = {
       current: 1,
       size: 20,
-      ...params
+      ...params,
+      userName: userName
     }
-
-    const result = await post(`${CHAT_API_BASE_URL}/omp/api/agentOrder/pageList`, defaultParams)
-    return result
+    return await post(`${CHAT_API_BASE_URL}/omp/api/agentOrder/pageList`, defaultParams)
   } catch (error) {
     throw error
   }
@@ -106,14 +106,26 @@ export const getHistoryOrders = async (params = {}) => {
  * @returns {Promise<Object>} - 返回响应数据
  */
 export const getHistoryOrderDetail = async (conversationId) => {
-  console.log('获取历史工单详情，conversationId:', conversationId)
-
   try {
-    const result = await get(`${CHAT_API_BASE_URL}/omp/api/agentChat/history/${conversationId}`)
-    console.log('历史工单详情接口返回:', result)
-    return result
+    return await get(`${CHAT_API_BASE_URL}/omp/api/agentChat/history/${conversationId}`)
   } catch (error) {
-    console.error('历史工单详情接口请求失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 更新工单消息状态接口
+ * @param {string} id - 工单ID
+ * @param {string} messageStatus - 消息状态
+ * @returns {Promise<Object>} - 返回响应数据
+ */
+export const updateMessageStatus = async (id, messageStatus) => {
+  try {
+    return await post(`${CHAT_API_BASE_URL}/omp/api/agentOrder/updateMessageStatus`, {
+      id,
+      messageStatus
+    })
+  } catch (error) {
     throw error
   }
 }

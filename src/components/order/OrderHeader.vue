@@ -25,10 +25,10 @@
 </template>
 
 <script>
-import SvgIcon from '../assets/svg/SvgIcon.vue'
+import SvgIcon from '../../assets/svg/SvgIcon.vue'
 
 export default {
-  name: 'ContactsHeader',
+  name: 'OrderHeader',
   components: {
     SvgIcon
   },

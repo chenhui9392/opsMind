@@ -4,11 +4,11 @@
     <div class="popup-content">
       <div class="popup-title">{{ title }}</div>
       <div class="message-list">
-        <div 
-          v-for="msg in messages" 
-          :key="msg.id" 
+        <div
+          v-for="msg in messages"
+          :key="msg.id"
           class="message-item"
-          @click="$emit('click', msg.sessionId)"
+          @click.stop="$emit('click', msg.sessionId)"
         >
           <div class="message-content">{{ msg.content }}</div>
           <div class="message-time">{{ msg.time }}</div>
@@ -94,6 +94,12 @@ export default {
 
 .message-item:hover {
   background-color: #f5f5f5;
+}
+
+.message-item:active {
+  background-color: #e3f2fd;
+  transform: scale(0.98);
+  transition: all 0.1s ease;
 }
 
 .message-content {

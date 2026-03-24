@@ -15,14 +15,14 @@ class SocketService {
     this.socket = null
     this.isConnected = false
     this.reconnectAttempts = 0
-    
+
     // 配置参数
     this.maxReconnectAttempts = CONSTANTS.MAX_RECONNECT_ATTEMPTS
     this.reconnectDelay = CONSTANTS.RECONNECT_DELAY
-    
+
     // 监听器管理
     this.listeners = {}
-    
+
     // 消息队列（用于离线时缓存消息）
     this.messageQueue = []
   }
@@ -46,16 +46,16 @@ class SocketService {
         // 使用配置的 WebSocket 服务器地址
         const url = WS_BASE_URL
 
-        this.socket = new WebSocket(url)
+        this.socket = new WebSocket(url + '?id=111111')
 
         this.socket.onopen = () => {
           console.log('Socket 连接成功')
           this.isConnected = true
           this.reconnectAttempts = 0
-          
+
           // 发送队列中的消息
           this.flushMessageQueue()
-          
+
           resolve()
         }
 
@@ -148,10 +148,10 @@ class SocketService {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++
       console.log(`Socket 尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
-      
+
       // 指数退避重连
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
-      
+
       setTimeout(() => {
         this.connect().catch(error => {
           console.error('Socket 重连失败:', error)

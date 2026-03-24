@@ -59,8 +59,8 @@
 </template>
 
 <script>
-import { uploadImage } from '../api'
-import SvgIcon from '../assets/svg/SvgIcon.vue'
+import { uploadImage } from '../../api'
+import SvgIcon from '../../assets/svg/SvgIcon.vue'
 
 export default {
   name: 'ChatInput',
