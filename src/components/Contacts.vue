@@ -14,8 +14,14 @@
 
 
     <div class="contacts-list" ref="contactsList">
+      <!-- 加载中状态 -->
+      <div class="loading-state" v-if="isLoading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在加载历史工单...</div>
+      </div>
+
       <!-- 历史工单列表 -->
-      <div class="history-orders-section" v-if="historyOrders.length > 0">
+      <div class="history-orders-section" v-else-if="historyOrders.length > 0">
         <div
           v-for="order in historyOrders"
           :key="order.id"
@@ -37,6 +43,14 @@
         </div>
       </div>
 
+      <!-- 无数据提示 -->
+      <div class="empty-state" v-else>
+        <div class="empty-icon">
+          <SvgIcon name="inbox" width="64" height="64" />
+        </div>
+        <div class="empty-text">暂无历史工单</div>
+        <div class="empty-subtext">工单数据将在这里展示</div>
+      </div>
     </div>
 
   </div>
@@ -79,6 +93,7 @@ export default {
     return {
       searchQuery: '',
       historyOrders: [], // 历史工单列表
+      isLoading: false, // 加载状态
       fetchAttempted: false // 是否已尝试获取数据
     }
   },
@@ -131,6 +146,7 @@ export default {
      * 获取历史工单列表
      */
     async fetchHistoryOrders() {
+      this.isLoading = true // 开始加载
       this.fetchAttempted = true
       try {
         const response = await getHistoryOrders()
@@ -142,7 +158,10 @@ export default {
           this.historyOrders = []
         }
       } catch (error) {
+        console.error('获取历史工单失败:', error)
         this.historyOrders = []
+      } finally {
+        this.isLoading = false // 加载完成
       }
     },
     /**
@@ -250,6 +269,60 @@ export default {
 
 .history-orders-section {
   margin-bottom: 16px;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3e5f5;
+  border-top-color: #673ab7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 14px;
+  color: #999;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.empty-icon {
+  color: #d1c4e9;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #999;
+  font-weight: 500;
+}
+
+.empty-subtext {
+  font-size: 13px;
+  color: #bbb;
 }
 
 .section-title {

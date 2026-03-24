@@ -2,6 +2,16 @@
   <div class="chat">
     <ChatHeader :userName="userName" @create-new-session="handleCreateNewSession" @navigate-to-session="handleNavigateToSession" />
     <div class="chat-messages" ref="chatMessages">
+      <!-- 空状态提示 -->
+      <div class="empty-state" v-if="messages.length === 0">
+        <div class="empty-icon">
+          <SvgIcon name="inbox" width="64" height="64" />
+        </div>
+        <div class="empty-text">暂无消息记录</div>
+        <div class="empty-subtext">工单详情将在这里展示</div>
+      </div>
+
+      <!-- 消息列表 -->
       <div
         v-for="(message, index) in messages"
         :key="index"
@@ -51,6 +61,7 @@
 <script>
 import ChatInput from './ChatInput.vue'
 import ChatHeader from './ChatHeader.vue'
+import SvgIcon from '../assets/svg/SvgIcon.vue'
 import { getSystemUsername } from '../utils/system'
 import { marked } from 'marked'
 
@@ -58,14 +69,15 @@ import { marked } from 'marked'
 marked.setOptions({
   breaks: true,
   gfm: true,
-  sanitize: false // 允许HTML标签，但marked会自动转义
+  sanitize: false // 允许 HTML 标签，但 marked 会自动转义
 })
 
 export default {
   name: 'Chat',
   components: {
     ChatInput,
-    ChatHeader
+    ChatHeader,
+    SvgIcon
   },
   props: {
     messages: {
@@ -257,6 +269,32 @@ export default {
   padding: 20px;
   overflow-y: auto;
   background-color: #fafafa;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+  margin-top: 100px;
+}
+
+.empty-icon {
+  color: #d1c4e9;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #999;
+  font-weight: 500;
+}
+
+.empty-subtext {
+  font-size: 13px;
+  color: #bbb;
 }
 
 .message {

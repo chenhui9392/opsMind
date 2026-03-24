@@ -8,6 +8,7 @@
         :selectedContact="selectedContact"
         :currentChatSession="currentChatSession"
         @select="selectContact"
+        @select-order="selectOrder"
         @back-to-current="backToCurrentChat"
         @create-new-session="createNewSession"
       />
@@ -41,7 +42,7 @@
 import Contacts from './Contacts.vue'
 import Chat from './Chat.vue'
 import ImagePreview from './ImagePreview.vue'
-import { sendChatMessage, abortChatRequest, stopChat, downloadSoftware } from '../api'
+import { sendChatMessage, abortChatRequest, downloadSoftware, getHistoryOrderDetail } from '../api'
 import { contacts as mockContacts, initialMessages, mockReply } from '../mock/data'
 import socketService from '../utils/socketService'
 
@@ -105,6 +106,94 @@ export default {
         // 保存到消息存储
         this.messageStore[contactId] = [...this.messages]
       }
+    },
+
+    /**
+     * 选择工单
+     * @param {Object} order - 工单对象
+     */
+    async selectOrder(order) {
+      console.log('选择工单:', order)
+
+      // 保存当前会话的消息
+      if (this.currentChatSession) {
+        this.messageStore[this.currentChatSession] = [...this.messages]
+      }
+
+      this.selectedContact = order.id
+      this.currentChatSession = null
+      this.showInput = false
+      this.isNewSession = false
+
+      // 获取工单详情
+      try {
+        const response = await getHistoryOrderDetail(order.conversationId)
+        debugger
+        if (response) {
+          // 将详情数据转换为消息格式
+          const messages = this.convertHistoryToMessages(response)
+          this.messages = messages
+          console.log('工单详情:', this.messages)
+          // 保存到消息存储
+          this.messageStore[order.id] = [...this.messages]
+        } else {
+          // 如果获取失败，显示默认消息
+          this.messages = [
+            {
+              sender: 'bot',
+              text: `无法加载工单"${order.orderTitle}"的历史记录。`,
+              time: new Date().toLocaleString('zh-CN'),
+              images: []
+            }
+          ]
+          this.messageStore[order.id] = [...this.messages]
+        }
+      } catch (error) {
+        console.error('获取工单详情失败:', error)
+        this.messages = [
+          {
+            sender: 'bot',
+            text: `加载工单"${order.orderTitle}"失败，请稍后重试。`,
+            time: new Date().toLocaleString('zh-CN'),
+            images: []
+          }
+        ]
+        this.messageStore[order.id] = [...this.messages]
+      }
+    },
+
+    /**
+     * 将历史记录转换为消息格式
+     * @param {Array} historyData - 历史记录数据
+     * @returns {Array} - 消息数组
+     */
+    convertHistoryToMessages(historyData) {
+      if (!Array.isArray(historyData)) {
+        return []
+      }
+
+      return historyData.map(item => {
+        // 解析 content 字段（如果是 JSON 字符串）
+        let content = item.content
+        try {
+          const parsedContent = JSON.parse(content)
+          if (parsedContent.questionContent) {
+            content = parsedContent.questionContent
+          } else if (parsedContent.input) {
+            content = parsedContent.input
+          }
+        } catch (parseError) {
+          // 如果解析失败，使用原始 content
+          console.log('Content is not JSON:', content)
+        }
+
+        return {
+          sender: item.messageType === 'user' ? 'user' : 'bot',
+          text: content,
+          time: item.createTime || new Date().toLocaleString('zh-CN'),
+          images: []
+        }
+      })
     },
     /**
      * 处理发送消息
@@ -421,14 +510,6 @@ export default {
     async handleStopSending() {
       // 中断API请求
       abortChatRequest()
-
-      // 调用停止聊天接口
-      // try {
-      //   await stopChat()
-      //   console.log('停止聊天接口调用成功')
-      // } catch (error) {
-      //   console.error('停止聊天接口调用失败:', error)
-      // }
 
       // 设置加载状态为false
       this.isLoading = false

@@ -69,25 +69,12 @@ export const abortChatRequest = () => {
 }
 
 /**
- * 中断聊天服务接口
- * @returns {Promise<Object>} - 返回响应数据
- */
-export const stopChat = async () => {
-  const userName = await getSystemUsername()
-
-  return await post(`${CHAT_API_BASE_URL}/omp/api/agentChat/stop`, {
-    userName: userName,
-  })
-}
-
-/**
  * 下载软件接口
  * @param {string} id - 软件 ID
  * @returns {Promise<Object>} - 返回响应数据
  */
 export const downloadSoftware = async (id) => {
-  const downloadUrl = `http://10.108.112.202:8080/api/software/download/${id}`
-  console.log('Calling download API:', downloadUrl)
+  const downloadUrl = `${CHAT_API_BASE_URL}/api/software/download/${id}`
   // 发送 POST 请求
   return await post(downloadUrl, {})
 }
@@ -98,9 +85,6 @@ export const downloadSoftware = async (id) => {
  * @returns {Promise<Object>} - 返回响应数据
  */
 export const getHistoryOrders = async (params = {}) => {
-  console.log('获取历史工单，请求参数:', params)
-  console.log('请求地址:', `http://10.100.60.71:8080/omp/api/agentOrder/pageList`)
-  
   try {
     // 默认请求参数
     const defaultParams = {
@@ -108,12 +92,28 @@ export const getHistoryOrders = async (params = {}) => {
       size: 20,
       ...params
     }
-    
-    const result = await post(`http://10.100.60.71:8080/omp/api/agentOrder/pageList`, defaultParams)
-    console.log('历史工单接口返回:', result)
+
+    const result = await post(`${CHAT_API_BASE_URL}/omp/api/agentOrder/pageList`, defaultParams)
     return result
   } catch (error) {
-    console.error('历史工单接口请求失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 获取历史工单详情接口
+ * @param {string} conversationId - 会话ID
+ * @returns {Promise<Object>} - 返回响应数据
+ */
+export const getHistoryOrderDetail = async (conversationId) => {
+  console.log('获取历史工单详情，conversationId:', conversationId)
+
+  try {
+    const result = await get(`${CHAT_API_BASE_URL}/omp/api/agentChat/history/${conversationId}`)
+    console.log('历史工单详情接口返回:', result)
+    return result
+  } catch (error) {
+    console.error('历史工单详情接口请求失败:', error)
     throw error
   }
 }
