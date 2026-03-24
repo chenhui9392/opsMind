@@ -12,22 +12,31 @@
       </div>
     </div>
 
+
     <div class="contacts-list" ref="contactsList">
-      <div
-        v-for="contact in filteredContacts"
-        :key="contact.id"
-        class="contact-item"
-        :class="{ active: selectedContact === contact.id }"
-        @click="selectContact(contact.id)"
-      >
-        <div class="contact-content">
-          <div class="contact-info">
-            <div class="contact-name">{{ contact.name }}</div>
-            <div class="contact-time">{{ contact.time }}</div>
+      <!-- 历史工单列表 -->
+      <div class="history-orders-section" v-if="historyOrders.length > 0">
+        <div
+          v-for="order in historyOrders"
+          :key="order.id"
+          class="contact-item order-item"
+          @click="selectOrder(order)"
+        >
+          <div class="contact-content">
+            <div class="contact-info">
+              <div class="order-name">{{ order.orderTitle }}</div>
+              <div class="order-type" v-if="order.orderType">{{ order.orderType }}</div>
+            </div>
+            <div class="order-user-message">
+              {{ order.userMessage }}
+            </div>
+            <div class="order-time">
+              {{ formatDate(order.createTime) }}
+            </div>
           </div>
-          <div class="contact-message">{{ contact.lastMessage }}</div>
         </div>
       </div>
+
     </div>
 
   </div>
@@ -36,6 +45,15 @@
 <script>
 import SvgIcon from '../assets/svg/SvgIcon.vue'
 import ContactsHeader from './ContactsHeader.vue'
+import { getHistoryOrders } from '../api/index'
+
+// 工单类型映射
+const ORDER_TYPE_MAP = {
+  CONSULTATION: '咨询',
+  REQUIREMENT: '需求',
+  BUG: 'BUG',
+  DATA_CHANGE: '数据变更',
+}
 
 export default {
   name: 'Contacts',
@@ -59,20 +77,12 @@ export default {
   },
   data() {
     return {
-      searchQuery: ''
+      searchQuery: '',
+      historyOrders: [], // 历史工单列表
+      fetchAttempted: false // 是否已尝试获取数据
     }
   },
   computed: {
-    filteredContacts() {
-      if (!this.searchQuery) {
-        return this.contacts
-      }
-      const query = this.searchQuery.toLowerCase()
-      return this.contacts.filter(contact =>
-        contact.name.toLowerCase().includes(query) ||
-        contact.lastMessage.toLowerCase().includes(query)
-      )
-    },
     isCurrentChatSelected() {
       return this.selectedContact === this.currentChatSession
     }
@@ -80,10 +90,18 @@ export default {
   methods: {
     /**
      * 选择联系人
-     * @param {number} contactId - 联系人ID
+     * @param {number} contactId - 联系人 ID
      */
     selectContact(contactId) {
       this.$emit('select', contactId)
+    },
+    /**
+     * 选择工单
+     * @param {Object} order - 工单对象
+     */
+    selectOrder(order) {
+      // 触发自定义事件，将工单信息传递给父组件
+      this.$emit('select-order', order)
     },
     /**
      * 滚动到底部
@@ -108,7 +126,42 @@ export default {
      */
     handleSearch(query) {
       this.searchQuery = query
+    },
+    /**
+     * 获取历史工单列表
+     */
+    async fetchHistoryOrders() {
+      this.fetchAttempted = true
+      try {
+        const response = await getHistoryOrders()
+
+        if (response && response.data) {
+          // 尝试多种可能的数据结构
+          this.historyOrders = response.data.records || response.data.list || response.data.data || []
+        } else {
+          this.historyOrders = []
+        }
+      } catch (error) {
+        this.historyOrders = []
+      }
+    },
+    /**
+     * 格式化日期
+     * @param {string} dateStr - 日期字符串
+     * @returns {string} - 格式化后的日期
+     */
+    formatDate(dateStr) {
+      if (!dateStr) return ''
+      const date = new Date(dateStr)
+      const year = date.getFullYear()
+      const month = (date.getMonth() + 1).toString().padStart(2, '0')
+      const day = date.getDate().toString().padStart(2, '0')
+      return `${year}-${month}-${day}`
     }
+  },
+  mounted() {
+    // 组件挂载时加载历史工单
+    this.fetchHistoryOrders()
   }
 }
 </script>
@@ -161,6 +214,95 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: 8px 0;
+}
+
+.refresh-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+
+.refresh-text {
+  font-size: 14px;
+  color: #999;
+}
+
+.refresh-btn {
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #673ab7 0%, #5e35b1 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(103, 58, 183, 0.3);
+}
+
+.refresh-btn:hover {
+  background: linear-gradient(135deg, #5e35b1 0%, #512da8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(103, 58, 183, 0.4);
+}
+
+.history-orders-section {
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #673ab7;
+  padding: 8px 16px;
+  background-color: #f3e5f5;
+  border-radius: 8px;
+  margin: 8px 8px 12px;
+}
+
+.order-item {
+  background-color: #fff8e1;
+  border-left: 3px solid #ff9800;
+}
+
+.order-item:hover {
+  background-color: #ffecb3;
+}
+
+.order-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 15px;
+  flex: 1;
+}
+
+.order-type {
+  font-size: 12px;
+  color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.order-user-message {
+  font-size: 13px;
+  color: #666;
+  margin-top: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.order-time {
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .contact-item {

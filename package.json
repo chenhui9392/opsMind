@@ -31,6 +31,7 @@
       "dist/**/*",
       "main.js",
       "preload.js",
+      "src/main/**/*",
       "src/utils/menu.js",
       "public/**/*"
     ],

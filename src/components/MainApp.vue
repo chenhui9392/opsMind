@@ -490,13 +490,13 @@ export default {
      */
     handleSocketMessage(message) {
       console.log('收到 Socket 消息:', message)
-      
+
       // 过滤掉连接成功的提示消息，不显示在会话列表中
       if (message.type === 'connected' && message.message === 'WebSocket 连接成功') {
         console.log('Socket 连接成功，不显示在会话列表中')
         return
       }
-      
+
       // 创建消息对象并添加到聊天
       const responseMessage = this.createMessageObject(JSON.stringify(message, null, 2))
       this.addMessageToChat(responseMessage)
@@ -536,7 +536,7 @@ export default {
     // 初始化时，设置为新会话状态
     this.isNewSession = true
     // 初始化 Socket 服务
-    this.initSocketService()
+    // this.initSocketService()
   },
   beforeDestroy() {
     // 关闭 Socket 服务

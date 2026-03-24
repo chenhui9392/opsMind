@@ -1,6 +1,6 @@
 /*
  * @Author: hui.chenn
- * @Description: 
+ * @Description:
  * @Date: 2026-03-18 08:38:24
  * @LastEditTime: 2026-03-23 15:42:36
  * @LastEditors: hui.chenn
@@ -41,10 +41,10 @@ export const uploadImage = async (file) => {
 export const sendChatMessage = async (params) => {
   console.log('sendChatMessage called with params:', params)
   const userName = await getSystemUsername()
-  
+
   // 创建新的 AbortController
   chatAbortController = new AbortController()
-  
+
   try {
     const result = await post(`${CHAT_API_BASE_URL}/omp/api/agentChat/chat`, {
       ...params,
@@ -74,7 +74,7 @@ export const abortChatRequest = () => {
  */
 export const stopChat = async () => {
   const userName = await getSystemUsername()
-  
+
   return await post(`${CHAT_API_BASE_URL}/omp/api/agentChat/stop`, {
     userName: userName,
   })
@@ -82,12 +82,38 @@ export const stopChat = async () => {
 
 /**
  * 下载软件接口
- * @param {string} id - 软件ID
+ * @param {string} id - 软件 ID
  * @returns {Promise<Object>} - 返回响应数据
  */
 export const downloadSoftware = async (id) => {
   const downloadUrl = `http://10.108.112.202:8080/api/software/download/${id}`
   console.log('Calling download API:', downloadUrl)
-  // 发送POST请求
+  // 发送 POST 请求
   return await post(downloadUrl, {})
+}
+
+/**
+ * 获取历史工单列表接口
+ * @param {Object} params - 请求参数（分页等）
+ * @returns {Promise<Object>} - 返回响应数据
+ */
+export const getHistoryOrders = async (params = {}) => {
+  console.log('获取历史工单，请求参数:', params)
+  console.log('请求地址:', `http://10.100.60.71:8080/omp/api/agentOrder/pageList`)
+  
+  try {
+    // 默认请求参数
+    const defaultParams = {
+      current: 1,
+      size: 20,
+      ...params
+    }
+    
+    const result = await post(`http://10.100.60.71:8080/omp/api/agentOrder/pageList`, defaultParams)
+    console.log('历史工单接口返回:', result)
+    return result
+  } catch (error) {
+    console.error('历史工单接口请求失败:', error)
+    throw error
+  }
 }

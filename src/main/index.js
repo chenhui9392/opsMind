@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, session } = require('electron')
 const path = require('path')
 
 // 导入模块
@@ -43,6 +43,16 @@ const getSystemUsername = () => {
 // 应用准备就绪
 app.whenReady().then(() => {
   console.log('System username:', getSystemUsername())
+  
+  // 禁用跨域限制 (CORS)
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Access-Control-Allow-Origin': ['*']
+      }
+    })
+  })
   
   // 创建窗口
   windowManager.createWindow()
