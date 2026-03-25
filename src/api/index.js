@@ -128,3 +128,28 @@ export const updateMessageStatus = async (id, messageStatus) => {
     throw error
   }
 }
+
+/**
+ * 获取系统列表接口
+ * @returns {Promise<Object>} - 返回系统列表数据
+ */
+export const getSystemList = async () => {
+  try {
+    return await get(`${CHAT_API_BASE_URL}/omp/api/agentChat/systemList`)
+  } catch (error) {
+    throw error
+  }
+}
+
+/**
+ * 获取模块列表接口
+ * @param {string} systemCode - 系统编码
+ * @returns {Promise<Object>} - 返回模块列表数据
+ */
+export const getModuleList = async (systemCode) => {
+  try {
+    return await get(`${CHAT_API_BASE_URL}/omp/api/agentChat/moduleList`, { systemCode })
+  } catch (error) {
+    throw error
+  }
+}

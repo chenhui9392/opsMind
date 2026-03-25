@@ -23,6 +23,7 @@
       v-model:selectedContact="selectedContact"
       v-model:currentChatSession="currentChatSession"
       :isSending="isSending"
+      :isNewSession="isNewSession"
       @navigate-to-session="handleNavigateToSession"
       @update:isSending="isSending = $event"
       @refresh-orders="handleRefreshOrders"
@@ -54,7 +55,8 @@ export default {
       isResizing: false,
       isLoading: false, // 发送消息加载状态
       loadingMessageId: null, // 加载消息的 ID
-      isSending: false // 全局发送中状态
+      isSending: false, // 全局发送中状态
+      isNewSession: true // 是否为新会话
     }
   },
   methods: {
@@ -99,13 +101,15 @@ export default {
       console.log('开始回到当前聊天')
       // 调用 messageService 的 backToCurrentChat 方法从缓存获取数据
       const result = messageService.backToCurrentChat(initialMessages)
+      console.log("已从缓存恢复会话:",result)
 
       // 更新状态
       this.messages = result.messages
       this.selectedContact = result.selectedContact
       this.showInput = result.showInput
+      this.isNewSession = result.isNewSession
 
-      console.log('已从缓存恢复会话数据:', result.selectedContact)
+      console.log('已从缓存恢复会话数据:', this.isNewSession)
     },
     /**
      * 处理导航到会话
@@ -154,6 +158,17 @@ export default {
     // 初始化当前聊天会话
     this.currentChatSession = 0
     this.selectedContact = 0
+    // 同步新会话状态
+    this.isNewSession = messageService.getIsNewSession()
+  },
+  watch: {
+    // 监听消息变化，同步新会话状态
+    messages: {
+      handler() {
+        this.isNewSession = messageService.getIsNewSession()
+      },
+      deep: true
+    }
   }
 }
 </script>

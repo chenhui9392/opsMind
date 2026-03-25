@@ -153,10 +153,14 @@ export default {
 
 <style scoped>
 .chat-header {
-  padding: 16px;
+  padding: 0 16px;
   border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  height: 72px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
 .chat-title {

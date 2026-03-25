@@ -244,17 +244,15 @@ class MessageService {
    * @returns {Object} - 包含消息和会话信息的对象
    */
   backToCurrentChat(initialMessages) {
-    console.log('回到当前聊天，currentChatSession:', this.currentChatSession)
-    console.log('回到当前聊天，currentChatSession2:', this.messageStore)
     if (this.messageStore[this.currentChatSession]) {
-      console.log('回到当前聊天，currentChatSession3=============',this.messageStore[this.currentChatSession])
+      console.info('111111111:',this.messageStore[this.currentChatSession].length === 1)
       // 从缓存中获取当前会话的消息
-      console.log('从缓存中恢复当前会话消息:', this.messageStore[this.currentChatSession])
+      this.isNewSession = this.messageStore[this.currentChatSession].length === 1
       return {
         messages: [...this.messageStore[this.currentChatSession]],
         selectedContact: this.currentChatSession,
         showInput: true,
-        isNewSession: false
+        isNewSession: this.messageStore[this.currentChatSession].length === 1
       }
     } else {
       // 如果没有当前聊天会话，使用默认会话 (ID 为 0)
@@ -338,6 +336,22 @@ class MessageService {
    */
   saveMessages(sessionId, messages) {
     this.messageStore[sessionId] = [...messages]
+  }
+
+  /**
+   * 获取当前是否为新会话状态
+   * @returns {boolean} - 是否为新会话
+   */
+  getIsNewSession() {
+    return this.isNewSession
+  }
+
+  /**
+   * 设置新会话状态
+   * @param {boolean} value - 新会话状态
+   */
+  setIsNewSession(value) {
+    this.isNewSession = value
   }
 }
 

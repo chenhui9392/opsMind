@@ -61,7 +61,9 @@
       v-if="showInput"
       @send="handleSend"
       @stop="handleStop"
+      @show-error="handleShowError"
       :isSending="isSendingLocal"
+      :isNewSession="isNewSession"
     />
 
     <!-- 图片预览模态框 -->
@@ -72,6 +74,9 @@
       @close="closeImagePreview"
       @navigate="handleNavigateImage"
     />
+
+    <!-- Toast 提示组件 -->
+    <Toast ref="toast" />
   </div>
 </template>
 
@@ -79,6 +84,7 @@
 import ChatInput from './ChatInput.vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import ImagePreview from '../common/ImagePreview.vue'
+import Toast from '../common/Toast.vue'
 import { marked } from 'marked'
 import messageService from '../../services/messageService'
 
@@ -94,7 +100,8 @@ export default {
   components: {
     ChatInput,
     SvgIcon,
-    ImagePreview
+    ImagePreview,
+    Toast
   },
   props: {
     messages: {
@@ -106,6 +113,10 @@ export default {
       default: true
     },
     isSending: {
+      type: Boolean,
+      default: false
+    },
+    isNewSession: {
       type: Boolean,
       default: false
     }
@@ -123,6 +134,15 @@ export default {
     }
   },
   methods: {
+    /**
+     * 处理显示错误提示
+     * @param {string} message - 错误消息
+     */
+    handleShowError(message) {
+      // 使用 Toast 组件显示错误提示
+      this.$refs.toast.error(message)
+    },
+
     /**
      * 处理发送消息
      * @param {Object} data - 消息数据

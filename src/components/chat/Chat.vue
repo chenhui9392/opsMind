@@ -17,6 +17,7 @@
         :messages="messages"
         :showInput="showInput"
         :isSending="isSending"
+        :isNewSession="isNewSession"
         @update:messages="$emit('update:messages', $event)"
         @stop="handleStop"
       />
@@ -57,6 +58,10 @@ export default {
     currentChatSession: {
       type: [String, Number],
       default: null
+    },
+    isNewSession: {
+      type: Boolean,
+      default: false
     }
   },
   data() {

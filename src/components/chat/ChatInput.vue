@@ -23,6 +23,30 @@
 
     <!-- 输入区域 -->
     <div class="chat-input-wrapper">
+      <!-- 系统和模块选择器 -->
+      <div class="selectors-container">
+        <select
+          v-model="selectedSystem"
+          class="system-select"
+          :disabled="!isNewSession"
+          @change="handleSystemChange"
+        >
+          <option value="">选择系统</option>
+          <option v-for="system in systemList" :key="system.code" :value="system.code">
+            {{ system.name }}
+          </option>
+        </select>
+        <select
+          v-model="selectedModule"
+          class="module-select"
+          :disabled="!isNewSession || !selectedSystem"
+        >
+          <option value="">{{ selectedSystem ? '选择模块' : '请先选择系统' }}</option>
+          <option v-for="module in moduleList" :key="module.code" :value="module.code">
+            {{ module.name }}
+          </option>
+        </select>
+      </div>
       <textarea
         v-model="inputMessage"
         class="chat-input"
@@ -61,6 +85,7 @@
 <script>
 import { uploadImage } from '../../api'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
+import { getSystemList, getModuleListBySystem } from '../../config/systemModuleData.js'
 
 export default {
   name: 'ChatInput',
@@ -69,6 +94,10 @@ export default {
   },
   props: {
     isSending: {
+      type: Boolean,
+      default: false
+    },
+    isNewSession: {
       type: Boolean,
       default: false
     }
@@ -80,12 +109,18 @@ export default {
       uploadedImages: [],
       uploadedFiles: [], // 存储上传的非图片文件信息
       isUploading: false,
-      isInCodeBlock: false // 标记是否在代码块内
+      isInCodeBlock: false, // 标记是否在代码块内
+      selectedSystem: '', // 选中的系统
+      selectedModule: '', // 选中的模块
+      systemList: [], // 系统列表
+      moduleList: [] // 模块列表
     }
   },
   mounted() {
     // 初始化textarea高度
     this.autoResize()
+    // 加载系统列表
+    this.loadSystemList()
   },
   methods: {
     /**
@@ -148,15 +183,58 @@ export default {
       }
     },
     /**
+     * 加载系统列表
+     */
+    loadSystemList() {
+      this.systemList = getSystemList()
+    },
+
+    /**
+     * 处理系统选择变化
+     */
+    handleSystemChange() {
+      // 清空已选模块
+      this.selectedModule = ''
+      this.moduleList = []
+
+      if (this.selectedSystem) {
+        this.moduleList = getModuleListBySystem(this.selectedSystem)
+      }
+    },
+
+    /**
      * 发送消息
      */
     sendMessage() {
+      // 新会话时需要验证系统和模块选择
+      if (this.isNewSession) {
+        if (!this.selectedSystem || !this.selectedModule) {
+          this.$emit('show-error', '请先选择系统和模块')
+          return
+        }
+      }
+
       if (!this.inputMessage && this.uploadedImages.length === 0 && this.uploadedFiles.length === 0) return
 
+      // 构建消息文本
+      let messageText = this.inputMessage
+
+      // 新会话时将系统和模块信息拼在消息前面
+      if (this.isNewSession && this.selectedSystem && this.selectedModule) {
+        const system = this.systemList.find(s => s.code === this.selectedSystem)
+        const module = this.moduleList.find(m => m.code === this.selectedModule)
+        const systemName = system ? system.name : ''
+        const moduleName = module ? module.name : ''
+        messageText = `${systemName}-${moduleName} ${this.inputMessage}`
+      }
+
       this.$emit('send', {
-        text: this.inputMessage,
+        text: messageText,
+        originalText: this.inputMessage,
         images: this.uploadedImages,
-        files: this.uploadedFiles
+        files: this.uploadedFiles,
+        systemCode: this.selectedSystem,
+        moduleCode: this.selectedModule
       })
 
       // 清空输入和文件
@@ -333,6 +411,64 @@ export default {
   min-height: 88px;
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+/* 系统和模块选择器容器 */
+.selectors-container {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 系统选择器 */
+.system-select,
+.module-select {
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  font-size: 13px;
+  background-color: #f5f5f5;
+  color: #333;
+  outline: none;
+  cursor: pointer;
+  min-width: 120px;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.system-select:hover,
+.module-select:hover {
+  border-color: #673ab7;
+  background-color: #ffffff;
+}
+
+.system-select:focus,
+.module-select:focus {
+  border-color: #673ab7;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+/* 禁用状态的选择器 */
+.system-select:disabled,
+.module-select:disabled {
+  background-color: #e8e8e8;
+  color: #888;
+  cursor: not-allowed;
+  border-color: #d0d0d0;
+  opacity: 0.7;
+}
+
+/* 下拉框选项样式 */
+.system-select option,
+.module-select option {
+  padding: 8px 12px;
+  font-size: 13px;
 }
 
 .chat-input {

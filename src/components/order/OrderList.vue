@@ -3,11 +3,27 @@
     <!-- 历史工单头部组件 -->
     <div class="order-header">
       <OrderHeader
-        @search="handleSearch"
-        @clear-search="clearSearch"
-        @create-new-session="$emit('create-new-session')"
         @refresh-orders="handleRefreshOrders"
       />
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="search-box">
+      <div class="search-container">
+        <input
+          type="text"
+          v-model="searchQuery"
+          class="search-input"
+          placeholder="搜索工单..."
+        />
+        <button
+          v-if="searchQuery"
+          class="search-clear-button"
+          @click="clearSearch"
+        >
+          <SvgIcon name="clear" width="14" height="14" />
+        </button>
+      </div>
     </div>
 
     <div class="back-to-current" v-if="!isCurrentChatSelected" @click="handleBackToCurrent">
@@ -221,6 +237,62 @@ export default {
   z-index: 10;
   background-color: #f5f5f5;
   border-bottom: 1px solid #e0e0e0;
+}
+
+/* 搜索框样式 */
+.search-box {
+  padding: 12px 16px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.search-container {
+  width: 100%;
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 40px 10px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  font-size: 14px;
+  outline: none;
+  background-color: white;
+  color: #333;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: #673ab7;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+.search-clear-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.search-clear-button:hover {
+  background-color: #d0d0d0;
+  transform: translateY(-50%) scale(1.1);
 }
 
 /* 确保OrderItemList可以滚动 */
