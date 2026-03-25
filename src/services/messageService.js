@@ -324,6 +324,10 @@ class MessageService {
     console.log('导航到会话:', sessionId)
     // 选择对应的会话
     let order = historyOrders.find(contact => contact.id === sessionId)
+    if (!order) {
+      console.error('找不到对应的会话:', sessionId)
+      return []
+    }
     return this.selectOrder(order)
   }
 

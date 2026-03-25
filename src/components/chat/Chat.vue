@@ -6,6 +6,7 @@
         :userName="userName"
         @create-new-session="createNewSession"
         @navigate-to-session="handleNavigateToSession"
+        @refresh-orders="handleRefreshOrders"
       />
     </div>
 
@@ -110,6 +111,12 @@ export default {
     async handleNavigateToSession(sessionId) {
       // 从父组件获取历史工单列表
       this.$emit('navigate-to-session', sessionId)
+    },
+    /**
+     * 处理刷新历史工单列表
+     */
+    handleRefreshOrders() {
+      this.$emit('refresh-orders')
     },
     /**
      * 回到当前聊天会话

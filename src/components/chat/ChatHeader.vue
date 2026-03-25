@@ -16,13 +16,14 @@
 
       <div class="offline-session-box"  @mouseenter="showMessagePopup = true" @mouseleave="showMessagePopup = false">
           <div class="offline-session-container"  >
-          <span class="offline-session">【离线会话】</span>
+          <SvgIcon name="bell" width="14" height="14" class="bell-icon" />
+          <span class="offline-session">消息通知</span>
           <div class="notification-dot" v-if="hasNotification"></div>
           <!-- 消息弹窗 -->
           <MessagePopup
             v-if="showMessagePopup && messages.length > 0"
             :messages="messages"
-            @click="navigateToSession"
+            @click="handleMessageClick"
           />
           </div>
         </div>
@@ -37,10 +38,12 @@
 <script>
 import socketService from '../../utils/socketService'
 import MessagePopup from '../common/MessagePopup.vue'
+import SvgIcon from '../../assets/svg/SvgIcon.vue'
 
 export default {
   components: {
-    MessagePopup
+    MessagePopup,
+    SvgIcon
   },
   name: 'ChatHeader',
   props: {
@@ -57,6 +60,7 @@ export default {
       default: ''
     }
   },
+  emits: ['create-new-session', 'navigate-to-session', 'refresh-orders'],
   data() {
     return {
       hasNotification: false,
@@ -89,19 +93,44 @@ export default {
         this.recentSessionId = data.sessionId || 1
       }
     },
+    /**
+     * 处理消息点击 - 先刷新历史工单，再导航到会话
+     * @param {number} sessionId - 会话 ID
+     */
+    async handleMessageClick(sessionId) {
+      const targetSessionId = sessionId || this.recentSessionId
+
+      // 先触发刷新历史工单列表
+      this.$emit('refresh-orders')
+
+      // 等待刷新完成后再导航（给刷新操作一些时间）
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      // 触发导航事件，定位到历史工单
+      this.$emit('navigate-to-session', targetSessionId)
+
+      // 点击后隐藏弹窗
+      this.showMessagePopup = false
+
+      // 从消息列表中删除对应的会话记录
+      this.messages = this.messages.filter(msg => msg.sessionId !== targetSessionId)
+
+      // 检查是否还有离线会话数据
+      this.hasNotification = this.messages.length > 0
+    },
     navigateToSession(sessionId) {
       // 点击离线会话或消息项，定位到历史会话列表
       const targetSessionId = sessionId || this.recentSessionId
-      
+
       // 先触发导航事件，定位到历史工单
       this.$emit('navigate-to-session', targetSessionId)
-      
+
       // 点击后隐藏弹窗
       this.showMessagePopup = false
-      
+
       // 从消息列表中删除对应的会话记录
       this.messages = this.messages.filter(msg => msg.sessionId !== targetSessionId)
-      
+
       // 检查是否还有离线会话数据
       this.hasNotification = this.messages.length > 0
     }
@@ -233,10 +262,20 @@ export default {
   color: white;
 }
 
+.bell-icon {
+  color: rgba(255, 255, 255, 0.8);
+  margin-right: 4px;
+  transition: color 0.3s ease;
+}
+
+.offline-session-container:hover .bell-icon {
+  color: white;
+}
+
 .notification-dot {
   position: absolute;
   top: -2px;
-  right: 6px;
+  right: -2px;
   width: 8px;
   height: 8px;
   background-color: #ff4757;

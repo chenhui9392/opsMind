@@ -25,6 +25,7 @@
       :isSending="isSending"
       @navigate-to-session="handleNavigateToSession"
       @update:isSending="isSending = $event"
+      @refresh-orders="handleRefreshOrders"
     />
   </div>
 </template>
@@ -137,6 +138,14 @@ export default {
           this.$refs.contactsComponent.$refs.orderItemList.scrollToTop()
         }
       }, 100)
+    },
+    /**
+     * 刷新历史工单列表
+     */
+    handleRefreshOrders() {
+      if (this.$refs.contactsComponent) {
+        this.$refs.contactsComponent.handleRefreshOrders()
+      }
     },
   },
   mounted() {
