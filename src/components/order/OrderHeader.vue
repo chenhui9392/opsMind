@@ -2,9 +2,20 @@
   <div class="contacts-header">
     <div class="header-top">
       <h2>{{ title }}</h2>
-<!--      <button class="new-session-button" @click="createNewSession">-->
-<!--        + 新建会话-->
-<!--      </button>-->
+      <button 
+        class="refresh-button" 
+        @click="refreshOrders"
+        :class="{ 'refreshing': isRefreshing }"
+        :disabled="isRefreshing"
+        title="刷新工单列表"
+      >
+        <SvgIcon 
+          name="refresh" 
+          width="16" 
+          height="16" 
+          :class="{ 'spinning': isRefreshing }" 
+        />
+      </button>
     </div>
     <div class="search-container">
       <input
@@ -44,7 +55,8 @@ export default {
   },
   data() {
     return {
-      searchQuery: ''
+      searchQuery: '',
+      isRefreshing: false
     }
   },
   methods: {
@@ -54,6 +66,14 @@ export default {
     },
     createNewSession() {
       this.$emit('create-new-session')
+    },
+    refreshOrders() {
+      this.isRefreshing = true
+      this.$emit('refresh-orders')
+      // 模拟刷新完成，实际应该由父组件通过事件回调来重置此状态
+      setTimeout(() => {
+        this.isRefreshing = false
+      }, 1000)
     }
   },
   watch: {
@@ -107,6 +127,50 @@ export default {
   background-color: rgba(255, 255, 255, 0.1);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.refresh-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.refresh-button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.refresh-button:active {
+  transform: scale(0.95);
+}
+
+.refresh-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* 旋转动画 */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
 }
 
 .search-container {

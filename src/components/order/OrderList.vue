@@ -6,6 +6,7 @@
         @search="handleSearch"
         @clear-search="clearSearch"
         @create-new-session="$emit('create-new-session')"
+        @refresh-orders="handleRefreshOrders"
       />
     </div>
 
@@ -145,6 +146,14 @@ export default {
      */
     backToCurrentChat() {
       this.$emit('back-to-current')
+    },
+    /**
+     * 处理刷新工单列表
+     */
+    handleRefreshOrders() {
+      if (this.$refs.orderItemList) {
+        this.$refs.orderItemList.fetchHistoryOrders()
+      }
     }
   }
 }

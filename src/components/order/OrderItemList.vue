@@ -104,7 +104,8 @@ export default {
       currentPage: 1, // 当前页码
       pageSize: 10, // 每页大小
       hasMoreData: true, // 是否有更多数据
-      error: null // 错误信息
+      error: null, // 错误信息
+      scrollListenerAdded: false // 滚动事件监听器是否已添加
     }
   },
   computed: {
@@ -163,12 +164,17 @@ export default {
       if (isLoadMore) {
         this.isLoadingMore = true
       } else {
+        // 刷新时暂时移除滚动事件监听器，防止触发加载更多
+        this.removeScrollListener()
+        
         this.isLoading = true // 开始加载
         this.fetchAttempted = true
         this.currentPage = 1
         this.historyOrders = []
         this.hasMoreData = true
         this.error = null
+        // 刷新时滚动到顶部
+        this.scrollToTop()
       }
 
       try {
@@ -205,6 +211,33 @@ export default {
       } finally {
         this.isLoading = false // 加载完成
         this.isLoadingMore = false
+        
+        // 刷新完成后重新添加滚动事件监听器
+        if (!isLoadMore) {
+          setTimeout(() => {
+            this.addScrollListener()
+          }, 500)
+        }
+      }
+    },
+    /**
+     * 添加滚动事件监听器
+     */
+    addScrollListener() {
+      const contactsList = this.$refs.contactsList
+      if (contactsList && !this.scrollListenerAdded) {
+        contactsList.addEventListener('scroll', this.handleScroll)
+        this.scrollListenerAdded = true
+      }
+    },
+    /**
+     * 移除滚动事件监听器
+     */
+    removeScrollListener() {
+      const contactsList = this.$refs.contactsList
+      if (contactsList && this.scrollListenerAdded) {
+        contactsList.removeEventListener('scroll', this.handleScroll)
+        this.scrollListenerAdded = false
       }
     },
     /**
@@ -247,24 +280,14 @@ export default {
     // 使用nextTick确保DOM已经更新
     this.$nextTick(() => {
       // 添加滚动事件监听器
-      const contactsList = this.$refs.contactsList
-      if (contactsList) {
-        console.log('添加滚动事件监听器')
-        contactsList.addEventListener('scroll', this.handleScroll)
-      } else {
-        console.error('contactsList ref未找到')
-      }
+      this.addScrollListener()
     })
   },
   beforeUnmount() {
     // 使用nextTick确保DOM仍然存在
     this.$nextTick(() => {
       // 移除滚动事件监听器
-      const contactsList = this.$refs.contactsList
-      if (contactsList) {
-        console.log('移除滚动事件监听器')
-        contactsList.removeEventListener('scroll', this.handleScroll)
-      }
+      this.removeScrollListener()
     })
   },
 }

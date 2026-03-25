@@ -1,6 +1,7 @@
 const { ipcMain } = require('electron')
 const os = require('os')
 const floatingBallManager = require('./floatingBallManager')
+const windowManager = require('./windowManager')
 
 class IpcHandler {
   constructor() {
@@ -52,13 +53,13 @@ class IpcHandler {
    * 切换主窗口显示/隐藏状态
    */
   toggleMainWindow() {
-    const { BrowserWindow } = require('electron')
-    if (BrowserWindow.getAllWindows().length > 0) {
-      const mainWindow = BrowserWindow.getAllWindows()[0]
+    const mainWindow = windowManager.getMainWindow()
+    if (mainWindow) {
       if (mainWindow.isVisible()) {
         mainWindow.hide()
       } else {
         mainWindow.show()
+        mainWindow.focus()
       }
     }
   }
