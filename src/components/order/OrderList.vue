@@ -21,6 +21,7 @@
       <OrderItemList
           ref="orderItemList"
         :selectedContact="selectedContact"
+        :searchQuery="searchQuery"
         @select-order="$emit('select-order', $event)"
       />
     </div>

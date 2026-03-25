@@ -37,7 +37,7 @@
           type="file"
           ref="fileInput"
           multiple
-          accept="image/*,.xlsx,.xls"
+          accept="image/*,.xlsx,.xls,.pdf"
           class="file-input"
           @change="handleFileSelect"
         />

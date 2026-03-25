@@ -43,9 +43,11 @@
               v-for="(file, fileIndex) in message.files"
               :key="'file_' + fileIndex"
               class="file-item"
+              @click="downloadFile(file)"
             >
-              <div class="file-icon">📄</div>
+              <div class="file-icon" :class="getFileIconClass(file.name)">{{ getFileIcon(file.name) }}</div>
               <div class="file-name">{{ file.name }}</div>
+              <div class="file-download-icon">⬇</div>
             </div>
           </div>
           <!-- 时间 -->
@@ -196,6 +198,57 @@ export default {
      */
     handleStop() {
       this.$emit('stop')
+    },
+    /**
+     * 下载文件
+     * @param {Object} file - 文件对象
+     */
+    downloadFile(file) {
+      try {
+        if (file.url) {
+          const link = document.createElement('a')
+          link.href = file.url
+          link.download = file.name || 'download'
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+        } else {
+          console.error('文件URL不存在')
+        }
+      } catch (error) {
+        console.error('文件下载失败:', error)
+      }
+    },
+    /**
+     * 根据文件名获取文件图标
+     * @param {string} fileName - 文件名
+     * @returns {string} - 图标
+     */
+    getFileIcon(fileName) {
+      const extension = fileName.toLowerCase().split('.').pop()
+      switch (extension) {
+        case 'pdf':
+          return '📄'
+        case 'xlsx':
+        case 'xls':
+          return '📊'
+        case 'jpg':
+        case 'jpeg':
+        case 'png':
+        case 'gif':
+          return '🖼️'
+        default:
+          return '📄'
+      }
+    },
+    /**
+     * 根据文件名获取文件图标类
+     * @param {string} fileName - 文件名
+     * @returns {string} - 图标类
+     */
+    getFileIconClass(fileName) {
+      const extension = fileName.toLowerCase().split('.').pop()
+      return `file-icon-${extension}`
     }
   },
   watch: {
@@ -374,11 +427,35 @@ export default {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   max-width: 400px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.file-item:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .file-icon {
   font-size: 20px;
   flex-shrink: 0;
+}
+
+.file-icon-pdf {
+  color: #e74c3c;
+}
+
+.file-icon-xlsx,
+.file-icon-xls {
+  color: #27ae60;
+}
+
+.file-icon-jpg,
+.file-icon-jpeg,
+.file-icon-png,
+.file-icon-gif {
+  color: #3498db;
 }
 
 .file-name {
@@ -390,6 +467,18 @@ export default {
   flex: 1;
   min-width: 0;
   max-width: 220px;
+}
+
+.file-download-icon {
+  font-size: 14px;
+  color: #666;
+  flex-shrink: 0;
+  transition: color 0.3s ease;
+}
+
+.file-item:hover .file-download-icon {
+  color: #673ab7;
+  transform: translateY(-1px);
 }
 
 .message-time {

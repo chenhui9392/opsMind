@@ -7,9 +7,9 @@
     </div>
 
     <!-- 历史工单列表 -->
-    <div class="history-orders-section" v-else-if="historyOrders.length > 0">
+    <div class="history-orders-section" v-else-if="filteredOrders.length > 0">
       <div
-        v-for="order in historyOrders"
+        v-for="order in filteredOrders"
         :key="order.id"
         class="contact-item order-item"
         :class="{ active: selectedContact === order.id }"
@@ -28,22 +28,31 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 加载更多状态 -->
-      <div class="loading-more-state" v-if="isLoadingMore">
+      <div class="loading-more-state" v-if="isLoadingMore && !searchQuery">
         <div class="loading-spinner small"></div>
         <div class="loading-text small">加载中...</div>
       </div>
       
       <!-- 已加载全部数据提示 -->
-      <div class="end-state" v-else-if="!hasMoreData && historyOrders.length > 0">
+      <div class="end-state" v-else-if="!hasMoreData && historyOrders.length > 0 && !searchQuery">
         <div class="end-text">已加载全部数据</div>
       </div>
       
       <!-- 错误提示 -->
-      <div class="error-state" v-if="error && historyOrders.length > 0">
+      <div class="error-state" v-if="error && historyOrders.length > 0 && !searchQuery">
         <div class="error-text">{{ error }}</div>
         <button class="retry-button" @click="fetchHistoryOrders(true)">重试</button>
+      </div>
+      
+      <!-- 搜索结果为空提示 -->
+      <div class="empty-state" v-else-if="searchQuery && filteredOrders.length === 0">
+        <div class="empty-icon">
+          <SvgIcon name="search" width="64" height="64" />
+        </div>
+        <div class="empty-text">未找到相关工单</div>
+        <div class="empty-subtext">请尝试其他搜索关键词</div>
       </div>
     </div>
 
@@ -55,7 +64,7 @@
       <div class="empty-text">暂无历史工单</div>
       <div class="empty-subtext">工单数据将在这里展示</div>
     </div>
-    
+
     <!-- 错误提示 -->
     <div class="error-state full" v-else-if="error">
       <div class="error-icon">
@@ -80,6 +89,10 @@ export default {
     selectedContact: {
       type: String,
       default: ''
+    },
+    searchQuery: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -94,20 +107,30 @@ export default {
       error: null // 错误信息
     }
   },
+  computed: {
+    /**
+     * 过滤后的工单列表
+     */
+    filteredOrders() {
+      if (!this.searchQuery) {
+        return this.historyOrders
+      }
+      const query = this.searchQuery.toLowerCase()
+      return this.historyOrders.filter(order => {
+        return (
+          (order.orderTitle && order.orderTitle.toLowerCase().includes(query)) ||
+          (order.userMessage && order.userMessage.toLowerCase().includes(query)) ||
+          (order.orderType && order.orderType.toLowerCase().includes(query))
+        )
+      })
+    }
+  },
   methods: {
     /**
      * 选择工单
      * @param {Object} order - 工单对象
      */
     async selectOrder(order) {
-      // 调用更新工单消息状态接口
-      // try {
-      //   await updateMessageStatus(order.id, 'READ')
-      //   console.log('工单消息状态更新成功:', order.id)
-      // } catch (error) {
-      //   console.error('更新工单消息状态失败:', error)
-      // }
-
       // 触发自定义事件，将工单信息传递给父组件
       this.$emit('select-order', order)
     },
@@ -147,24 +170,24 @@ export default {
         this.hasMoreData = true
         this.error = null
       }
-      
+
       try {
         const response = await getHistoryOrders({
-          page: isLoadMore ? this.currentPage + 1 : 1,
+          pageNo: isLoadMore ? this.currentPage + 1 : 1,
           pageSize: this.pageSize
         })
 
         if (response && response.data) {
           // 尝试多种可能的数据结构
           const newOrders = response.data.records || response.data.list || response.data.data || []
-          
+
           if (isLoadMore) {
             this.historyOrders = [...this.historyOrders, ...newOrders]
             this.currentPage++
           } else {
             this.historyOrders = newOrders
           }
-          
+
           // 判断是否还有更多数据
           this.hasMoreData = newOrders.length === this.pageSize
         } else {
@@ -195,7 +218,10 @@ export default {
       const year = date.getFullYear()
       const month = (date.getMonth() + 1).toString().padStart(2, '0')
       const day = date.getDate().toString().padStart(2, '0')
-      return `${year}-${month}-${day}`
+      const hours = date.getHours().toString().padStart(2, '0')
+      const minutes = date.getMinutes().toString().padStart(2, '0')
+      const seconds = date.getSeconds().toString().padStart(2, '0')
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
     },
     /**
      * 处理滚动事件
@@ -203,12 +229,13 @@ export default {
     handleScroll() {
       const contactsList = this.$refs.contactsList
       if (!contactsList) return
-      
+
       const { scrollTop, scrollHeight, clientHeight } = contactsList
       const distanceToBottom = scrollHeight - scrollTop - clientHeight
-      
+
       // 当距离底部300px且不是正在加载，且有更多数据时，加载更多
       if (distanceToBottom < 300 && !this.isLoadingMore && this.hasMoreData) {
+        console.log('触发加载更多数据')
         this.fetchHistoryOrders(true)
       }
     }
@@ -216,19 +243,29 @@ export default {
   mounted() {
     // 组件挂载时加载历史工单
     this.fetchHistoryOrders()
-    
-    // 添加滚动事件监听器
-    const contactsList = this.$refs.contactsList
-    if (contactsList) {
-      contactsList.addEventListener('scroll', this.handleScroll)
-    }
+
+    // 使用nextTick确保DOM已经更新
+    this.$nextTick(() => {
+      // 添加滚动事件监听器
+      const contactsList = this.$refs.contactsList
+      if (contactsList) {
+        console.log('添加滚动事件监听器')
+        contactsList.addEventListener('scroll', this.handleScroll)
+      } else {
+        console.error('contactsList ref未找到')
+      }
+    })
   },
   beforeUnmount() {
-    // 移除滚动事件监听器
-    const contactsList = this.$refs.contactsList
-    if (contactsList) {
-      contactsList.removeEventListener('scroll', this.handleScroll)
-    }
+    // 使用nextTick确保DOM仍然存在
+    this.$nextTick(() => {
+      // 移除滚动事件监听器
+      const contactsList = this.$refs.contactsList
+      if (contactsList) {
+        console.log('移除滚动事件监听器')
+        contactsList.removeEventListener('scroll', this.handleScroll)
+      }
+    })
   },
 }
 </script>
@@ -237,6 +274,8 @@ export default {
 .contacts-list {
   padding: 8px 0;
   height: 100%;
+  overflow-y: auto;
+  position: relative;
 }
 
 .loading-state {

@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description:
  * @Date: 2026-03-18 08:38:24
- * @LastEditTime: 2026-03-23 15:42:36
+ * @LastEditTime: 2026-03-25 09:21:34
  * @LastEditors: hui.chenn
  */
 import { upload, post, get } from '../utils/request'
@@ -89,8 +89,6 @@ export const getHistoryOrders = async (params = {}) => {
     const userName = await getSystemUsername()
     // 默认请求参数
     const defaultParams = {
-      current: 1,
-      size: 20,
       ...params,
       userName: userName
     }
