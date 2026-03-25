@@ -18,10 +18,10 @@
         <div class="contact-content">
           <div class="contact-info">
             <div class="order-name">{{ order.orderTitle }}</div>
-            <div class="order-type" v-if="order.orderType">{{ order.orderType }}</div>
+            <div class="order-type" v-if="order.orderType">{{ orderTypeText(order.orderType) }}</div>
           </div>
-          <div class="order-user-message">
-            {{ order.userMessage }}
+          <div class="order-user-message" v-if="order.systemName && order.moduleName">
+            {{ order.systemName }} <span v-if="order.moduleName">-</span> {{order.moduleName}}
           </div>
           <div class="order-time">
             {{ formatDate(order.createTime) }}
@@ -34,18 +34,18 @@
         <div class="loading-spinner small"></div>
         <div class="loading-text small">加载中...</div>
       </div>
-      
+
       <!-- 已加载全部数据提示 -->
       <div class="end-state" v-else-if="!hasMoreData && historyOrders.length > 0 && !searchQuery">
         <div class="end-text">已加载全部数据</div>
       </div>
-      
+
       <!-- 错误提示 -->
       <div class="error-state" v-if="error && historyOrders.length > 0 && !searchQuery">
         <div class="error-text">{{ error }}</div>
         <button class="retry-button" @click="fetchHistoryOrders(true)">重试</button>
       </div>
-      
+
       <!-- 搜索结果为空提示 -->
       <div class="empty-state" v-else-if="searchQuery && filteredOrders.length === 0">
         <div class="empty-icon">
@@ -80,6 +80,12 @@
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { getHistoryOrders } from '../../api/index'
 
+const ORDER_TYPE_MAP = {
+  CONSULTATION: '咨询',
+  REQUIREMENT: '需求',
+  BUG: 'BUG',
+  DATA_CHANGE: '数据变更',
+}
 export default {
   name: 'OrderItemList',
   components: {
@@ -166,7 +172,7 @@ export default {
       } else {
         // 刷新时暂时移除滚动事件监听器，防止触发加载更多
         this.removeScrollListener()
-        
+
         this.isLoading = true // 开始加载
         this.fetchAttempted = true
         this.currentPage = 1
@@ -211,7 +217,7 @@ export default {
       } finally {
         this.isLoading = false // 加载完成
         this.isLoadingMore = false
-        
+
         // 刷新完成后重新添加滚动事件监听器
         if (!isLoadMore) {
           setTimeout(() => {
@@ -255,6 +261,9 @@ export default {
       const minutes = date.getMinutes().toString().padStart(2, '0')
       const seconds = date.getSeconds().toString().padStart(2, '0')
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    },
+    orderTypeText(orderType) {
+      return ORDER_TYPE_MAP[orderType] || ''
     },
     /**
      * 处理滚动事件
@@ -373,7 +382,11 @@ export default {
   color: #333;
   font-size: 15px;
   flex: 1;
+  white-space: nowrap; /* 防止文本换行 */
+  overflow: hidden; /* 隐藏溢出的内容 */
+  text-overflow: ellipsis; /* 溢出内容显示为省略号 */
 }
+
 
 .order-type {
   font-size: 12px;
@@ -385,7 +398,7 @@ export default {
 }
 
 .order-user-message {
-  font-size: 13px;
+  font-size: 12px;
   color: #666;
   margin-top: 6px;
   overflow: hidden;
