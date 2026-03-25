@@ -5,12 +5,11 @@
       <OrderList
         ref="contactsComponent"
         :contacts="contacts"
-        :selectedContact="selectedContact"
+        v-model:selectedContact="selectedContact"
         :currentChatSession="currentChatSession"
-        @select="selectContact"
-        @select-order="selectOrder"
+        v-model:showInput="showInput"
+        v-model:messages="messages"
         @back-to-current="backToCurrentChat"
-        @create-new-session="createNewSession"
       />
       <div class="resize-handle" @mousedown="startResizing"></div>
     </div>
@@ -18,11 +17,11 @@
     <!-- 右侧聊天区域 -->
     <Chat
       ref="chatComponent"
-      :messages="messages"
-      :showInput="showInput"
+      v-model:messages="messages"
+      v-model:showInput="showInput"
+      v-model:selectedContact="selectedContact"
+      v-model:currentChatSession="currentChatSession"
       :isSending="isLoading"
-      @send="handleSendMessage"
-      @stop="handleStopSending"
       @navigate-to-session="handleNavigateToSession"
     />
   </div>
@@ -56,92 +55,6 @@ export default {
   },
   methods: {
     /**
-     * 选择联系人
-     * @param {string} contactId - 联系人ID
-     */
-    selectContact(contactId) {
-      this.selectedContact = contactId
-      this.showInput = false // 点击历史会话时不显示输入框
-      // 从消息服务获取消息
-      this.messages = messageService.selectContact(contactId, this.contacts)
-    },
-
-    /**
-     * 选择工单
-     * @param {Object} order - 工单对象
-     */
-    async selectOrder(order) {
-      this.selectedContact = order.id
-      this.showInput = false
-      // 从消息服务获取工单消息
-      this.messages = await messageService.selectOrder(order)
-    },
-    /**
-     * 处理发送消息
-     * @param {Object} data - 消息数据
-     */
-    async handleSendMessage(data) {
-      const { text, images, files } = data
-
-      if (!text && images.length === 0 && files.length === 0) return
-
-      // 添加用户消息
-      const message = {
-        sender: 'user',
-        text: text,
-        time: new Date().toLocaleString('zh-CN'),
-        images: images,
-        files: files
-      }
-      this.messages.push(message)
-
-      // 添加加载状态消息
-      this.isLoading = true
-      const loadingMessage = {
-        sender: 'bot',
-        text: '正在尝试思考您的问题...',
-        time: new Date().toLocaleString('zh-CN'),
-        images: [],
-        isLoading: true
-      }
-      this.messages.push(loadingMessage)
-      this.loadingMessageId = this.messages.length - 1
-
-      // 滚动会话列表到底部
-      this.scrollContactsToBottom()
-
-      try {
-        // 发送消息到服务器
-        const responseMessage = await messageService.handleSendMessage(data)
-
-        // 替换加载状态消息
-        if (this.isLoading && this.loadingMessageId !== null) {
-          this.messages.splice(this.loadingMessageId, 1, responseMessage)
-          this.isLoading = false
-          this.loadingMessageId = null
-        }
-      } catch (error) {
-        console.error('发送消息失败:', error)
-        // 错误处理：移除加载消息
-        if (this.isLoading && this.loadingMessageId !== null) {
-          this.messages.splice(this.loadingMessageId, 1)
-          this.isLoading = false
-          this.loadingMessageId = null
-        }
-      }
-
-    },
-    /**
-     * 回到当前聊天会话
-     */
-    backToCurrentChat() {
-      const result = messageService.backToCurrentChat(initialMessages)
-      this.messages = result.messages
-      this.selectedContact = result.selectedContact
-      this.showInput = result.showInput
-      this.currentChatSession = result.selectedContact
-    },
-    /**
      * 开始调整宽度
      * @param {Event} event - 鼠标事件
      */
@@ -170,69 +83,45 @@ export default {
       document.removeEventListener('mouseup', this.stopResizing)
     },
     /**
-     * 滚动会话列表到底部
+     * 回到当前聊天会话
      */
-    scrollContactsToBottom() {
-      const chatComponent = this.$refs.chatComponent
-      if (chatComponent && chatComponent.scrollToBottom) {
-        chatComponent.scrollToBottom()
-      }
-    },
-    /**
-     * 创建新会话
-     */
-    createNewSession() {
-      const result = messageService.createNewSession()
+    backToCurrentChat() {
+      console.log('开始回到当前聊天')
+      // 调用 messageService 的 backToCurrentChat 方法从缓存获取数据
+      const result = messageService.backToCurrentChat(initialMessages)
+
+      // 更新状态
       this.messages = result.messages
       this.selectedContact = result.selectedContact
       this.showInput = result.showInput
-      this.currentChatSession = result.selectedContact
-    },
 
-    /**
-     * 处理停止发送消息
-     */
-    handleStopSending() {
-      // 调用消息服务处理停止发送
-      messageService.handleStopSending()
-
-      // 设置加载状态为false
-      this.isLoading = false
-
-      // 移除加载消息
-      if (this.loadingMessageId !== null) {
-        this.messages.splice(this.loadingMessageId, 1)
-        this.loadingMessageId = null
-      }
-
-      console.log('发送消息已中断')
-    },
-    /**
-     * 更新工单
-     * @param {Object} id - 工单id
-     */
-    updateOrder(id) {
-      // 调用更新工单消息状态接口
-      try {
-        updateMessageStatus(id, 'READ')
-        console.log('工单消息状态更新成功:', id)
-      } catch (error) {
-        console.error('更新工单消息状态失败:', error)
-      }
+      console.log('已从缓存恢复会话数据:', result.selectedContact)
     },
     /**
      * 处理导航到会话
      * @param {number} sessionId - 会话 ID
      */
     async handleNavigateToSession(sessionId) {
-      // 从Contacts组件获取历史工单列表
+      // 保存当前会话的消息到缓存
+      // if (this.currentChatSession !== null) {
+      //   messageService.saveMessages(this.currentChatSession, this.messages)
+      //   console.log('导航前保存当前会话消息到缓存:', this.currentChatSession)
+      // }
+
+      // 从 Contacts 组件获取历史工单列表
       const historyOrders = this.$refs.contactsComponent.$refs.orderItemList.historyOrders
       // 调用消息服务处理导航
-      this.messages = await messageService.handleNavigateToSession(sessionId, historyOrders)
+      const messages = await messageService.handleNavigateToSession(sessionId, historyOrders)
+      // 更新状态
+      this.messages = messages
       this.selectedContact = sessionId
       this.showInput = false
-      this.updateOrder(sessionId)
-      
+
+      // 调用 OrderList 组件的 updateOrder 方法
+      if (this.$refs.contactsComponent && this.$refs.contactsComponent.updateOrder) {
+        this.$refs.contactsComponent.updateOrder(sessionId)
+      }
+
       // 导航到历史工单列表时滚动到顶部
       setTimeout(() => {
         if (this.$refs.contactsComponent && this.$refs.contactsComponent.$refs.orderItemList) {

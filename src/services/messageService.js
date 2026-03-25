@@ -7,7 +7,7 @@ import { createMessage, createMessageObject, convertHistoryToMessages } from '..
 class MessageService {
   constructor() {
     this.messageStore = {} // 存储每个会话的消息
-    this.currentChatSession = null // 当前正在进行的聊天会话
+    this.currentChatSession = 0 // 当前正在进行的聊天会话
     this.isNewSession = false // 标记是否为新会话
   }
 
@@ -22,53 +22,13 @@ class MessageService {
   }
 
   /**
-   * 选择联系人
-   * @param {string} contactId - 联系人ID
-   * @param {Array} contacts - 联系人列表
-   * @returns {Array} - 消息列表
-   */
-  selectContact(contactId, contacts) {
-    // 保存当前会话的消息
-    if (this.currentChatSession) {
-      this.messageStore[this.currentChatSession] = this.messages
-    }
-
-    this.currentChatSession = null // 点击历史会话时，清除当前聊天会话状态
-    this.isNewSession = false // 选择历史会话不是新会话
-
-    // 加载对应会话的消息，如果没有则使用默认消息
-    if (this.messageStore[contactId]) {
-      return [...this.messageStore[contactId]]
-    } else {
-      // 模拟加载历史会话消息
-      const messages = [
-        {
-          sender: 'bot',
-          text: `您好！欢迎咨询关于"${contacts.find(c => c.id === contactId)?.name}"的问题。`,
-          time: new Date().toLocaleString('zh-CN'),
-          images: []
-        }
-      ]
-      // 保存到消息存储
-      this.messageStore[contactId] = [...messages]
-      return messages
-    }
-  }
-
-  /**
    * 选择工单
    * @param {Object} order - 工单对象
    * @returns {Promise<Array>} - 消息列表
    */
   async selectOrder(order) {
     console.log('选择工单:', order)
-
-    // 保存当前会话的消息
-    if (this.currentChatSession) {
-      this.messageStore[this.currentChatSession] = this.messages
-    }
-
-    this.currentChatSession = null
+    this.currentChatSession = 0
     this.isNewSession = false
 
     // 获取工单详情
@@ -79,6 +39,7 @@ class MessageService {
         const messages = convertHistoryToMessages(response)
         // 保存到消息存储
         this.messageStore[order.id] = [...messages]
+        console.log('已从 API 获取并保存会话消息到缓存:', order.id)
         return messages
       } else {
         // 如果获取失败，显示默认消息
@@ -206,6 +167,9 @@ class MessageService {
         return createMessageObject('正在处理软件下载请求...')
       }
 
+      // 创建响应消息并添加到聊天
+      // const responseMessage = createMessageObject(content)
+      // this.saveMessages(this.currentChatSession, responseMessage)
       // 创建响应消息
       return createMessageObject(content)
     } else {
@@ -257,7 +221,12 @@ class MessageService {
    * @returns {Object} - 包含消息和会话信息的对象
    */
   backToCurrentChat(initialMessages) {
-    if (this.currentChatSession) {
+    console.log('回到当前聊天，currentChatSession:', this.currentChatSession)
+    console.log('回到当前聊天，currentChatSession2:', this.messageStore)
+    if (this.messageStore[this.currentChatSession]) {
+      console.log('回到当前聊天，currentChatSession3=============',this.messageStore[this.currentChatSession])
+      // 从缓存中获取当前会话的消息
+      console.log('从缓存中恢复当前会话消息:', this.messageStore[this.currentChatSession])
       return {
         messages: [...this.messageStore[this.currentChatSession]],
         selectedContact: this.currentChatSession,
@@ -265,16 +234,20 @@ class MessageService {
         isNewSession: false
       }
     } else {
-      // 如果没有当前聊天会话，创建一个新的
-      this.currentChatSession = 0 // 使用0作为当前聊天会话的ID
-      this.messageStore[0] = initialMessages
-      this.isNewSession = true
-      
+      // 如果没有当前聊天会话，使用默认会话 (ID 为 0)
+      if (!this.messageStore[0]) {
+        this.messageStore[0] = initialMessages
+        this.isNewSession = true
+      }
+
+      this.currentChatSession = 0
+      console.log('使用默认会话:', this.currentChatSession)
+
       return {
-        messages: initialMessages,
+        messages: this.messageStore[0],
         selectedContact: 0,
         showInput: true,
-        isNewSession: true
+        isNewSession: this.isNewSession
       }
     }
   }
@@ -284,12 +257,12 @@ class MessageService {
    * @returns {Object} - 包含消息和会话信息的对象
    */
   createNewSession() {
-    // 保存当前会话的消息
-    if (this.currentChatSession) {
-      this.messageStore[this.currentChatSession] = this.messages
+    // 保存当前会话的消息到缓存
+    if (this.currentChatSession !== null && this.messageStore[this.currentChatSession]) {
+      console.log('已保存当前会话消息到缓存:', this.currentChatSession)
     }
 
-    // 生成新的会话ID
+    // 生成新的会话 ID
     const newSessionId = Date.now()
 
     // 更新当前会话
@@ -308,6 +281,7 @@ class MessageService {
 
     // 保存到消息存储
     this.messageStore[newSessionId] = [...messages]
+    console.log('创建新会话并保存到缓存:', newSessionId)
 
     return {
       messages,

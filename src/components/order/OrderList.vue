@@ -22,7 +22,7 @@
           ref="orderItemList"
         :selectedContact="selectedContact"
         :searchQuery="searchQuery"
-        @select-order="$emit('select-order', $event)"
+        @select-order="selectOrder"
       />
     </div>
   </div>
@@ -32,6 +32,8 @@
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import OrderHeader from './OrderHeader.vue'
 import OrderItemList from './OrderItemList.vue'
+import messageService from '../../services/messageService'
+import { updateMessageStatus } from '../../api/index'
 
 export default {
   name: 'OrderList',
@@ -77,6 +79,39 @@ export default {
      */
     handleSearch(query) {
       this.searchQuery = query
+    },
+    /**
+     * 选择工单
+     * @param {Object} order - 工单对象
+     */
+    async selectOrder(order) {
+      console.log('OrderList: 选择工单', order)
+      // 从消息服务获取工单消息（会自动保存到缓存）
+      const messages = await messageService.selectOrder(order)
+      // 通知父组件更新
+      this.$emit('update:selectedContact', order.id)
+      this.$emit('update:showInput', false)
+      this.$emit('update:messages', messages)
+      console.log('OrderList: 已从缓存获取工单消息', order.id)
+    },
+    /**
+     * 更新工单
+     * @param {Object} id - 工单id
+     */
+    updateOrder(id) {
+      // 调用更新工单消息状态接口
+      try {
+        updateMessageStatus(id, 'READ')
+        console.log('工单消息状态更新成功:', id)
+      } catch (error) {
+        console.error('更新工单消息状态失败:', error)
+      }
+    },
+    /**
+     * 回到当前聊天会话
+     */
+    backToCurrentChat() {
+      this.$emit('back-to-current')
     }
   }
 }

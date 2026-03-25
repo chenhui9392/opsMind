@@ -80,6 +80,7 @@ import ChatInput from './ChatInput.vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import ImagePreview from '../common/ImagePreview.vue'
 import { marked } from 'marked'
+import messageService from '../../services/messageService'
 
 // 配置 marked 选项
 marked.setOptions({
@@ -115,7 +116,9 @@ export default {
         show: false,
         images: [],
         currentIndex: 0
-      }
+      },
+      isLoading: false, // 发送消息加载状态
+      loadingMessageId: null // 加载消息的ID
     }
   },
   methods: {
@@ -123,8 +126,66 @@ export default {
      * 处理发送消息
      * @param {Object} data - 消息数据
      */
-    handleSend(data) {
-      this.$emit('send', data)
+    async handleSend(data) {
+      const { text, images, files } = data
+
+      if (!text && images.length === 0 && files.length === 0) return
+
+      // 添加用户消息
+      const message = {
+        sender: 'user',
+        text: text,
+        time: new Date().toLocaleString('zh-CN'),
+        images: images,
+        files: files
+      }
+      let updatedMessages = [...this.messages, message]
+
+      // 添加加载状态消息
+      this.isLoading = true
+      const loadingMessage = {
+        sender: 'bot',
+        text: '正在尝试思考您的问题...',
+        time: new Date().toLocaleString('zh-CN'),
+        images: [],
+        isLoading: true
+      }
+      updatedMessages.push(loadingMessage)
+      const loadingMessageId = updatedMessages.length - 1
+
+      // 立即通知父组件更新消息，实现即时显示
+      this.$emit('update:messages', updatedMessages)
+      messageService.saveMessages(0, updatedMessages)
+
+      // 滚动会话列表到底部
+      this.scrollToBottom()
+
+      try {
+        // 发送消息到服务器
+        const responseMessage = await messageService.handleSendMessage(data)
+
+        // 替换加载状态消息
+        if (this.isLoading && loadingMessageId !== null) {
+          updatedMessages = [...this.messages]
+          updatedMessages.splice(loadingMessageId, 1, responseMessage)
+          this.isLoading = false
+        }
+
+        // 通知父组件更新消息
+        this.$emit('update:messages', updatedMessages)
+      } catch (error) {
+        console.error('发送消息失败:', error)
+        // 错误处理：移除加载消息
+        if (this.isLoading && loadingMessageId !== null) {
+          updatedMessages = [...this.messages]
+          updatedMessages.splice(loadingMessageId, 1)
+          this.isLoading = false
+        }
+
+        // 通知父组件更新消息
+        this.$emit('update:messages', updatedMessages)
+      }
+      messageService.saveMessages(0, updatedMessages)
     },
     /**
      * 打开图片预览

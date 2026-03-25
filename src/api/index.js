@@ -40,7 +40,8 @@ export const uploadImage = async (file) => {
  */
 export const sendChatMessage = async (params) => {
   console.log('sendChatMessage called with params:', params)
-  const userName = await getSystemUsername()
+  // const userName = await getSystemUsername()
+  const userName = 'hui.chenn'
 
   // 创建新的 AbortController
   chatAbortController = new AbortController()
