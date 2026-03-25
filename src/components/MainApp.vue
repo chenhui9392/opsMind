@@ -9,6 +9,7 @@
         :currentChatSession="currentChatSession"
         v-model:showInput="showInput"
         v-model:messages="messages"
+        :isSending="isSending"
         @back-to-current="backToCurrentChat"
       />
       <div class="resize-handle" @mousedown="startResizing"></div>
@@ -21,8 +22,9 @@
       v-model:showInput="showInput"
       v-model:selectedContact="selectedContact"
       v-model:currentChatSession="currentChatSession"
-      :isSending="isLoading"
+      :isSending="isSending"
       @navigate-to-session="handleNavigateToSession"
+      @update:isSending="isSending = $event"
     />
   </div>
 </template>
@@ -50,7 +52,8 @@ export default {
       contactsWidth: 300, // 初始宽度
       isResizing: false,
       isLoading: false, // 发送消息加载状态
-      loadingMessageId: null // 加载消息的ID
+      loadingMessageId: null, // 加载消息的 ID
+      isSending: false // 全局发送中状态
     }
   },
   methods: {
@@ -86,6 +89,12 @@ export default {
      * 回到当前聊天会话
      */
     backToCurrentChat() {
+      // 如果正在发送消息，不允许切换会话
+      if (this.isSending) {
+        console.log('正在发送消息中，无法切换会话')
+        return
+      }
+
       console.log('开始回到当前聊天')
       // 调用 messageService 的 backToCurrentChat 方法从缓存获取数据
       const result = messageService.backToCurrentChat(initialMessages)
@@ -102,11 +111,11 @@ export default {
      * @param {number} sessionId - 会话 ID
      */
     async handleNavigateToSession(sessionId) {
-      // 保存当前会话的消息到缓存
-      // if (this.currentChatSession !== null) {
-      //   messageService.saveMessages(this.currentChatSession, this.messages)
-      //   console.log('导航前保存当前会话消息到缓存:', this.currentChatSession)
-      // }
+      // 如果正在发送消息，不允许切换会话
+      if (this.isSending) {
+        console.log('正在发送消息中，无法切换会话')
+        return
+      }
 
       // 从 Contacts 组件获取历史工单列表
       const historyOrders = this.$refs.contactsComponent.$refs.orderItemList.historyOrders

@@ -162,20 +162,32 @@ class MessageService {
       // 如果是安装类型消息，调用下载接口并显示响应
       if (isInstallType && installId) {
         // 调用下载接口
-        this.handleDownloadSoftware(installId)
+        const message = this.handleDownloadSoftware(installId)
         // 返回一个提示消息，而不是null
-        return createMessageObject('正在处理软件下载请求...')
+        // const message = createMessageObject('正在处理软件下载请求...')
+        // 确保提示消息被添加到当前会话
+        if (this.messageStore[this.currentChatSession]) {
+          this.messageStore[this.currentChatSession].push(message)
+        }
+        return message
       }
 
-      // 创建响应消息并添加到聊天
-      // const responseMessage = createMessageObject(content)
-      // this.saveMessages(this.currentChatSession, responseMessage)
       // 创建响应消息
-      return createMessageObject(content)
+      const responseMessage = createMessageObject(content)
+      // 确保消息被添加到当前会话
+      if (this.messageStore[this.currentChatSession]) {
+        this.messageStore[this.currentChatSession].push(responseMessage)
+      }
+      return responseMessage
     } else {
       // 响应格式不正确
       console.error('Invalid response format:', response)
-      return this.receiveErrorMessage(response?.message || '服务器响应格式不正确')
+      const errorMessage = this.receiveErrorMessage(response?.message || '服务器响应格式不正确')
+      // 确保错误消息被添加到当前会话
+      if (this.messageStore[this.currentChatSession]) {
+        this.messageStore[this.currentChatSession].push(errorMessage)
+      }
+      return errorMessage
     }
   }
 
@@ -197,13 +209,24 @@ class MessageService {
     try {
       const response = await downloadSoftware(id)
       console.log('Download API response:', response)
-
-      // 创建响应消息
-      return createMessageObject(JSON.stringify(response, null, 2))
+      // 创建响应消息，只显示message字段
+      const messageText = response.message || '下载软件操作已执行'
+      const message = createMessageObject(messageText)
+      // 确保消息被添加到当前会话
+      if (this.messageStore[this.currentChatSession]) {
+        this.messageStore[this.currentChatSession].push(message)
+      }
+      console.log('Download API response message:', message)
+      return message
     } catch (error) {
       console.error('下载软件失败:', error)
       // 显示错误消息
-      return this.receiveErrorMessage(`下载软件失败: ${error.message}`)
+      const errorMessage = this.receiveErrorMessage(`下载软件失败: ${error.message}`)
+      // 确保错误消息被添加到当前会话
+      if (this.messageStore[this.currentChatSession]) {
+        this.messageStore[this.currentChatSession].push(errorMessage)
+      }
+      return errorMessage
     }
   }
 

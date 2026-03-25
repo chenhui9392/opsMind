@@ -71,6 +71,12 @@ export default {
      * 处理新建会话
      */
     createNewSession() {
+      // 如果正在发送消息，不允许创建新会话
+      if (this.isSending) {
+        console.log('正在发送消息中，无法创建新会话')
+        return
+      }
+    
       const result = messageService.createNewSession()
       this.$emit('update:messages', result.messages)
       this.$emit('update:selectedContact', result.selectedContact)

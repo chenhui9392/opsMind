@@ -61,7 +61,7 @@
       v-if="showInput"
       @send="handleSend"
       @stop="handleStop"
-      :isSending="isSending"
+      :isSending="isSendingLocal"
     />
 
     <!-- 图片预览模态框 -->
@@ -118,7 +118,8 @@ export default {
         currentIndex: 0
       },
       isLoading: false, // 发送消息加载状态
-      loadingMessageId: null // 加载消息的ID
+      loadingMessageId: null, // 加载消息的ID
+      isSendingLocal: false // 本地发送状态
     }
   },
   methods: {
@@ -131,6 +132,10 @@ export default {
 
       if (!text && images.length === 0 && files.length === 0) return
 
+      // 设置发送状态为 true
+      this.isSendingLocal = true
+      this.$emit('update:isSending', true)
+
       // 添加用户消息
       const message = {
         sender: 'user',
@@ -142,7 +147,6 @@ export default {
       let updatedMessages = [...this.messages, message]
 
       // 添加加载状态消息
-      this.isLoading = true
       const loadingMessage = {
         sender: 'bot',
         text: '正在尝试思考您的问题...',
@@ -165,25 +169,23 @@ export default {
         const responseMessage = await messageService.handleSendMessage(data)
 
         // 替换加载状态消息
-        if (this.isLoading && loadingMessageId !== null) {
-          updatedMessages = [...this.messages]
-          updatedMessages.splice(loadingMessageId, 1, responseMessage)
-          this.isLoading = false
-        }
+        updatedMessages = [...this.messages]
+        updatedMessages.splice(loadingMessageId, 1, responseMessage)
 
         // 通知父组件更新消息
         this.$emit('update:messages', updatedMessages)
       } catch (error) {
         console.error('发送消息失败:', error)
         // 错误处理：移除加载消息
-        if (this.isLoading && loadingMessageId !== null) {
-          updatedMessages = [...this.messages]
-          updatedMessages.splice(loadingMessageId, 1)
-          this.isLoading = false
-        }
+        updatedMessages = [...this.messages]
+        updatedMessages.splice(loadingMessageId, 1)
 
         // 通知父组件更新消息
         this.$emit('update:messages', updatedMessages)
+      } finally {
+        // 无论成功失败，都设置发送状态为 false
+        this.isSendingLocal = false
+        this.$emit('update:isSending', false)
       }
       messageService.saveMessages(0, updatedMessages)
     },
@@ -258,6 +260,9 @@ export default {
      * 处理中断请求
      */
     handleStop() {
+      // 中断发送时设置发送状态为 false
+      this.isSendingLocal = false
+      this.$emit('update:isSending', false)
       this.$emit('stop')
     },
     /**

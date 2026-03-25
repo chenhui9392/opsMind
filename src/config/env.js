@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description:
  * @Date: 2026-03-20 15:19:16
- * @LastEditTime: 2026-03-24 23:46:46
+ * @LastEditTime: 2026-03-25 14:05:16
  * @LastEditors: hui.chenn
  */
 // 环境配置
@@ -16,4 +16,5 @@ export const API_BASE_URL = isDev ? 'https://css-test.tineco.com' : 'https://css
 export const CHAT_API_BASE_URL = isDev ? 'https://cloud-test.tineco.com' : 'https://cloud.tineco.com'
 
 // WebSocket 服务器地址
-export const WS_BASE_URL = 'ws://10.100.60.55:8084/omp/ws-native'
+// export const WS_BASE_URL = 'ws://10.100.60.55:8084/omp/ws-native'
+export const WS_BASE_URL = `ws://cloud-test.tineco.com/omp/ws-native`

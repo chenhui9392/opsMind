@@ -41,11 +41,11 @@
           class="file-input"
           @change="handleFileSelect"
         />
-        <button class="upload-button" @click="$refs.fileInput.click()" :disabled="isUploading" title="上传">
+        <button class="upload-button" @click="$refs.fileInput.click()" :disabled="isUploading || isSending" title="上传">
           <SvgIcon name="upload" width="20" height="20" />
           <span class="button-text">上传</span>
         </button>
-        <button v-if="!isSending" class="send-button" @click="sendMessage" :disabled="isUploading" title="发送">
+        <button v-if="!isSending" class="send-button" @click="sendMessage" :disabled="isUploading || isSending" title="发送">
           <SvgIcon name="send" width="18" height="18" color="white" />
           <span class="button-text">发送</span>
         </button>
@@ -86,11 +86,6 @@ export default {
   mounted() {
     // 初始化textarea高度
     this.autoResize()
-  },
-  computed: {
-    charCount() {
-      return this.inputMessage.length
-    }
   },
   methods: {
     /**

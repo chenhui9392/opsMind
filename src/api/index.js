@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description:
  * @Date: 2026-03-18 08:38:24
- * @LastEditTime: 2026-03-25 09:21:34
+ * @LastEditTime: 2026-03-25 14:20:55
  * @LastEditors: hui.chenn
  */
 import { upload, post, get } from '../utils/request'
@@ -40,8 +40,8 @@ export const uploadImage = async (file) => {
  */
 export const sendChatMessage = async (params) => {
   console.log('sendChatMessage called with params:', params)
-  // const userName = await getSystemUsername()
-  const userName = 'hui.chenn'
+  const userName = await getSystemUsername()
+  // const userName = 'hui.chenn'
 
   // 创建新的 AbortController
   chatAbortController = new AbortController()
@@ -75,7 +75,7 @@ export const abortChatRequest = () => {
  * @returns {Promise<Object>} - 返回响应数据
  */
 export const downloadSoftware = async (id) => {
-  const downloadUrl = `${CHAT_API_BASE_URL}/api/software/download/${id}`
+  const downloadUrl = `http://10.108.112.202:8080/api/software/download/${id}`
   // 发送 POST 请求
   return await post(downloadUrl, {})
 }
