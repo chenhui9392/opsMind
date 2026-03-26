@@ -264,7 +264,7 @@ export default {
       let messageText = this.inputMessage
 
       // 新会话时将系统和模块信息拼在消息前面
-      if (this.isNewSession && this.selectedSystem && this.selectedModule) {
+      if (this.selectedSystem && this.selectedModule) {
         const system = this.systemList.find(s => s.code === this.selectedSystem)
         const module = this.moduleList.find(m => m.code === this.selectedModule)
         const systemName = system ? system.name : ''

@@ -9,6 +9,7 @@ class MessageService {
     this.messageStore = {} // 存储每个会话的消息
     this.sessionConfigStore = {} // 存储每个会话的配置（系统、模块等）
     this.currentChatSession = 0 // 当前正在进行的聊天会话
+    this.activeChatSession = 0 // 当前活跃的聊天会话（用于回到当前聊天）
     this.isNewSession = false // 标记是否为新会话
     this.currentConversationId = null // 当前会话的conversationId
     this.currentSystemName = '' // 当前选择的系统名称
@@ -284,19 +285,25 @@ class MessageService {
    * @returns {Object} - 包含消息和会话信息的对象
    */
   backToCurrentChat(initialMessages) {
-    if (this.messageStore[this.currentChatSession]) {
-      console.info('111111111:',this.messageStore[this.currentChatSession].length === 1)
+    // 使用 activeChatSession 而不是 currentChatSession，因为后者在查看历史工单时会被改变
+    const targetSessionId = this.activeChatSession
+    console.log('回到当前聊天，targetSessionId:', targetSessionId)
+
+    if (this.messageStore[targetSessionId]) {
+      console.info('111111111:',this.messageStore[targetSessionId].length === 1)
       // 从缓存中获取当前会话的消息
-      this.isNewSession = this.messageStore[this.currentChatSession].length === 1
+      this.isNewSession = this.messageStore[targetSessionId].length === 1
+      // 恢复当前会话ID
+      this.currentChatSession = targetSessionId
       // 恢复会话配置（系统、模块等）
-      const config = this.sessionConfigStore[this.currentChatSession] || {}
+      const config = this.sessionConfigStore[targetSessionId] || {}
       this.currentSystemName = config.systemName || ''
       this.currentModuleName = config.moduleName || ''
       return {
-        messages: [...this.messageStore[this.currentChatSession]],
-        selectedContact: this.currentChatSession,
+        messages: [...this.messageStore[targetSessionId]],
+        selectedContact: targetSessionId,
         showInput: true,
-        isNewSession: this.messageStore[this.currentChatSession].length === 1,
+        isNewSession: this.messageStore[targetSessionId].length === 1,
         systemName: this.currentSystemName,
         moduleName: this.currentModuleName
       }
@@ -308,6 +315,7 @@ class MessageService {
       }
 
       this.currentChatSession = 0
+      this.activeChatSession = 0
       console.log('使用默认会话:', this.currentChatSession)
 
       return {
@@ -334,6 +342,7 @@ class MessageService {
 
     // 更新当前会话
     this.currentChatSession = newSessionId
+    this.activeChatSession = newSessionId // 更新活跃聊天会话
     this.isNewSession = true
     this.currentConversationId = null // 新会话清空conversationId
 
