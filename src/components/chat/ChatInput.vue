@@ -261,16 +261,16 @@ export default {
       if (!this.inputMessage && this.uploadedImages.length === 0 && this.uploadedFiles.length === 0) return
 
       // 构建消息文本
-      let messageText = this.inputMessage
+      // let messageText = this.inputMessage
 
       // 新会话时将系统和模块信息拼在消息前面
-      if (this.selectedSystem && this.selectedModule) {
-        const system = this.systemList.find(s => s.code === this.selectedSystem)
-        const module = this.moduleList.find(m => m.code === this.selectedModule)
-        const systemName = system ? system.name : ''
-        const moduleName = module ? module.name : ''
-        messageText = `${systemName}-${moduleName} ${this.inputMessage}`
-      }
+      // if (this.selectedSystem && this.selectedModule) {
+      //   const system = this.systemList.find(s => s.code === this.selectedSystem)
+      //   const module = this.moduleList.find(m => m.code === this.selectedModule)
+      //   const systemName = system ? system.name : ''
+      //   const moduleName = module ? module.name : ''
+      //   messageText = `${systemName}-${moduleName} ${this.inputMessage}`
+      // }
 
       // 获取系统名称和模块名称
       const system = this.systemList.find(s => s.code === this.selectedSystem)
@@ -279,7 +279,7 @@ export default {
       const moduleName = module ? module.name : ''
 
       this.$emit('send', {
-        text: messageText,
+        text: this.inputMessage,
         originalText: this.inputMessage,
         images: this.uploadedImages,
         files: this.uploadedFiles,

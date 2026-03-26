@@ -189,7 +189,9 @@ export default {
 
       // 立即通知父组件更新消息，实现即时显示
       this.$emit('update:messages', updatedMessages)
-      messageService.saveMessages(0, updatedMessages)
+      // 使用当前会话ID保存消息，而不是固定的0
+      const currentSessionId = messageService.currentChatSession || 0
+      messageService.saveMessages(currentSessionId, updatedMessages)
 
       // 滚动会话列表到底部
       this.scrollToBottom()
@@ -216,8 +218,10 @@ export default {
         // 无论成功失败，都设置发送状态为 false
         this.isSendingLocal = false
         this.$emit('update:isSending', false)
+        // 使用当前会话ID保存消息，而不是固定的0
+        const finalSessionId = messageService.currentChatSession || 0
+        messageService.saveMessages(finalSessionId, updatedMessages)
       }
-      messageService.saveMessages(0, updatedMessages)
     },
     /**
      * 打开图片预览
