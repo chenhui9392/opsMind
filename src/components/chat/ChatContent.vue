@@ -64,6 +64,8 @@
       @show-error="handleShowError"
       :isSending="isSendingLocal"
       :isNewSession="isNewSession"
+      :systemName="systemName"
+      :moduleName="moduleName"
     />
 
     <!-- 图片预览模态框 -->
@@ -119,6 +121,14 @@ export default {
     isNewSession: {
       type: Boolean,
       default: false
+    },
+    systemName: {
+      type: String,
+      default: ''
+    },
+    moduleName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -148,7 +158,7 @@ export default {
      * @param {Object} data - 消息数据
      */
     async handleSend(data) {
-      const { text, images, files } = data
+      const { text, images, files, systemName, moduleName } = data
 
       if (!text && images.length === 0 && files.length === 0) return
 

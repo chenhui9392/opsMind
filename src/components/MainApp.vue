@@ -24,6 +24,8 @@
       v-model:currentChatSession="currentChatSession"
       :isSending="isSending"
       :isNewSession="isNewSession"
+      :systemName="currentSystemName"
+      :moduleName="currentModuleName"
       @navigate-to-session="handleNavigateToSession"
       @update:isSending="isSending = $event"
       @refresh-orders="handleRefreshOrders"
@@ -56,7 +58,9 @@ export default {
       isLoading: false, // 发送消息加载状态
       loadingMessageId: null, // 加载消息的 ID
       isSending: false, // 全局发送中状态
-      isNewSession: true // 是否为新会话
+      isNewSession: true, // 是否为新会话
+      currentSystemName: '', // 当前系统名称
+      currentModuleName: '' // 当前模块名称
     }
   },
   methods: {
@@ -108,8 +112,11 @@ export default {
       this.selectedContact = result.selectedContact
       this.showInput = result.showInput
       this.isNewSession = result.isNewSession
+      // 恢复系统/模块名称
+      this.currentSystemName = result.systemName || ''
+      this.currentModuleName = result.moduleName || ''
 
-      console.log('已从缓存恢复会话数据:', this.isNewSession)
+      console.log('已从缓存恢复会话数据:', this.isNewSession, '系统:', this.currentSystemName, '模块:', this.currentModuleName)
     },
     /**
      * 处理导航到会话

@@ -100,6 +100,14 @@ export default {
     isNewSession: {
       type: Boolean,
       default: false
+    },
+    systemName: {
+      type: String,
+      default: ''
+    },
+    moduleName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -121,6 +129,23 @@ export default {
     this.autoResize()
     // 加载系统列表
     this.loadSystemList()
+    // 如果有传入的系统名称和模块名称，恢复选择状态
+    if (this.systemName && this.moduleName) {
+      this.restoreSystemModuleSelection()
+    }
+  },
+  watch: {
+    // 监听systemName和moduleName变化，恢复选择状态
+    systemName(newVal) {
+      if (newVal && this.moduleName) {
+        this.restoreSystemModuleSelection()
+      }
+    },
+    moduleName(newVal) {
+      if (newVal && this.systemName) {
+        this.restoreSystemModuleSelection()
+      }
+    }
   },
   methods: {
     /**
@@ -190,6 +215,25 @@ export default {
     },
 
     /**
+     * 恢复系统模块选择状态
+     */
+    restoreSystemModuleSelection() {
+      // 根据名称找到对应的code
+      const system = this.systemList.find(s => s.name === this.systemName)
+      if (system) {
+        this.selectedSystem = system.code
+        // 加载该系统的模块列表
+        this.moduleList = getModuleListBySystem(this.selectedSystem)
+        // 在模块列表中查找对应的模块
+        const module = this.moduleList.find(m => m.name === this.moduleName)
+        if (module) {
+          this.selectedModule = module.code
+        }
+      }
+      console.log('恢复系统模块选择:', this.systemName, this.moduleName, '->', this.selectedSystem, this.selectedModule)
+    },
+
+    /**
      * 处理系统选择变化
      */
     handleSystemChange() {
@@ -228,13 +272,21 @@ export default {
         messageText = `${systemName}-${moduleName} ${this.inputMessage}`
       }
 
+      // 获取系统名称和模块名称
+      const system = this.systemList.find(s => s.code === this.selectedSystem)
+      const module = this.moduleList.find(m => m.code === this.selectedModule)
+      const systemName = system ? system.name : ''
+      const moduleName = module ? module.name : ''
+
       this.$emit('send', {
         text: messageText,
         originalText: this.inputMessage,
         images: this.uploadedImages,
         files: this.uploadedFiles,
         systemCode: this.selectedSystem,
-        moduleCode: this.selectedModule
+        moduleCode: this.selectedModule,
+        systemName: systemName,
+        moduleName: moduleName
       })
 
       // 清空输入和文件

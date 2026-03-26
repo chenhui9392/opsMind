@@ -18,6 +18,8 @@
         :showInput="showInput"
         :isSending="isSending"
         :isNewSession="isNewSession"
+        :systemName="systemName"
+        :moduleName="moduleName"
         @update:messages="$emit('update:messages', $event)"
         @stop="handleStop"
       />
@@ -62,6 +64,14 @@ export default {
     isNewSession: {
       type: Boolean,
       default: false
+    },
+    systemName: {
+      type: String,
+      default: ''
+    },
+    moduleName: {
+      type: String,
+      default: ''
     }
   },
   data() {

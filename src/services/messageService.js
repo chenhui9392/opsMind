@@ -7,9 +7,12 @@ import { createMessage, createMessageObject, convertHistoryToMessages } from '..
 class MessageService {
   constructor() {
     this.messageStore = {} // 存储每个会话的消息
+    this.sessionConfigStore = {} // 存储每个会话的配置（系统、模块等）
     this.currentChatSession = 0 // 当前正在进行的聊天会话
     this.isNewSession = false // 标记是否为新会话
     this.currentConversationId = null // 当前会话的conversationId
+    this.currentSystemName = '' // 当前选择的系统名称
+    this.currentModuleName = '' // 当前选择的模块名称
   }
 
   /**
@@ -77,9 +80,27 @@ class MessageService {
    * @returns {Promise<Object>} - 消息对象
    */
   async handleSendMessage(data) {
-    const { text, images, files } = data
+    const { text, images, files, systemName, moduleName } = data
 
     if (!text && images.length === 0 && files.length === 0) return null
+
+    // 保存系统名称和模块名称（首次发送时传入）
+    if (systemName) {
+      this.currentSystemName = systemName
+      // 保存到会话配置中
+      if (!this.sessionConfigStore[this.currentChatSession]) {
+        this.sessionConfigStore[this.currentChatSession] = {}
+      }
+      this.sessionConfigStore[this.currentChatSession].systemName = systemName
+    }
+    if (moduleName) {
+      this.currentModuleName = moduleName
+      // 保存到会话配置中
+      if (!this.sessionConfigStore[this.currentChatSession]) {
+        this.sessionConfigStore[this.currentChatSession] = {}
+      }
+      this.sessionConfigStore[this.currentChatSession].moduleName = moduleName
+    }
 
     // 发送消息到服务器并返回响应消息
     return await this.sendToServer(text, images, files)
@@ -107,6 +128,14 @@ class MessageService {
       const params = {
         message: text,
         fileUrls: allFileUrls
+      }
+
+      // 添加系统名称和模块名称（如果有）
+      if (this.currentSystemName) {
+        params.systemName = this.currentSystemName
+      }
+      if (this.currentModuleName) {
+        params.moduleName = this.currentModuleName
       }
 
       // 如果是新会话，添加isNewSession参数；否则添加conversationId
@@ -259,11 +288,17 @@ class MessageService {
       console.info('111111111:',this.messageStore[this.currentChatSession].length === 1)
       // 从缓存中获取当前会话的消息
       this.isNewSession = this.messageStore[this.currentChatSession].length === 1
+      // 恢复会话配置（系统、模块等）
+      const config = this.sessionConfigStore[this.currentChatSession] || {}
+      this.currentSystemName = config.systemName || ''
+      this.currentModuleName = config.moduleName || ''
       return {
         messages: [...this.messageStore[this.currentChatSession]],
         selectedContact: this.currentChatSession,
         showInput: true,
-        isNewSession: this.messageStore[this.currentChatSession].length === 1
+        isNewSession: this.messageStore[this.currentChatSession].length === 1,
+        systemName: this.currentSystemName,
+        moduleName: this.currentModuleName
       }
     } else {
       // 如果没有当前聊天会话，使用默认会话 (ID 为 0)
