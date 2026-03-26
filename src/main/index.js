@@ -46,12 +46,22 @@ app.whenReady().then(() => {
   
   // 禁用跨域限制 (CORS)
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Access-Control-Allow-Origin': ['*']
-      }
-    })
+    // 检查是否已存在Access-Control-Allow-Origin头
+    const hasCorsHeader = Object.keys(details.responseHeaders).some(key => 
+      key.toLowerCase() === 'access-control-allow-origin'
+    )
+    
+    if (!hasCorsHeader) {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Access-Control-Allow-Origin': ['*']
+        }
+      })
+    } else {
+      // 保持原有的CORS头
+      callback({ responseHeaders: details.responseHeaders })
+    }
   })
   
   // 创建窗口

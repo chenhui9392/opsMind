@@ -9,6 +9,7 @@ class MessageService {
     this.messageStore = {} // 存储每个会话的消息
     this.currentChatSession = 0 // 当前正在进行的聊天会话
     this.isNewSession = false // 标记是否为新会话
+    this.currentConversationId = null // 当前会话的conversationId
   }
 
   /**
@@ -19,6 +20,7 @@ class MessageService {
     this.currentChatSession = 0
     this.messageStore[0] = initialMessages
     this.isNewSession = true
+    this.currentConversationId = null
   }
 
   /**
@@ -101,17 +103,20 @@ class MessageService {
         allFileUrls.push(...fileUrlsFromFiles);
       }
 
-      // 准备参数，如果当前是新会话，则添加isNewSession参数
+      // 准备参数
       const params = {
         message: text,
         fileUrls: allFileUrls
       }
 
-      // 如果是新会话，添加isNewSession参数
+      // 如果是新会话，添加isNewSession参数；否则添加conversationId
       if (this.isNewSession) {
         params.isNewSession = true
         // 发送完第一条消息后，将isNewSession设置为false
         this.isNewSession = false
+      } else if (this.currentConversationId) {
+        // 非新会话时，传入conversationId
+        params.conversationId = this.currentConversationId
       }
 
       const response = await sendChatMessage(params)
@@ -133,6 +138,12 @@ class MessageService {
    */
   handleServerResponse(response) {
     if (response && response.code === 200 && response.data && response.data.message) {
+      // 保存返回的conversationId
+      if (response.data.conversationId) {
+        this.currentConversationId = response.data.conversationId
+        console.log('保存conversationId:', this.currentConversationId)
+      }
+
       const messageData = response.data.message
       let content = messageData.content
 
@@ -289,6 +300,7 @@ class MessageService {
     // 更新当前会话
     this.currentChatSession = newSessionId
     this.isNewSession = true
+    this.currentConversationId = null // 新会话清空conversationId
 
     // 初始化新会话的消息
     const messages = [

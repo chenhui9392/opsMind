@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description:
  * @Date: 2026-03-18 20:04:58
- * @LastEditTime: 2026-03-19 11:30:58
+ * @LastEditTime: 2026-03-26 09:48:24
  * @LastEditors: hui.chenn
 -->
 <!DOCTYPE html>
@@ -19,28 +19,30 @@
             user-select: none;
         }
         .floating-ball-box{
-            width: 100px;
-            height: 100px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .floating-ball {
-            width: 60px;
-            height: 60px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             cursor: move;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: box-shadow 0.2s;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .floating-ball:hover {
-            transform: scale(1.1);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+        .floating-ball.dragging {
+            cursor: grabbing;
         }
         .floating-ball img {
             width: 100px;
@@ -53,7 +55,7 @@
 <body>
 <div class="floating-ball-box">
     <div class="floating-ball" id="floatingBall">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="white">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
             <circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.8)"/>
             <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" fill="#667eea"/>
         </svg>
@@ -68,7 +70,12 @@
     let windowX, windowY;
     let lastX = 0, lastY = 0;
     let lastMouseX, lastMouseY;
-    let debounceTimer = null;
+    let animationFrameId = null;
+    let hasDragged = false;
+    const DRAG_THRESHOLD = 5;
+
+    // 锁定状态：点击后禁用跟随（拖拽）功能
+    let isLocked = false;
 
     // 初始化获取窗口位置
     ipcRenderer.invoke('getWindowPosition').then((pos) => {
@@ -82,13 +89,34 @@
     let screenWidth = window.screen.width;
     let screenHeight = window.screen.height;
 
+    // 拖拽检测变量
+    let mouseDownTime = 0;
+    let isMouseDown = false;
+
     // 开始拖拽
     floatingBall.addEventListener('mousedown', (e) => {
+        // 只处理左键
+        if (e.button !== 0) return;
+
+        // 如果处于锁定状态，禁止拖拽（但允许点击处理）
+        if (isLocked) {
+            // 记录鼠标按下时间，用于点击检测
+            isMouseDown = true;
+            mouseDownTime = Date.now();
+            return;
+        }
+
         isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
+        hasDragged = false;
+        isMouseDown = true;
+        mouseDownTime = Date.now();
+        startX = e.screenX;
+        startY = e.screenY;
+        lastMouseX = e.screenX;
+        lastMouseY = e.screenY;
+
+        // 添加拖拽样式
+        floatingBall.classList.add('dragging');
 
         // 确保窗口位置已获取
         if (windowX === undefined || windowY === undefined) {
@@ -104,93 +132,137 @@
         e.preventDefault();
     });
 
-    // 拖拽中
+    // 拖拽中 - 使用 requestAnimationFrame 实现流畅动画
     document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
 
+        // 使用屏幕坐标，避免窗口移动导致的坐标偏移
+        const screenX = e.screenX;
+        const screenY = e.screenY;
+
+        // 计算从mousedown开始的总移动距离
+        const totalDeltaX = Math.abs(screenX - startX);
+        const totalDeltaY = Math.abs(screenY - startY);
+
+        // 判断是否超过拖拽阈值，标记为拖拽操作
+        if (totalDeltaX > DRAG_THRESHOLD || totalDeltaY > DRAG_THRESHOLD) {
+            hasDragged = true;
+        }
+
         // 计算鼠标移动距离
-        const mouseDeltaX = e.clientX - lastMouseX;
-        const mouseDeltaY = e.clientY - lastMouseY;
+        const mouseDeltaX = screenX - lastMouseX;
+        const mouseDeltaY = screenY - lastMouseY;
 
         // 只有当鼠标移动超过阈值时才处理
-        if (Math.abs(mouseDeltaX) < 1 && Math.abs(mouseDeltaY) < 1) {
+        if (Math.abs(mouseDeltaX) < 2 && Math.abs(mouseDeltaY) < 2) {
             e.preventDefault();
             return;
         }
 
         // 更新鼠标位置
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
+        lastMouseX = screenX;
+        lastMouseY = screenY;
 
-        // 防抖处理，避免频繁更新
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            updatePosition(e.clientX, e.clientY);
-        }, 10);
+        // 取消之前的动画帧
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        // 使用 requestAnimationFrame 进行位置更新
+        animationFrameId = requestAnimationFrame(() => {
+            updatePosition(screenX, screenY);
+        });
 
         // 阻止默认行为
         e.preventDefault();
     });
 
     // 更新位置函数
-    function updatePosition(clientX, clientY) {
+    function updatePosition(screenX, screenY) {
         if (!isDragging) return;
 
-        const deltaX = clientX - startX;
-        const deltaY = clientY - startY;
+        const deltaX = screenX - startX;
+        const deltaY = screenY - startY;
 
         // 计算新位置
         let newX = windowX + deltaX;
         let newY = windowY + deltaY;
 
         // 边界检查，确保窗口不会超出屏幕
-        newX = Math.max(0, Math.min(newX, screenWidth - 100)); // 100是窗口宽度
-        newY = Math.max(0, Math.min(newY, screenHeight - 100)); // 100是窗口高度
+        newX = Math.max(0, Math.min(newX, screenWidth - 40));
+        newY = Math.max(0, Math.min(newY, screenHeight - 40));
 
-        // 避免微小的抖动
-        if (Math.abs(newX - lastX) < 1 && Math.abs(newY - lastY) < 1) {
+        // 避免微小的抖动（阈值设为2像素）
+        if (Math.abs(newX - lastX) < 2 && Math.abs(newY - lastY) < 2) {
             return;
         }
 
         // 更新窗口位置
         ipcRenderer.send('updateWindowPosition', {
-            x: newX,
-            y: newY
+            x: Math.round(newX),
+            y: Math.round(newY)
         });
 
         // 更新上次位置
         lastX = newX;
         lastY = newY;
-
-        // 实时更新起始坐标，使拖拽更平滑
-        startX = clientX;
-        startY = clientY;
-        windowX = newX;
-        windowY = newY;
     }
 
     // 结束拖拽
-    document.addEventListener('mouseup', () => {
+    function stopDragging() {
+        if (!isDragging) return;
         isDragging = false;
-        if (debounceTimer) {
-            clearTimeout(debounceTimer);
-            debounceTimer = null;
+
+        // 移除拖拽样式
+        floatingBall.classList.remove('dragging');
+
+        // 取消待处理的动画帧
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
         }
+
+        // 更新窗口位置作为下一次拖拽的基准
+        windowX = lastX;
+        windowY = lastY;
+    }
+
+    document.addEventListener('mouseup', stopDragging);
+    document.addEventListener('mouseleave', stopDragging);
+
+    // 点击悬浮球 - 使用 mouseup 实现点击与拖拽的区分
+    floatingBall.addEventListener('mouseup', (e) => {
+        // 只处理左键点击
+        if (e.button !== 0) return;
+
+        const mouseUpTime = Date.now();
+        const clickDuration = mouseUpTime - mouseDownTime;
+        isMouseDown = false;
+
+        // 判断是否为有效的点击操作（非拖拽、时间阈值内）
+        const isValidClick = !hasDragged &&
+                             clickDuration < 300 &&
+                             clickDuration > 50;
+
+        if (isValidClick) {
+            // 阻止事件冒泡，防止触发其他点击事件
+            e.stopPropagation();
+            ipcRenderer.send('toggleMainWindow');
+        }
+
+        // 重置拖拽标记
+        hasDragged = false;
     });
 
-    // 结束拖拽（鼠标离开窗口）
-    document.addEventListener('mouseleave', () => {
-        isDragging = false;
-        if (debounceTimer) {
-            clearTimeout(debounceTimer);
-            debounceTimer = null;
+    // 防止拖拽结束时触发 document 的 click 事件
+    document.addEventListener('click', (e) => {
+        // 如果刚刚完成拖拽，阻止点击事件
+        if (hasDragged) {
+            e.preventDefault();
+            e.stopPropagation();
+            hasDragged = false;
         }
-    });
-
-    // 点击悬浮球
-    floatingBall.addEventListener('click', () => {
-        ipcRenderer.send('toggleMainWindow');
-    });
+    }, true);
 </script>
 </body>
 </html>
