@@ -1,47 +1,68 @@
 /*
  * @Author: hui.chenn
- * @Description:
+ * @Description: Vite 配置 - 支持多环境
  * @Date: 2026-03-17 18:17:56
- * @LastEditTime: 2026-03-19 10:23:45
+ * @LastEditTime: 2026-03-30 11:00:00
  * @LastEditors: hui.chenn
  */
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import path from 'path'
 
-export default defineConfig({
-  plugins: [vue()],
-  base: './',
-  server: {
-    port: 9090, // 自定义端口号（比如改为 8080/3000 等）
-    strictPort: false, // 可选：端口被占用时自动切换端口
-    webSecurity: false, // 关闭跨域限制
-  },
-  build: {
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        passes: 2
-      },
-      mangle: {
-        toplevel: true
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => {
+  // 加载对应的环境变量文件 (.env.development 或 .env.production)
+  const env = loadEnv(mode, path.resolve(__dirname), '')
+  
+  // 获取版本检查域名用于代理配置
+  const updateApiBaseUrl = env.VITE_UPDATE_API_BASE_URL || 'https://unitive-api.tineco.cn'
+  
+  return {
+    plugins: [vue()],
+    base: './',
+    server: {
+      port: 9090,
+      strictPort: false,
+      webSecurity: false,
+      proxy: {
+        // 版本检查接口代理
+        '/api/apprelease': {
+          target: updateApiBaseUrl,
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/apprelease/, '/api/v2/apprelease')
+        }
       }
     },
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['vue'],
-          marked: ['marked']
+    build: {
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+          passes: 2
         },
-        compact: true
+        mangle: {
+          toplevel: true
+        }
       },
-      treeshake: {
-        moduleSideEffects: false,
-        propertyReadSideEffects: false
-      }
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['vue'],
+            marked: ['marked']
+          },
+          compact: true
+        },
+        treeshake: {
+          moduleSideEffects: false,
+          propertyReadSideEffects: false
+        }
+      },
+      sourcemap: false,
+      target: 'es2015',
     },
-    sourcemap: false,
-    target: 'es2015',
+    // 定义环境变量前缀（只有以 VITE_ 开头的变量才会暴露给客户端代码）
+    envPrefix: 'VITE_'
   }
 })

@@ -31,8 +31,8 @@ class WindowManager {
 
     if (isDev) {
       // 开发模式：加载Vite开发服务器
-      console.log('Loading Vite dev server at http://localhost:9091')
-      this.mainWindow.loadURL('http://localhost:9091')
+      console.log('Loading Vite dev server at http://localhost:9090')
+      this.mainWindow.loadURL('http://localhost:9090')
     } else {
       // 生产模式：加载静态文件
       console.log('Loading static file at dist/index.html')

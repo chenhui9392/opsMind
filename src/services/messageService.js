@@ -1,8 +1,9 @@
 /**
  * 消息管理服务
  */
-import { sendChatMessage, abortChatRequest, downloadSoftware, getHistoryOrderDetail } from '../api'
+import { sendChatMessage, downloadSoftware, getHistoryOrderDetail } from '../api'
 import { createMessage, createMessageObject, convertHistoryToMessages } from '../utils/messageUtils'
+import {getSystemUsername} from "../utils/system";
 
 class MessageService {
   constructor() {
@@ -14,6 +15,7 @@ class MessageService {
     this.currentConversationId = null // 当前会话的conversationId
     this.currentSystemName = '' // 当前选择的系统名称
     this.currentModuleName = '' // 当前选择的模块名称
+    this.chatAbortController = null // 用于中断发送消息请求的控制器
   }
 
   /**
@@ -125,10 +127,12 @@ class MessageService {
         allFileUrls.push(...fileUrlsFromFiles);
       }
 
+      const userName = await getSystemUsername()
       // 准备参数
       const params = {
         message: text,
-        fileUrls: allFileUrls
+        fileUrls: allFileUrls,
+        userName: userName
       }
 
       // 添加系统名称和模块名称（如果有）
@@ -149,7 +153,13 @@ class MessageService {
         params.conversationId = this.currentConversationId
       }
 
-      const response = await sendChatMessage(params)
+      // 创建新的 AbortController
+      this.chatAbortController = new AbortController()
+      
+      const response = await sendChatMessage(params, this.chatAbortController.signal).finally(() => {
+        // 请求完成后清空控制器
+        this.chatAbortController = null
+      })
       // 处理服务器响应
       const responseMessage = this.handleServerResponse(response)
       // 确保返回有效的消息对象
@@ -276,7 +286,11 @@ class MessageService {
    */
   handleStopSending() {
     // 中断API请求
-    abortChatRequest()
+    if (this.chatAbortController) {
+      this.chatAbortController.abort()
+      this.chatAbortController = null
+      console.log('发送消息请求已中断')
+    }
   }
 
   /**

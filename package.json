@@ -5,20 +5,28 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:dev": "vite build --mode development",
+    "build:prod": "vite build --mode production",
     "electron:dev": "electron .",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:dev": "npm run build:dev && electron-builder",
+    "electron:build:prod": "npm run build:prod && electron-builder"
   },
   "build": {
     "appId": "com.opsmind.app",
     "productName": "运维智能助手",
     "directories": {
-      "output": "dist_electron"
+      "output": "release"
     },
     "defaultArch": "x64",
     "icon": "public/app.png",
     "win": {
       "target": "nsis",
-      "electronLanguages": ["en-US", "zh-CN", "zh-TW"]
+      "electronLanguages": [
+        "en-US",
+        "zh-CN",
+        "zh-TW"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -49,6 +57,7 @@
     "detectUpdateChannel": false
   },
   "dependencies": {
+    "crypto-js": "^4.2.0",
     "marked": "^17.0.4",
     "vue": "^3.5.30"
   },

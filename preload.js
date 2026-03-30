@@ -27,7 +27,34 @@ contextBridge.exposeInMainWorld('systemInfo', {
   }
 })
 
-console.log('preload.js loaded and systemInfo exposed')
+// 暴露应用更新接口给渲染进程
+contextBridge.exposeInMainWorld('appUpdater', {
+  // 下载并安装更新
+  downloadAndInstall: async (downloadUrl, fileName) => {
+    try {
+      const result = await ipcRenderer.invoke('downloadAndInstallUpdate', downloadUrl, fileName)
+      console.log('Download and install result:', result)
+      return result
+    } catch (error) {
+      console.error('Error downloading and installing update:', error)
+      return { success: false, message: error.message }
+    }
+  },
+  
+  // 打开外部链接（浏览器下载）
+  openExternalLink: async (url) => {
+    try {
+      const result = await ipcRenderer.invoke('openExternalLink', url)
+      console.log('Open external link result:', result)
+      return result
+    } catch (error) {
+      console.error('Error opening external link:', error)
+      return { success: false, message: error.message }
+    }
+  }
+})
+
+console.log('preload.js loaded and APIs exposed')
 
 window.addEventListener('DOMContentLoaded', () => {
   const replaceText = (selector, text) => {

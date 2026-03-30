@@ -30,21 +30,37 @@
       @update:isSending="isSending = $event"
       @refresh-orders="handleRefreshOrders"
     />
+
+    <!-- 版本更新对话框 -->
+    <UpdateDialog
+      v-model:visible="showUpdateDialog"
+      :currentVersion="updateInfo.currentVersion"
+      :latestVersion="updateInfo.latestVersion"
+      :releaseNotes="updateInfo.releaseNotes"
+      :downloadUrl="updateInfo.downloadUrl"
+      :fileSize="updateInfo.fileSize"
+      :forceUpdate="updateInfo.forceUpdate"
+      @confirm="handleUpdateConfirm"
+      @cancel="handleUpdateCancel"
+    />
   </div>
 </template>
 
 <script>
 import OrderList from './order/OrderList.vue'
 import Chat from './chat/Chat.vue'
+import UpdateDialog from './common/UpdateDialog.vue'
 import { contacts as mockContacts, initialMessages } from '../mock/data'
 import messageService from '../services/messageService'
+import updateService from '../services/updateService'
 import { updateMessageStatus } from '../api/index'
 
 export default {
   name: 'MainApp',
   components: {
     OrderList,
-    Chat
+    Chat,
+    UpdateDialog
   },
   data() {
     return {
@@ -60,7 +76,17 @@ export default {
       isSending: false, // 全局发送中状态
       isNewSession: true, // 是否为新会话
       currentSystemName: '', // 当前系统名称
-      currentModuleName: '' // 当前模块名称
+      currentModuleName: '', // 当前模块名称
+      // 版本更新相关
+      showUpdateDialog: false,
+      updateInfo: {
+        currentVersion: '',
+        latestVersion: '',
+        releaseNotes: '',
+        downloadUrl: '',
+        fileSize: 0,
+        forceUpdate: false
+      }
     }
   },
   methods: {
@@ -158,6 +184,66 @@ export default {
         this.$refs.contactsComponent.handleRefreshOrders()
       }
     },
+
+    /**
+     * 检查应用版本更新
+     * @param {Object} options - 检查选项
+     */
+    async checkForAppUpdates(options = {}) {
+      try {
+        const result = await updateService.checkForUpdates({
+          silent: true, // 静默检查，不显示错误提示
+          ...options
+        })
+
+        if (result.hasUpdate && result.updateInfo) {
+          // 有新版本，显示更新对话框
+          this.updateInfo = {
+            currentVersion: result.currentVersion,
+            latestVersion: result.latestVersion,
+            releaseNotes: result.updateInfo.releaseNotes || '修复了一些已知问题，优化了用户体验。',
+            downloadUrl: result.updateInfo.downloadUrl,
+            fileSize: result.updateInfo.fileSize,
+            forceUpdate: result.updateInfo.forceUpdate
+          }
+          this.showUpdateDialog = true
+          console.log('发现新版本，已显示更新对话框')
+        }
+      } catch (error) {
+        // 静默处理错误，不影响用户正常使用
+        console.log('版本检查失败（已静默处理）:', error.message)
+      }
+    },
+
+    /**
+     * 处理更新确认
+     * @param {Object} data - 更新数据
+     */
+    async handleUpdateConfirm(data) {
+      console.log('用户确认更新:', data)
+      // 调用更新服务执行下载并安装
+      const result = await updateService.downloadAndInstall(data.downloadUrl, `opsmind-setup-${data.version}.exe`)
+      if (result.success) {
+        console.log('下载安装结果:', result.message)
+        if (result.delayed) {
+          // 用户选择稍后安装，可以显示一个提示
+          console.log('用户选择稍后安装，安装包路径:', result.installerPath)
+        }
+      } else {
+        console.error('下载更新失败:', result.message)
+        // 如果下载失败，尝试用浏览器打开下载链接
+        const fallbackResult = await updateService.openExternalLink(data.downloadUrl)
+        console.log('备用下载方式结果:', fallbackResult.message)
+      }
+    },
+
+    /**
+     * 处理更新取消
+     */
+    handleUpdateCancel() {
+      console.log('用户取消更新')
+      // 可以记录用户选择，下次不再提示或延迟提示
+    },
   },
   mounted() {
     // 初始化消息服务
@@ -167,6 +253,11 @@ export default {
     this.selectedContact = 0
     // 同步新会话状态
     this.isNewSession = messageService.getIsNewSession()
+
+    // 应用启动时检查版本更新（延迟执行，避免影响启动速度）
+    setTimeout(() => {
+      this.checkForAppUpdates()
+    }, 3000)
   },
   watch: {
     // 监听消息变化，同步新会话状态
