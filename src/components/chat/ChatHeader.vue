@@ -15,18 +15,18 @@
       </div>
 
       <div class="offline-session-box"  @mouseenter="showMessagePopup = true" @mouseleave="showMessagePopup = false">
-          <div class="offline-session-container"  >
-          <SvgIcon name="bell" width="14" height="14" class="bell-icon" />
-          <span class="offline-session">消息通知</span>
-          <div class="notification-dot" v-if="hasNotification"></div>
-          <!-- 消息弹窗 -->
-          <MessagePopup
-            v-if="showMessagePopup && messages.length > 0"
-            :messages="messages"
-            @click="handleMessageClick"
-          />
-          </div>
+        <div class="offline-session-container"  >
+        <SvgIcon name="bell" width="14" height="14" class="bell-icon" />
+        <span class="offline-session">消息通知</span>
+        <div class="notification-dot" v-if="hasNotification"></div>
+        <!-- 消息弹窗 -->
+        <MessagePopup
+          v-if="showMessagePopup && messages.length > 0"
+          :messages="messages"
+          @click="handleMessageClick"
+        />
         </div>
+      </div>
 
       <div class="user-info" v-if="userName">
         <span class="user-name">{{ userName }}</span>

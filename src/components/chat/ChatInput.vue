@@ -57,18 +57,17 @@
         :style="{ maxHeight: '500px' }"
       />
       <div class="input-actions">
-        <input
-          type="file"
-          ref="fileInput"
-          multiple
+        <FileUploader
+          ref="fileUploader"
           accept="image/*,.xlsx,.xls,.pdf"
-          class="file-input"
-          @change="handleFileSelect"
+          :disabled="uploaderDisabled || isSending"
+          title="上传"
+          button-text="上传"
+          @upload-start="handleUploadStart"
+          @upload-success="handleUploadSuccess"
+          @upload-error="handleUploadError"
+          @upload-complete="handleUploadComplete"
         />
-        <button class="upload-button" @click="$refs.fileInput.click()" :disabled="isUploading || isSending" title="上传">
-          <SvgIcon name="upload" width="20" height="20" />
-          <span class="button-text">上传</span>
-        </button>
         <button v-if="!isSending" class="send-button" @click="sendMessage" :disabled="isUploading || isSending" title="发送">
           <SvgIcon name="send" width="18" height="18" color="white" />
           <span class="button-text">发送</span>
@@ -83,14 +82,15 @@
 </template>
 
 <script>
-import { uploadImage } from '../../api'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
+import FileUploader from '../common/FileUploader.vue'
 import { getSystemList, getModuleListBySystem } from '../../config/systemModuleData.js'
 
 export default {
   name: 'ChatInput',
   components: {
-    SvgIcon
+    SvgIcon,
+    FileUploader
   },
   props: {
     isSending: {
@@ -117,6 +117,7 @@ export default {
       uploadedImages: [],
       uploadedFiles: [], // 存储上传的非图片文件信息
       isUploading: false,
+      uploaderDisabled: false,
       isInCodeBlock: false, // 标记是否在代码块内
       selectedSystem: '', // 选中的系统
       selectedModule: '', // 选中的模块
@@ -172,40 +173,41 @@ export default {
       }
     },
     /**
-     * 处理文件选择
-     * @param {Event} event - 文件选择事件
+     * 处理文件上传开始
      */
-    async handleFileSelect(event) {
-      const files = event.target.files
-      if (files.length > 0) {
-        this.isUploading = true
-        const filesArray = Array.from(files)
-
-        for (const file of filesArray) {
-          // 判断文件类型
-          const isImage = file.type.startsWith('image/')
-
-          try {
-            const fileUrl = await uploadImage(file)
-
-            if (isImage) {
-              // 图片文件显示预览
-              this.uploadedImages.push(fileUrl)
-            } else {
-              // 非图片文件（Excel等）只显示文件名
-              this.uploadedFiles.push({
-                name: file.name,
-                url: fileUrl,
-                type: file.type
-              })
-            }
-          } catch (error) {
-            console.error('文件上传失败:', error)
-          }
-        }
-
-        this.isUploading = false
+    handleUploadStart() {
+      this.isUploading = true
+      this.uploaderDisabled = true
+    },
+    /**
+     * 处理文件上传成功
+     * @param {Object} result - 上传结果
+     */
+    handleUploadSuccess(result) {
+      if (result.isImage) {
+        this.uploadedImages.push(result.url)
+      } else {
+        this.uploadedFiles.push({
+          name: result.name,
+          url: result.url,
+          type: result.type
+        })
       }
+    },
+    /**
+     * 处理文件上传错误
+     * @param {Object} error - 错误信息
+     */
+    handleUploadError(error) {
+      console.error('文件上传失败:', error)
+    },
+    /**
+     * 处理文件上传完成
+     * @param {Object} result - 上传结果
+     */
+    handleUploadComplete(result) {
+      this.isUploading = false
+      this.uploaderDisabled = false
     },
     /**
      * 加载系统列表
@@ -260,18 +262,6 @@ export default {
 
       if (!this.inputMessage && this.uploadedImages.length === 0 && this.uploadedFiles.length === 0) return
 
-      // 构建消息文本
-      // let messageText = this.inputMessage
-
-      // 新会话时将系统和模块信息拼在消息前面
-      // if (this.selectedSystem && this.selectedModule) {
-      //   const system = this.systemList.find(s => s.code === this.selectedSystem)
-      //   const module = this.moduleList.find(m => m.code === this.selectedModule)
-      //   const systemName = system ? system.name : ''
-      //   const moduleName = module ? module.name : ''
-      //   messageText = `${systemName}-${moduleName} ${this.inputMessage}`
-      // }
-
       // 获取系统名称和模块名称
       const system = this.systemList.find(s => s.code === this.selectedSystem)
       const module = this.moduleList.find(m => m.code === this.selectedModule)
@@ -293,7 +283,7 @@ export default {
       this.inputMessage = ''
       this.uploadedImages = []
       this.uploadedFiles = []
-      this.$refs.fileInput.value = ''
+      this.$refs.fileUploader.clear()
       // 重置代码块状态
       this.isInCodeBlock = false
       // 重置textarea高度
@@ -555,35 +545,6 @@ export default {
   z-index: 10;
 }
 
-.file-input {
-  display: none;
-}
-
-.upload-button {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 50%;
-  background-color: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  color: #666;
-  position: relative;
-}
-
-.upload-button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  transform: scale(1.05);
-}
-
-.upload-icon {
-  width: 20px;
-  height: 20px;
-}
-
 .send-button {
   width: 40px;
   height: 40px;
@@ -633,7 +594,6 @@ export default {
 }
 
 /* 禁用状态 */
-.upload-button:disabled,
 .send-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -658,7 +618,6 @@ export default {
   pointer-events: none;
 }
 
-.upload-button:hover .button-text,
 .send-button:hover .button-text,
 .stop-button:hover .button-text {
   opacity: 1;

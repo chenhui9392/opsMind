@@ -11,20 +11,20 @@ export const get = async (url, params = {}, signal = null) => {
   const queryString = Object.entries(params)
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
     .join('&')
-  
+
   const options = {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json'
     }
   }
-  
+
   if (signal) {
     options.signal = signal
   }
-  
+
   const response = await fetch(`${url}${queryString ? `?${queryString}` : ''}`, options)
-  
+
   return response.json()
 }
 
@@ -43,13 +43,13 @@ export const post = async (url, data = {}, signal = null) => {
     },
     body: JSON.stringify(data)
   }
-  
+
   if (signal) {
     options.signal = signal
   }
-  
+
   const response = await fetch(url, options)
-  
+
   return response.json()
 }
 
@@ -61,16 +61,17 @@ export const post = async (url, data = {}, signal = null) => {
  * @returns {Promise} - 返回请求结果
  */
 export const upload = async (url, formData, signal = null) => {
+
   const options = {
     method: 'POST',
     body: formData
   }
-  
+
   if (signal) {
     options.signal = signal
   }
-  
+
   const response = await fetch(url, options)
-  
+
   return response.json()
 }

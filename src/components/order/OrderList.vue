@@ -1,37 +1,24 @@
 <template>
-  <div class="contacts">
-    <!-- 历史工单头部组件 -->
-    <div class="order-header">
-      <OrderHeader
-        @refresh-orders="handleRefreshOrders"
-      />
-    </div>
-
-    <!-- 搜索框 -->
-    <div class="search-box">
-      <div class="search-container">
-        <input
-          type="text"
-          v-model="searchQuery"
-          class="search-input"
-          placeholder="搜索工单..."
+  <div class="contacts-container" :style="{ width: contactsWidth + 'px' }">
+    <div class="contacts">
+      <!-- 历史工单头部组件 -->
+      <div class="order-header">
+        <OrderHeader
+          @refresh-orders="handleRefreshOrders"
         />
-        <button
-          v-if="searchQuery"
-          class="search-clear-button"
-          @click="clearSearch"
-        >
-          <SvgIcon name="clear" width="14" height="14" />
-        </button>
       </div>
-    </div>
 
-    <div class="back-to-current" v-if="!isCurrentChatSelected" @click="handleBackToCurrent">
-      <div class="back-to-current-text">回到当前聊天</div>
-      <div class="back-to-current-icon">
-        <SvgIcon name="arrow" width="16" height="16" />
-      </div>
-    </div>
+      <!-- 搜索框 -->
+      <SearchBox
+        v-model="searchQuery"
+        placeholder="搜索工单..."
+        @search="handleSearch"
+      />
+
+    <BackToCurrent
+      v-if="!isCurrentChatSelected"
+      @click="handleBackToCurrent"
+    />
 
     <!-- 历史工单列表组件 -->
     <div class="order-item-list" :class="{ 'disabled': isSending }">
@@ -42,26 +29,32 @@
         @select-order="handleSelectOrder"
       />
     </div>
-    
+
     <!-- 发送消息时的遮罩层 -->
     <div v-if="isSending" class="loading-overlay">
       <div class="loading-spinner"></div>
       <div class="loading-text">正在发送消息...</div>
     </div>
+    </div>
+    <!-- 调整宽度手柄 -->
+    <div class="resize-handle" @mousedown="resizeMethods.startResizing"></div>
   </div>
 </template>
 
 <script>
-import SvgIcon from '../../assets/svg/SvgIcon.vue'
+import SearchBox from '../common/SearchBox.vue'
+import BackToCurrent from '../common/BackToCurrent.vue'
 import OrderHeader from './OrderHeader.vue'
 import OrderItemList from './OrderItemList.vue'
 import messageService from '../../services/messageService'
 import { updateMessageStatus } from '../../api/index'
+import { createResizeMethods } from '../../utils/resizeHandler'
 
 export default {
   name: 'OrderList',
   components: {
-    SvgIcon,
+    SearchBox,
+    BackToCurrent,
     OrderHeader,
     OrderItemList
   },
@@ -85,7 +78,11 @@ export default {
   },
   data() {
     return {
-      searchQuery: ''
+      searchQuery: '',
+      contactsWidth: 300, // 初始宽度
+      isResizing: false,
+      // 调整大小方法由 createResizeMethods 注入
+      resizeMethods: null
     }
   },
   computed: {
@@ -112,16 +109,9 @@ export default {
     handleBackToCurrent() {
       // 如果正在发送消息，不允许切换会话
       if (this.isSending) {
-        console.log('正在发送消息中，无法切换会话')
         return
       }
       this.$emit('back-to-current')
-    },
-    /**
-     * 清除搜索
-     */
-    clearSearch() {
-      this.searchQuery = ''
     },
     /**
      * 处理搜索
@@ -171,19 +161,59 @@ export default {
         this.$refs.orderItemList.fetchHistoryOrders()
       }
     }
+  },
+  created() {
+    // 初始化调整大小方法
+    this.resizeMethods = createResizeMethods(this, {
+      widthKey: 'contactsWidth',
+      resizingKey: 'isResizing',
+      minWidth: 200,
+      maxWidth: 500
+    })
+    // 绑定方法到当前实例
+    this.resizeMethods.startResizing = this.resizeMethods.startResizing.bind(this)
+    this.resizeMethods.onResizing = this.resizeMethods.onResizing.bind(this)
+    this.resizeMethods.stopResizing = this.resizeMethods.stopResizing.bind(this)
   }
 }
 </script>
 
 <style scoped>
+.contacts-container {
+  position: relative;
+  height: 100%;
+  transition: width 0.2s ease;
+  display: flex;
+}
+
 .contacts {
-  width: 100%;
+  flex: 1;
   border-right: 1px solid #e0e0e0;
   background-color: #f5f5f5;
   display: flex;
   flex-direction: column;
   height: 100%;
   position: relative;
+  width: 100%;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  background-color: transparent;
+  z-index: 10;
+}
+
+.resize-handle:hover {
+  background-color: rgba(103, 58, 183, 0.3);
+}
+
+.resize-handle:active {
+  background-color: rgba(103, 58, 183, 0.5);
 }
 
 /* 禁用状态 */
@@ -239,97 +269,10 @@ export default {
   border-bottom: 1px solid #e0e0e0;
 }
 
-/* 搜索框样式 */
-.search-box {
-  padding: 12px 16px;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.search-container {
-  width: 100%;
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 40px 10px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 20px;
-  font-size: 14px;
-  outline: none;
-  background-color: white;
-  color: #333;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  border-color: #673ab7;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
-}
-
-.search-input::placeholder {
-  color: #999;
-}
-
-.search-clear-button {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background-color: #e0e0e0;
-  color: #666;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.search-clear-button:hover {
-  background-color: #d0d0d0;
-  transform: translateY(-50%) scale(1.1);
-}
-
 /* 确保OrderItemList可以滚动 */
 .contacts > .order-item-list {
   flex: 1;
   overflow-y: auto;
 }
 
-.back-to-current {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.back-to-current:hover {
-  background: linear-gradient(135deg, #e1bee7 0%, #ce93d8 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.back-to-current-icon {
-  font-size: 16px;
-  color: #673ab7;
-}
-
-.back-to-current-text {
-  font-size: 14px;
-  color: #673ab7;
-  font-weight: 600;
-  flex: 1;
-}
 </style>

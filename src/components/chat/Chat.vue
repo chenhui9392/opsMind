@@ -31,7 +31,7 @@
 import ChatHeader from './ChatHeader.vue'
 import ChatContent from './ChatContent.vue'
 import { getSystemUsername } from '../../utils/system'
-import messageService from '../../services/messageService'
+import chatMessageService from '../../services/chatMessageService'
 import { initialMessages } from '../../mock/data'
 
 export default {
@@ -89,11 +89,10 @@ export default {
     createNewSession() {
       // 如果正在发送消息，不允许创建新会话
       if (this.isSending) {
-        console.log('正在发送消息中，无法创建新会话')
         return
       }
     
-      const result = messageService.createNewSession()
+      const result = chatMessageService.createNewSession()
       this.$emit('update:messages', result.messages)
       this.$emit('update:selectedContact', result.selectedContact)
       this.$emit('update:showInput', result.showInput)
@@ -104,7 +103,7 @@ export default {
      */
     handleStop() {
       // 调用消息服务处理停止发送
-      messageService.handleStopSending()
+      chatMessageService.handleStopSending()
     
       // 设置加载状态为 false
       this.isLoading = false
@@ -116,8 +115,6 @@ export default {
         this.loadingMessageId = null
         this.$emit('update:messages', updatedMessages)
       }
-    
-      console.log('发送消息已中断')
     },
     /**
      * 处理导航到会话
@@ -132,15 +129,6 @@ export default {
      */
     handleRefreshOrders() {
       this.$emit('refresh-orders')
-    },
-    /**
-     * 回到当前聊天会话
-     */
-    backToCurrentChat() {
-      console.log('Chat组件：backToCurrentChat 被调用')
-      // 注意：这个方法现在主要由 MainApp 的 backToCurrentChat 处理
-      // Chat 组件只需要响应父组件的 props 更新即可
-      return {}
     },
     /**
      * 获取系统用户名
