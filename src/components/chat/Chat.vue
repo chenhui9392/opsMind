@@ -27,129 +27,141 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted } from 'vue'
 import ChatHeader from './ChatHeader.vue'
 import ChatContent from './ChatContent.vue'
 import { getSystemUsername } from '../../utils/system'
 import chatMessageService from '../../services/chatMessageService'
 import { initialMessages } from '../../mock/data'
 
-export default {
-  name: 'Chat',
-  components: {
-    ChatHeader,
-    ChatContent
+// Props
+const props = defineProps({
+  messages: {
+    type: Array,
+    default: () => []
   },
-  props: {
-    messages: {
-      type: Array,
-      default: () => []
-    },
-    showInput: {
-      type: Boolean,
-      default: true
-    },
-    isSending: {
-      type: Boolean,
-      default: false
-    },
-    selectedContact: {
-      type: [String, Number],
-      default: ''
-    },
-    currentChatSession: {
-      type: [String, Number],
-      default: null
-    },
-    isNewSession: {
-      type: Boolean,
-      default: false
-    },
-    systemName: {
-      type: String,
-      default: ''
-    },
-    moduleName: {
-      type: String,
-      default: ''
-    }
+  showInput: {
+    type: Boolean,
+    default: true
   },
-  data() {
-    return {
-      userName: '',
-      isLoading: false, // 发送消息加载状态
-      loadingMessageId: null // 加载消息的ID
-    }
+  isSending: {
+    type: Boolean,
+    default: false
   },
-  methods: {
+  selectedContact: {
+    type: [String, Number],
+    default: ''
+  },
+  currentChatSession: {
+    type: [String, Number],
+    default: null
+  },
+  isNewSession: {
+    type: Boolean,
+    default: false
+  },
+  systemName: {
+    type: String,
+    default: ''
+  },
+  moduleName: {
+    type: String,
+    default: ''
+  }
+})
 
-    /**
-     * 处理新建会话
-     */
-    createNewSession() {
-      // 如果正在发送消息，不允许创建新会话
-      if (this.isSending) {
-        return
-      }
-    
-      const result = chatMessageService.createNewSession()
-      this.$emit('update:messages', result.messages)
-      this.$emit('update:selectedContact', result.selectedContact)
-      this.$emit('update:showInput', result.showInput)
-      this.$emit('update:currentChatSession', result.selectedContact)
-    },
-    /**
-     * 处理中断请求
-     */
-    handleStop() {
-      // 调用消息服务处理停止发送
-      chatMessageService.handleStopSending()
-    
-      // 设置加载状态为 false
-      this.isLoading = false
-    
-      // 移除加载消息
-      if (this.loadingMessageId !== null) {
-        const updatedMessages = [...this.messages]
-        updatedMessages.splice(this.loadingMessageId, 1)
-        this.loadingMessageId = null
-        this.$emit('update:messages', updatedMessages)
-      }
-    },
-    /**
-     * 处理导航到会话
-     * @param {number} sessionId - 会话 ID
-     */
-    async handleNavigateToSession(sessionId) {
-      // 从父组件获取历史工单列表
-      this.$emit('navigate-to-session', sessionId)
-    },
-    /**
-     * 处理刷新历史工单列表
-     */
-    handleRefreshOrders() {
-      this.$emit('refresh-orders')
-    },
-    /**
-     * 获取系统用户名
-     */
-    async getUserName() {
-      this.userName = await getSystemUsername()
-    },
-    /**
-     * 滚动到底部
-     */
-    scrollToBottom() {
-      const chatComponent = this.$refs.chatContent
-      if (chatComponent && chatComponent.scrollToBottom) {
-        chatComponent.scrollToBottom()
-      }
-    },
-  },
-  mounted() {
-    this.getUserName()
+// Emits
+const emit = defineEmits([
+  'update:messages',
+  'update:selectedContact',
+  'update:showInput',
+  'update:currentChatSession',
+  'update:isSending',
+  'navigate-to-session',
+  'refresh-orders'
+])
+
+// 响应式数据
+const userName = ref('')
+const isLoading = ref(false)
+const loadingMessageId = ref(null)
+
+// 模板引用
+const chatContent = ref(null)
+
+/**
+ * 处理新建会话
+ */
+const createNewSession = () => {
+  // 如果正在发送消息，不允许创建新会话
+  if (props.isSending) {
+    return
+  }
+
+  const result = chatMessageService.createNewSession()
+  emit('update:messages', result.messages)
+  emit('update:selectedContact', result.selectedContact)
+  emit('update:showInput', result.showInput)
+  emit('update:currentChatSession', result.selectedContact)
+}
+
+/**
+ * 处理中断请求
+ */
+const handleStop = () => {
+  // 调用消息服务处理停止发送
+  chatMessageService.handleStopSending()
+
+  // 设置加载状态为 false
+  isLoading.value = false
+
+  // 移除加载消息
+  if (loadingMessageId.value !== null) {
+    const updatedMessages = [...props.messages]
+    updatedMessages.splice(loadingMessageId.value, 1)
+    loadingMessageId.value = null
+    emit('update:messages', updatedMessages)
   }
 }
+
+/**
+ * 处理导航到会话
+ * @param {number} sessionId - 会话 ID
+ */
+const handleNavigateToSession = async (sessionId) => {
+  // 从父组件获取历史工单列表
+  emit('navigate-to-session', sessionId)
+}
+
+/**
+ * 处理刷新历史工单列表
+ */
+const handleRefreshOrders = () => {
+  emit('refresh-orders')
+}
+
+/**
+ * 获取系统用户名
+ */
+const getUserName = async () => {
+  userName.value = await getSystemUsername()
+}
+
+/**
+ * 滚动到底部
+ */
+const scrollToBottom = () => {
+  const chatComponent = chatContent.value
+  if (chatComponent && chatComponent.scrollToBottom) {
+    chatComponent.scrollToBottom()
+  }
+}
+
+// 生命周期钩子
+onMounted(() => {
+  getUserName()
+})
 </script>
 
 <style scoped>

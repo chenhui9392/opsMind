@@ -14,52 +14,54 @@
   </svg>
 </template>
 
-<script>
-import { IconPaths } from './IconPaths';
+<script setup>
+import { computed } from 'vue'
+import { IconPaths } from './IconPaths'
 
-export default {
-  name: 'SvgIcon',
-  props: {
-    name: {
-      type: String,
-      required: true
-    },
-    width: {
-      type: [String, Number],
-      default: 20
-    },
-    height: {
-      type: [String, Number],
-      default: 20
-    },
-    className: {
-      type: String,
-      default: ''
-    },
-    color: {
-      type: String,
-      default: 'currentColor'
-    }
+// Props
+const props = defineProps({
+  name: {
+    type: String,
+    required: true
   },
-  computed: {
-    icon() {
-      return IconPaths[this.name] || null;
-    },
-    paths() {
-      return this.icon ? this.icon.paths : [];
-    },
-    viewBox() {
-      return this.icon ? this.icon.viewBox : '0 0 24 24';
-    },
-    iconStyle() {
-      return {
-        fill: 'none',
-        stroke: this.color,
-        strokeWidth: '2',
-        strokeLinecap: 'round',
-        strokeLinejoin: 'round'
-      };
-    }
+  width: {
+    type: [String, Number],
+    default: 20
+  },
+  height: {
+    type: [String, Number],
+    default: 20
+  },
+  className: {
+    type: String,
+    default: ''
+  },
+  color: {
+    type: String,
+    default: 'currentColor'
   }
-};
+})
+
+// 计算属性
+const icon = computed(() => {
+  return IconPaths[props.name] || null
+})
+
+const paths = computed(() => {
+  return icon.value ? icon.value.paths : []
+})
+
+const viewBox = computed(() => {
+  return icon.value ? icon.value.viewBox : '0 0 24 24'
+})
+
+const iconStyle = computed(() => {
+  return {
+    fill: 'none',
+    stroke: props.color,
+    strokeWidth: '2',
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round'
+  }
+})
 </script>

@@ -18,20 +18,21 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'MessagePopup',
-  props: {
-    title: {
-      type: String,
-      default: '离线消息'
-    },
-    messages: {
-      type: Array,
-      required: true
-    }
+<script setup>
+// Props
+const props = defineProps({
+  title: {
+    type: String,
+    default: '离线消息'
+  },
+  messages: {
+    type: Array,
+    required: true
   }
-}
+})
+
+// Emits
+const emit = defineEmits(['mouseenter', 'mouseleave', 'click'])
 </script>
 
 <style scoped>

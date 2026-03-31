@@ -1,12 +1,5 @@
 <!--
  * @Author: hui.chenn
- * @Description: 
- * @Date: 2026-03-30 09:03:05
- * @LastEditTime: 2026-03-30 09:03:12
- * @LastEditors: hui.chenn
--->
-<!--
- * @Author: hui.chenn
  * @Description: 应用更新对话框组件
  * @Date: 2026-03-27 17:15:00
  * @LastEditTime: 2026-03-27 17:15:00
@@ -91,132 +84,117 @@
   </Teleport>
 </template>
 
-<script>
-export default {
-  name: 'UpdateDialog',
-  props: {
-    // 是否显示对话框
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    // 当前版本号
-    currentVersion: {
-      type: String,
-      default: ''
-    },
-    // 最新版本号
-    latestVersion: {
-      type: String,
-      default: ''
-    },
-    // 更新说明
-    releaseNotes: {
-      type: String,
-      default: ''
-    },
-    // 下载链接
-    downloadUrl: {
-      type: String,
-      default: ''
-    },
-    // 文件大小（字节）
-    fileSize: {
-      type: Number,
-      default: 0
-    },
-    // 是否强制更新
-    forceUpdate: {
-      type: Boolean,
-      default: false
-    }
+<script setup>
+import { ref, watch } from 'vue'
+
+// Props
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false
   },
-  data() {
-    return {
-      downloading: false
-    }
+  currentVersion: {
+    type: String,
+    default: ''
   },
-  watch: {
-    visible(newVal) {
-      if (newVal) {
-        this.downloading = false
-        // 禁止背景滚动
-        document.body.style.overflow = 'hidden'
-      } else {
-        // 恢复背景滚动
-        document.body.style.overflow = ''
-      }
-    }
+  latestVersion: {
+    type: String,
+    default: ''
   },
-  beforeUnmount() {
-    // 组件卸载时恢复背景滚动
-    document.body.style.overflow = ''
+  releaseNotes: {
+    type: String,
+    default: ''
   },
-  methods: {
-    /**
-     * 处理确认更新
-     */
-    handleConfirm() {
-      if (!this.downloadUrl) {
-        console.error('下载链接为空')
-        this.$emit('error', '下载链接为空')
-        return
-      }
-
-      this.downloading = true
-      this.$emit('confirm', {
-        downloadUrl: this.downloadUrl,
-        version: this.latestVersion
-      })
-
-      // 延迟关闭对话框，给用户反馈时间
-      setTimeout(() => {
-        this.downloading = false
-        this.$emit('update:visible', false)
-      }, 500)
-    },
-
-    /**
-     * 处理取消/关闭
-     */
-    handleCancel() {
-      if (this.forceUpdate) {
-        // 强制更新模式下不允许取消
-        return
-      }
-      this.$emit('cancel')
-      this.$emit('update:visible', false)
-    },
-
-    /**
-     * 处理遮罩层点击
-     */
-    handleOverlayClick() {
-      if (!this.forceUpdate) {
-        this.handleCancel()
-      }
-    },
-
-    /**
-     * 格式化文件大小
-     * @param {number} bytes - 字节数
-     * @returns {string} 格式化后的文件大小
-     */
-    formatFileSize(bytes) {
-      if (!bytes || bytes === 0) return '未知'
-      
-      const units = ['B', 'KB', 'MB', 'GB']
-      let size = bytes
-      let unitIndex = 0
-      
-      while (size >= 1024 && unitIndex < units.length - 1) {
-        size /= 1024
-        unitIndex++
-      }
-      
-      return `${size.toFixed(2)} ${units[unitIndex]}`
-    }
+  downloadUrl: {
+    type: String,
+    default: ''
+  },
+  fileSize: {
+    type: Number,
+    default: 0
+  },
+  forceUpdate: {
+    type: Boolean,
+    default: false
   }
+})
+
+// Emits
+const emit = defineEmits(['confirm', 'cancel', 'update:visible', 'error'])
+
+// 响应式数据
+const downloading = ref(false)
+
+// 监听 visible 变化
+watch(() => props.visible, (newVal) => {
+  if (newVal) {
+    downloading.value = false
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+})
+
+/**
+ * 处理确认更新
+ */
+const handleConfirm = () => {
+  if (!props.downloadUrl) {
+    console.error('下载链接为空')
+    emit('error', '下载链接为空')
+    return
+  }
+
+  downloading.value = true
+  emit('confirm', {
+    downloadUrl: props.downloadUrl,
+    version: props.latestVersion
+  })
+
+  setTimeout(() => {
+    downloading.value = false
+    emit('update:visible', false)
+  }, 500)
+}
+
+/**
+ * 处理取消/关闭
+ */
+const handleCancel = () => {
+  if (props.forceUpdate) {
+    return
+  }
+  emit('cancel')
+  emit('update:visible', false)
+}
+
+/**
+ * 处理遮罩层点击
+ */
+const handleOverlayClick = () => {
+  if (!props.forceUpdate) {
+    handleCancel()
+  }
+}
+
+/**
+ * 格式化文件大小
+ * @param {number} bytes - 字节数
+ * @returns {string} 格式化后的文件大小
+ */
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '未知'
+  
+  const units = ['B', 'KB', 'MB', 'GB']
+  let size = bytes
+  let unitIndex = 0
+  
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024
+    unitIndex++
+  }
+  
+  return `${size.toFixed(2)} ${units[unitIndex]}`
 }
 </script>
 

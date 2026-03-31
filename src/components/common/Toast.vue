@@ -1,10 +1,3 @@
-<!--
- * @Author: hui.chenn
- * @Description: 
- * @Date: 2026-03-25 20:32:54
- * @LastEditTime: 2026-03-25 20:33:07
- * @LastEditors: hui.chenn
--->
 <template>
   <transition name="toast-fade">
     <div v-if="visible" class="toast" :class="type">
@@ -19,50 +12,89 @@
   </transition>
 </template>
 
-<script>
-export default {
-  name: 'Toast',
-  data() {
-    return {
-      visible: false,
-      message: '',
-      type: 'info',
-      duration: 3000,
-      timer: null
-    }
-  },
-  methods: {
-    show(message, type = 'info', duration = 3000) {
-      this.message = message
-      this.type = type
-      this.duration = duration
-      this.visible = true
+<script setup>
+import { ref } from 'vue'
 
-      if (this.timer) {
-        clearTimeout(this.timer)
-      }
+// 响应式数据
+const visible = ref(false)
+const message = ref('')
+const type = ref('info')
+const duration = ref(3000)
+const timer = ref(null)
 
-      this.timer = setTimeout(() => {
-        this.hide()
-      }, this.duration)
-    },
-    hide() {
-      this.visible = false
-    },
-    success(message, duration) {
-      this.show(message, 'success', duration)
-    },
-    error(message, duration) {
-      this.show(message, 'error', duration)
-    },
-    warning(message, duration) {
-      this.show(message, 'warning', duration)
-    },
-    info(message, duration) {
-      this.show(message, 'info', duration)
-    }
+/**
+ * 显示提示
+ * @param {string} msg - 消息内容
+ * @param {string} msgType - 消息类型
+ * @param {number} msgDuration - 显示时长
+ */
+const show = (msg, msgType = 'info', msgDuration = 3000) => {
+  message.value = msg
+  type.value = msgType
+  duration.value = msgDuration
+  visible.value = true
+
+  if (timer.value) {
+    clearTimeout(timer.value)
   }
+
+  timer.value = setTimeout(() => {
+    hide()
+  }, duration.value)
 }
+
+/**
+ * 隐藏提示
+ */
+const hide = () => {
+  visible.value = false
+}
+
+/**
+ * 显示成功提示
+ * @param {string} msg - 消息内容
+ * @param {number} msgDuration - 显示时长
+ */
+const success = (msg, msgDuration) => {
+  show(msg, 'success', msgDuration)
+}
+
+/**
+ * 显示错误提示
+ * @param {string} msg - 消息内容
+ * @param {number} msgDuration - 显示时长
+ */
+const error = (msg, msgDuration) => {
+  show(msg, 'error', msgDuration)
+}
+
+/**
+ * 显示警告提示
+ * @param {string} msg - 消息内容
+ * @param {number} msgDuration - 显示时长
+ */
+const warning = (msg, msgDuration) => {
+  show(msg, 'warning', msgDuration)
+}
+
+/**
+ * 显示信息提示
+ * @param {string} msg - 消息内容
+ * @param {number} msgDuration - 显示时长
+ */
+const info = (msg, msgDuration) => {
+  show(msg, 'info', msgDuration)
+}
+
+// 暴露方法给父组件
+defineExpose({
+  show,
+  hide,
+  success,
+  error,
+  warning,
+  info
+})
 </script>
 
 <style scoped>

@@ -20,39 +20,35 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 
-export default {
-  name: 'OrderHeader',
-  components: {
-    SvgIcon
+// Props
+const props = defineProps({
+  title: {
+    type: String,
+    default: '历史工单'
   },
-  props: {
-    title: {
-      type: String,
-      default: '历史工单'
-    },
-    placeholder: {
-      type: String,
-      default: '搜索工单...'
-    }
-  },
-  data() {
-    return {
-      isRefreshing: false
-    }
-  },
-  methods: {
-    refreshOrders() {
-      this.isRefreshing = true
-      this.$emit('refresh-orders')
-      // 模拟刷新完成，实际应该由父组件通过事件回调来重置此状态
-      setTimeout(() => {
-        this.isRefreshing = false
-      }, 1000)
-    }
+  placeholder: {
+    type: String,
+    default: '搜索工单...'
   }
+})
+
+// Emits
+const emit = defineEmits(['refresh-orders'])
+
+// 响应式数据
+const isRefreshing = ref(false)
+
+// 方法
+const refreshOrders = () => {
+  isRefreshing.value = true
+  emit('refresh-orders')
+  setTimeout(() => {
+    isRefreshing.value = false
+  }, 1000)
 }
 </script>
 

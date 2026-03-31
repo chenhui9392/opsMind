@@ -1,10 +1,3 @@
-<!--
- * @Author: hui.chenn
- * @Description: 
- * @Date: 2026-03-30 14:50:49
- * @LastEditTime: 2026-03-30 14:50:57
- * @LastEditors: hui.chenn
--->
 <template>
   <div
     class="message"
@@ -49,7 +42,8 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { computed } from 'vue'
 import { marked } from 'marked'
 
 // 配置 marked 选项
@@ -59,52 +53,55 @@ marked.setOptions({
   sanitize: false
 })
 
-export default {
-  name: 'MessageItem',
-  props: {
-    message: {
-      type: Object,
-      required: true
-    }
-  },
-  emits: ['image-click', 'file-click'],
-  computed: {
-    renderedText() {
-      if (!this.message.text) return ''
-      const textStr = String(this.message.text)
-      const escapedText = textStr.replace(/</g, '&lt;')
-      return marked(escapedText)
-    }
-  },
-  methods: {
-    handleImageClick(image, index) {
-      this.$emit('image-click', image, this.message.images, index)
-    },
-    handleFileClick(file) {
-      this.$emit('file-click', file)
-    },
-    getFileIcon(fileName) {
-      const extension = fileName.toLowerCase().split('.').pop()
-      switch (extension) {
-        case 'pdf':
-          return '📄'
-        case 'xlsx':
-        case 'xls':
-          return '📊'
-        case 'jpg':
-        case 'jpeg':
-        case 'png':
-        case 'gif':
-          return '🖼️'
-        default:
-          return '📄'
-      }
-    },
-    getFileIconClass(fileName) {
-      const extension = fileName.toLowerCase().split('.').pop()
-      return `file-icon-${extension}`
-    }
+// Props
+const props = defineProps({
+  message: {
+    type: Object,
+    required: true
   }
+})
+
+// Emits
+const emit = defineEmits(['image-click', 'file-click'])
+
+// 计算属性
+const renderedText = computed(() => {
+  if (!props.message.text) return ''
+  const textStr = String(props.message.text)
+  const escapedText = textStr.replace(/</g, '&lt;')
+  return marked(escapedText)
+})
+
+// 方法
+const handleImageClick = (image, index) => {
+  emit('image-click', image, props.message.images, index)
+}
+
+const handleFileClick = (file) => {
+  emit('file-click', file)
+}
+
+const getFileIcon = (fileName) => {
+  const extension = fileName.toLowerCase().split('.').pop()
+  switch (extension) {
+    case 'pdf':
+      return '📄'
+    case 'xlsx':
+    case 'xls':
+      return '📊'
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+      return '🖼️'
+    default:
+      return '📄'
+  }
+}
+
+const getFileIconClass = (fileName) => {
+  const extension = fileName.toLowerCase().split('.').pop()
+  return `file-icon-${extension}`
 }
 </script>
 

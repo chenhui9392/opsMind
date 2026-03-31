@@ -1,10 +1,3 @@
-<!--
- * @Author: hui.chenn
- * @Description: 
- * @Date: 2026-03-30 13:41:29
- * @LastEditTime: 2026-03-30 13:41:36
- * @LastEditors: hui.chenn
--->
 <template>
   <div class="search-box">
     <div class="search-container">
@@ -26,44 +19,41 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 
-export default {
-  name: 'SearchBox',
-  components: {
-    SvgIcon
+// Props
+const props = defineProps({
+  modelValue: {
+    type: String,
+    default: ''
   },
-  props: {
-    modelValue: {
-      type: String,
-      default: ''
-    },
-    placeholder: {
-      type: String,
-      default: '搜索...'
-    }
-  },
-  emits: ['update:modelValue', 'search', 'clear'],
-  methods: {
-    /**
-     * 处理输入
-     * @param {Event} event - 输入事件
-     */
-    handleInput(event) {
-      const value = event.target.value
-      this.$emit('update:modelValue', value)
-      this.$emit('search', value)
-    },
-    /**
-     * 清除搜索
-     */
-    clearSearch() {
-      this.$emit('update:modelValue', '')
-      this.$emit('clear')
-      this.$emit('search', '')
-    }
+  placeholder: {
+    type: String,
+    default: '搜索...'
   }
+})
+
+// Emits
+const emit = defineEmits(['update:modelValue', 'search', 'clear'])
+
+/**
+ * 处理输入
+ * @param {Event} event - 输入事件
+ */
+const handleInput = (event) => {
+  const value = event.target.value
+  emit('update:modelValue', value)
+  emit('search', value)
+}
+
+/**
+ * 清除搜索
+ */
+const clearSearch = () => {
+  emit('update:modelValue', '')
+  emit('clear')
+  emit('search', '')
 }
 </script>
 

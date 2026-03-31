@@ -1,10 +1,3 @@
-<!--
- * @Author: hui.chenn
- * @Description: 
- * @Date: 2026-03-30 15:11:37
- * @LastEditTime: 2026-03-30 15:11:44
- * @LastEditors: hui.chenn
--->
 <template>
   <div class="file-uploader">
     <input
@@ -29,99 +22,110 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { uploadImage } from '../../api'
 
-export default {
-  name: 'FileUploader',
-  components: {
-    SvgIcon
+// Props
+const props = defineProps({
+  accept: {
+    type: String,
+    default: 'image/*,.xlsx,.xls,.pdf'
   },
-  props: {
-    accept: {
-      type: String,
-      default: 'image/*,.xlsx,.xls,.pdf'
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    title: {
-      type: String,
-      default: '上传文件'
-    },
-    buttonText: {
-      type: String,
-      default: ''
-    },
-    bucket: {
-      type: String,
-      default: 'CSS-01'
-    }
+  disabled: {
+    type: Boolean,
+    default: false
   },
-  emits: ['upload-start', 'upload-success', 'upload-error', 'upload-complete'],
-  data() {
-    return {
-      isUploading: false
-    }
+  title: {
+    type: String,
+    default: '上传文件'
   },
-  methods: {
-    handleClick() {
-      this.$refs.fileInput.click()
-    },
-    async handleFileChange(event) {
-      const files = event.target.files
-      if (files.length === 0) return
+  buttonText: {
+    type: String,
+    default: ''
+  },
+  bucket: {
+    type: String,
+    default: 'CSS-01'
+  }
+})
 
-      this.isUploading = true
-      this.$emit('upload-start')
+// Emits
+const emit = defineEmits(['upload-start', 'upload-success', 'upload-error', 'upload-complete'])
 
-      const filesArray = Array.from(files)
-      const uploadedImages = []
-      const uploadedFiles = []
+// 响应式数据
+const isUploading = ref(false)
 
-      for (const file of filesArray) {
-        const isImage = file.type.startsWith('image/')
+// 模板引用
+const fileInput = ref(null)
 
-        try {
-          const formData = new FormData()
-          formData.append('file', file)
-          formData.append('bucket', this.bucket)
-
-          const data = await uploadImage(formData)
-
-          if (data.success) {
-            const fileUrl = data.data.accessPath.trim()
-            if (isImage) {
-              uploadedImages.push(fileUrl)
-            } else {
-              uploadedFiles.push({
-                name: file.name,
-                url: fileUrl,
-                type: file.type
-              })
-            }
-            this.$emit('upload-success', { url: fileUrl, name: file.name, isImage })
-          } else {
-            this.$emit('upload-error', { file: file.name, error: '上传失败' })
-          }
-        } catch (error) {
-          this.$emit('upload-error', { file: file.name, error: error.message })
-        }
-      }
-
-      this.isUploading = false
-      this.$emit('upload-complete', { images: uploadedImages, files: uploadedFiles })
-
-      // 清空 input 以便可以重复选择相同文件
-      this.$refs.fileInput.value = ''
-    },
-    clear() {
-      this.$refs.fileInput.value = ''
-    }
+const handleClick = () => {
+  if (fileInput.value) {
+    fileInput.value.click()
   }
 }
+
+const handleFileChange = async (event) => {
+  const files = event.target.files
+  if (files.length === 0) return
+
+  isUploading.value = true
+  emit('upload-start')
+
+  const filesArray = Array.from(files)
+  const uploadedImages = []
+  const uploadedFiles = []
+
+  for (const file of filesArray) {
+    const isImage = file.type.startsWith('image/')
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('bucket', props.bucket)
+
+      const data = await uploadImage(formData)
+
+      if (data.success) {
+        const fileUrl = data.data.accessPath.trim()
+        if (isImage) {
+          uploadedImages.push(fileUrl)
+        } else {
+          uploadedFiles.push({
+            name: file.name,
+            url: fileUrl,
+            type: file.type
+          })
+        }
+        emit('upload-success', { url: fileUrl, name: file.name, isImage })
+      } else {
+        emit('upload-error', { file: file.name, error: '上传失败' })
+      }
+    } catch (error) {
+      emit('upload-error', { file: file.name, error: error.message })
+    }
+  }
+
+  isUploading.value = false
+  emit('upload-complete', { images: uploadedImages, files: uploadedFiles })
+
+  // 清空 input 以便可以重复选择相同文件
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+const clear = () => {
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+// 暴露方法给父组件
+defineExpose({
+  clear
+})
 </script>
 
 <style scoped>

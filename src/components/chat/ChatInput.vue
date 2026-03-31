@@ -81,254 +81,255 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, watch, onMounted } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import FileUploader from '../common/FileUploader.vue'
 import { getSystemList, getModuleListBySystem } from '../../config/systemModuleData.js'
 
-export default {
-  name: 'ChatInput',
-  components: {
-    SvgIcon,
-    FileUploader
+// Props
+const props = defineProps({
+  isSending: {
+    type: Boolean,
+    default: false
   },
-  props: {
-    isSending: {
-      type: Boolean,
-      default: false
-    },
-    isNewSession: {
-      type: Boolean,
-      default: false
-    },
-    systemName: {
-      type: String,
-      default: ''
-    },
-    moduleName: {
-      type: String,
-      default: ''
-    }
+  isNewSession: {
+    type: Boolean,
+    default: false
   },
-  data() {
-    return {
-      inputMessage: '',
-      selectedFiles: [],
-      uploadedImages: [],
-      uploadedFiles: [], // 存储上传的非图片文件信息
-      isUploading: false,
-      uploaderDisabled: false,
-      isInCodeBlock: false, // 标记是否在代码块内
-      selectedSystem: '', // 选中的系统
-      selectedModule: '', // 选中的模块
-      systemList: [], // 系统列表
-      moduleList: [] // 模块列表
-    }
+  systemName: {
+    type: String,
+    default: ''
   },
-  mounted() {
-    // 初始化textarea高度
-    this.autoResize()
-    // 加载系统列表
-    this.loadSystemList()
-    // 如果有传入的系统名称和模块名称，恢复选择状态
-    if (this.systemName && this.moduleName) {
-      this.restoreSystemModuleSelection()
-    }
-  },
-  watch: {
-    // 监听systemName和moduleName变化，恢复选择状态
-    systemName(newVal) {
-      if (newVal && this.moduleName) {
-        this.restoreSystemModuleSelection()
-      }
-    },
-    moduleName(newVal) {
-      if (newVal && this.systemName) {
-        this.restoreSystemModuleSelection()
-      }
-    }
-  },
-  methods: {
-    /**
-     * 检查是否在代码块内
-     */
-    checkIfInCodeBlock() {
-      const codeBlockMarkers = (this.inputMessage.match(/```/g) || []).length
-      this.isInCodeBlock = codeBlockMarkers % 2 === 1
-    },
+  moduleName: {
+    type: String,
+    default: ''
+  }
+})
 
-    /**
-     * 处理回车键事件
-     * @param {Event} event - 键盘事件
-     */
-    handleEnterKey(event) {
-      this.checkIfInCodeBlock()
+// Emits
+const emit = defineEmits(['send', 'stop', 'show-error'])
 
-      if (event.shiftKey || this.isInCodeBlock) {
-        // Shift + Enter 或在代码块内时换行
-        this.inputMessage += '\n'
-      } else {
-        // Enter 发送消息
-        this.sendMessage()
-      }
-    },
-    /**
-     * 处理文件上传开始
-     */
-    handleUploadStart() {
-      this.isUploading = true
-      this.uploaderDisabled = true
-    },
-    /**
-     * 处理文件上传成功
-     * @param {Object} result - 上传结果
-     */
-    handleUploadSuccess(result) {
-      if (result.isImage) {
-        this.uploadedImages.push(result.url)
-      } else {
-        this.uploadedFiles.push({
-          name: result.name,
-          url: result.url,
-          type: result.type
-        })
-      }
-    },
-    /**
-     * 处理文件上传错误
-     * @param {Object} error - 错误信息
-     */
-    handleUploadError(error) {
-      console.error('文件上传失败:', error)
-    },
-    /**
-     * 处理文件上传完成
-     * @param {Object} result - 上传结果
-     */
-    handleUploadComplete(result) {
-      this.isUploading = false
-      this.uploaderDisabled = false
-    },
-    /**
-     * 加载系统列表
-     */
-    loadSystemList() {
-      this.systemList = getSystemList()
-    },
+// 响应式数据
+const inputMessage = ref('')
+const selectedFiles = ref([])
+const uploadedImages = ref([])
+const uploadedFiles = ref([])
+const isUploading = ref(false)
+const uploaderDisabled = ref(false)
+const isInCodeBlock = ref(false)
+const selectedSystem = ref('')
+const selectedModule = ref('')
+const systemList = ref([])
+const moduleList = ref([])
 
-    /**
-     * 恢复系统模块选择状态
-     */
-    restoreSystemModuleSelection() {
-      // 根据名称找到对应的code
-      const system = this.systemList.find(s => s.name === this.systemName)
-      if (system) {
-        this.selectedSystem = system.code
-        // 加载该系统的模块列表
-        this.moduleList = getModuleListBySystem(this.selectedSystem)
-        // 在模块列表中查找对应的模块
-        const module = this.moduleList.find(m => m.name === this.moduleName)
-        if (module) {
-          this.selectedModule = module.code
-        }
-      }
-      console.log('恢复系统模块选择:', this.systemName, this.moduleName, '->', this.selectedSystem, this.selectedModule)
-    },
+// 模板引用
+const fileUploader = ref(null)
+const textareaRef = ref(null)
 
-    /**
-     * 处理系统选择变化
-     */
-    handleSystemChange() {
-      // 清空已选模块
-      this.selectedModule = ''
-      this.moduleList = []
+/**
+ * 检查是否在代码块内
+ */
+const checkIfInCodeBlock = () => {
+  const codeBlockMarkers = (inputMessage.value.match(/```/g) || []).length
+  isInCodeBlock.value = codeBlockMarkers % 2 === 1
+}
 
-      if (this.selectedSystem) {
-        this.moduleList = getModuleListBySystem(this.selectedSystem)
-      }
-    },
+/**
+ * 处理回车键事件
+ * @param {Event} event - 键盘事件
+ */
+const handleEnterKey = (event) => {
+  checkIfInCodeBlock()
 
-    /**
-     * 发送消息
-     */
-    sendMessage() {
-      // 新会话时需要验证系统和模块选择
-      if (this.isNewSession) {
-        if (!this.selectedSystem || !this.selectedModule) {
-          this.$emit('show-error', '请先选择系统和模块')
-          return
-        }
-      }
-
-      if (!this.inputMessage && this.uploadedImages.length === 0 && this.uploadedFiles.length === 0) return
-
-      // 获取系统名称和模块名称
-      const system = this.systemList.find(s => s.code === this.selectedSystem)
-      const module = this.moduleList.find(m => m.code === this.selectedModule)
-      const systemName = system ? system.name : ''
-      const moduleName = module ? module.name : ''
-
-      this.$emit('send', {
-        text: this.inputMessage,
-        originalText: this.inputMessage,
-        images: this.uploadedImages,
-        files: this.uploadedFiles,
-        systemCode: this.selectedSystem,
-        moduleCode: this.selectedModule,
-        systemName: systemName,
-        moduleName: moduleName
-      })
-
-      // 清空输入和文件
-      this.inputMessage = ''
-      this.uploadedImages = []
-      this.uploadedFiles = []
-      this.$refs.fileUploader.clear()
-      // 重置代码块状态
-      this.isInCodeBlock = false
-      // 重置textarea高度
-      this.resetResize()
-    },
-    /**
-     * 删除图片
-     * @param {number} index - 图片索引
-     */
-    deleteImage(index) {
-      this.uploadedImages.splice(index, 1)
-    },
-
-    /**
-     * 重置textarea高度
-     */
-    resetResize() {
-      const textarea = this.$el.querySelector('.chat-input')
-      if (textarea) {
-        // 重置高度，以便正确计算
-        textarea.style.height = '54px'
-      }
-    },
-
-    /**
-     * 自动调整textarea高度
-     */
-    autoResize() {
-      const textarea = this.$el.querySelector('.chat-input')
-      if (textarea) {
-        // 重置高度，以便正确计算
-        textarea.style.height = '54px'
-        // 设置新高度，不超过最大高度
-        const newHeight = Math.min(textarea.scrollHeight, 500)
-        textarea.style.height = `${newHeight}px`
-      }
-    },
-    /**
-     * 处理中断请求
-     */
-    handleStop() {
-      this.$emit('stop')
-    }
+  if (event.shiftKey || isInCodeBlock.value) {
+    inputMessage.value += '\n'
+  } else {
+    sendMessage()
   }
 }
+
+/**
+ * 处理文件上传开始
+ */
+const handleUploadStart = () => {
+  isUploading.value = true
+  uploaderDisabled.value = true
+}
+
+/**
+ * 处理文件上传成功
+ * @param {Object} result - 上传结果
+ */
+const handleUploadSuccess = (result) => {
+  if (result.isImage) {
+    uploadedImages.value.push(result.url)
+  } else {
+    uploadedFiles.value.push({
+      name: result.name,
+      url: result.url,
+      type: result.type
+    })
+  }
+}
+
+/**
+ * 处理文件上传错误
+ * @param {Object} error - 错误信息
+ */
+const handleUploadError = (error) => {
+  console.error('文件上传失败:', error)
+}
+
+/**
+ * 处理文件上传完成
+ * @param {Object} result - 上传结果
+ */
+const handleUploadComplete = (result) => {
+  isUploading.value = false
+  uploaderDisabled.value = false
+}
+
+/**
+ * 加载系统列表
+ */
+const loadSystemList = () => {
+  systemList.value = getSystemList()
+}
+
+/**
+ * 恢复系统模块选择状态
+ */
+const restoreSystemModuleSelection = () => {
+  const system = systemList.value.find(s => s.name === props.systemName)
+  if (system) {
+    selectedSystem.value = system.code
+    moduleList.value = getModuleListBySystem(selectedSystem.value)
+    const module = moduleList.value.find(m => m.name === props.moduleName)
+    if (module) {
+      selectedModule.value = module.code
+    }
+  }
+  console.log('恢复系统模块选择:', props.systemName, props.moduleName, '->', selectedSystem.value, selectedModule.value)
+}
+
+/**
+ * 处理系统选择变化
+ */
+const handleSystemChange = () => {
+  selectedModule.value = ''
+  moduleList.value = []
+
+  if (selectedSystem.value) {
+    moduleList.value = getModuleListBySystem(selectedSystem.value)
+  }
+}
+
+/**
+ * 发送消息
+ */
+const sendMessage = () => {
+  if (props.isNewSession) {
+    if (!selectedSystem.value || !selectedModule.value) {
+      emit('show-error', '请先选择系统和模块')
+      return
+    }
+  }
+
+  if (!inputMessage.value && uploadedImages.value.length === 0 && uploadedFiles.value.length === 0) return
+
+  const system = systemList.value.find(s => s.code === selectedSystem.value)
+  const module = moduleList.value.find(m => m.code === selectedModule.value)
+  const systemName = system ? system.name : ''
+  const moduleName = module ? module.name : ''
+
+  emit('send', {
+    text: inputMessage.value,
+    originalText: inputMessage.value,
+    images: uploadedImages.value,
+    files: uploadedFiles.value,
+    systemCode: selectedSystem.value,
+    moduleCode: selectedModule.value,
+    systemName: systemName,
+    moduleName: moduleName
+  })
+
+  inputMessage.value = ''
+  uploadedImages.value = []
+  uploadedFiles.value = []
+  if (fileUploader.value && fileUploader.value.clear) {
+    fileUploader.value.clear()
+  }
+  isInCodeBlock.value = false
+  resetResize()
+}
+
+/**
+ * 删除图片
+ * @param {number} index - 图片索引
+ */
+const deleteImage = (index) => {
+  uploadedImages.value.splice(index, 1)
+}
+
+/**
+ * 删除文件
+ * @param {number} index - 文件索引
+ */
+const deleteFile = (index) => {
+  uploadedFiles.value.splice(index, 1)
+}
+
+/**
+ * 重置textarea高度
+ */
+const resetResize = () => {
+  const textarea = document.querySelector('.chat-input')
+  if (textarea) {
+    textarea.style.height = '54px'
+  }
+}
+
+/**
+ * 自动调整textarea高度
+ */
+const autoResize = () => {
+  const textarea = document.querySelector('.chat-input')
+  if (textarea) {
+    textarea.style.height = '54px'
+    const newHeight = Math.min(textarea.scrollHeight, 500)
+    textarea.style.height = `${newHeight}px`
+  }
+}
+
+/**
+ * 处理中断请求
+ */
+const handleStop = () => {
+  emit('stop')
+}
+
+// 监听systemName和moduleName变化
+watch(() => props.systemName, (newVal) => {
+  if (newVal && props.moduleName) {
+    restoreSystemModuleSelection()
+  }
+})
+
+watch(() => props.moduleName, (newVal) => {
+  if (newVal && props.systemName) {
+    restoreSystemModuleSelection()
+  }
+})
+
+// 生命周期钩子
+onMounted(() => {
+  autoResize()
+  loadSystemList()
+  if (props.systemName && props.moduleName) {
+    restoreSystemModuleSelection()
+  }
+})
 </script>
 
 <style scoped>

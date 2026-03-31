@@ -1,10 +1,3 @@
-<!--
- * @Author: hui.chenn
- * @Description: 
- * @Date: 2026-03-30 14:51:28
- * @LastEditTime: 2026-03-30 14:51:34
- * @LastEditors: hui.chenn
--->
 <template>
   <div class="message-list">
     <!-- 空状态提示 -->
@@ -38,69 +31,63 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { reactive } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import MessageItem from './MessageItem.vue'
 import ImagePreview from '../common/ImagePreview.vue'
 
-export default {
-  name: 'MessageList',
-  components: {
-    SvgIcon,
-    MessageItem,
-    ImagePreview
-  },
-  props: {
-    messages: {
-      type: Array,
-      default: () => []
-    }
-  },
-  emits: ['file-click'],
-  data() {
-    return {
-      imagePreview: {
-        show: false,
-        images: [],
-        currentIndex: 0
-      }
-    }
-  },
-  methods: {
-    /**
-     * 处理图片点击
-     * @param {string} image - 当前图片
-     * @param {Array} images - 图片数组
-     * @param {number} index - 当前索引
-     */
-    handleImageClick(image, images, index) {
-      this.imagePreview = {
-        show: true,
-        images: images,
-        currentIndex: index
-      }
-    },
-    /**
-     * 关闭图片预览
-     */
-    closeImagePreview() {
-      this.imagePreview.show = false
-    },
-    /**
-     * 导航图片
-     * @param {number} index - 图片索引
-     */
-    handleNavigateImage(index) {
-      this.imagePreview.currentIndex = index
-    },
-    /**
-     * 处理文件点击
-     * @param {Object} file - 文件对象
-     */
-    handleFileClick(file) {
-      this.$emit('file-click', file)
-    }
+// Props
+const props = defineProps({
+  messages: {
+    type: Array,
+    default: () => []
   }
+})
+
+// Emits
+const emit = defineEmits(['file-click'])
+
+// 响应式数据
+const imagePreview = reactive({
+  show: false,
+  images: [],
+  currentIndex: 0
+})
+
+/**
+ * 处理图片点击
+ * @param {string} image - 当前图片
+ * @param {Array} images - 图片数组
+ * @param {number} index - 当前索引
+ */
+const handleImageClick = (image, images, index) => {
+  imagePreview.show = true
+  imagePreview.images = images
+  imagePreview.currentIndex = index
+}
+
+/**
+ * 关闭图片预览
+ */
+const closeImagePreview = () => {
+  imagePreview.show = false
+}
+
+/**
+ * 导航图片
+ * @param {number} index - 图片索引
+ */
+const handleNavigateImage = (index) => {
+  imagePreview.currentIndex = index
+}
+
+/**
+ * 处理文件点击
+ * @param {Object} file - 文件对象
+ */
+const handleFileClick = (file) => {
+  emit('file-click', file)
 }
 </script>
 

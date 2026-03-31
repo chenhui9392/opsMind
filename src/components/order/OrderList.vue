@@ -41,7 +41,8 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed } from 'vue'
 import SearchBox from '../common/SearchBox.vue'
 import BackToCurrent from '../common/BackToCurrent.vue'
 import OrderHeader from './OrderHeader.vue'
@@ -50,131 +51,141 @@ import messageService from '../../services/messageService'
 import { updateMessageStatus } from '../../api/index'
 import { createResizeMethods } from '../../utils/resizeHandler'
 
-export default {
-  name: 'OrderList',
-  components: {
-    SearchBox,
-    BackToCurrent,
-    OrderHeader,
-    OrderItemList
+// Props
+const props = defineProps({
+  contacts: {
+    type: Array,
+    default: () => []
   },
-  props: {
-    contacts: {
-      type: Array,
-      default: () => []
-    },
-    selectedContact: {
-      type: String,
-      default: ''
-    },
-    currentChatSession: {
-      type: Number,
-      default: 0
-    },
-    isSending: {
-      type: Boolean,
-      default: false
-    }
+  selectedContact: {
+    type: String,
+    default: ''
   },
-  data() {
-    return {
-      searchQuery: '',
-      contactsWidth: 300, // 初始宽度
-      isResizing: false,
-      // 调整大小方法由 createResizeMethods 注入
-      resizeMethods: null
-    }
+  currentChatSession: {
+    type: Number,
+    default: 0
   },
-  computed: {
-    isCurrentChatSelected() {
-      return this.selectedContact === this.currentChatSession
-    }
-  },
-  methods: {
-    /**
-     * 处理选择工单（禁用状态）
-     * @param {Object} order - 工单对象
-     */
-    async handleSelectOrder(order) {
-      // 如果正在发送消息，不允许切换会话
-      if (this.isSending) {
-        console.log('正在发送消息中，无法切换会话')
-        return
-      }
-      await this.selectOrder(order)
-    },
-    /**
-     * 处理回到当前聊天（禁用状态）
-     */
-    handleBackToCurrent() {
-      // 如果正在发送消息，不允许切换会话
-      if (this.isSending) {
-        return
-      }
-      this.$emit('back-to-current')
-    },
-    /**
-     * 处理搜索
-     * @param {string} query - 搜索关键词
-     */
-    handleSearch(query) {
-      this.searchQuery = query
-    },
-    /**
-     * 选择工单
-     * @param {Object} order - 工单对象
-     */
-    async selectOrder(order) {
-      console.log('OrderList: 选择工单', order)
-      // 从消息服务获取工单消息（会自动保存到缓存）
-      const messages = await messageService.selectOrder(order)
-      // 通知父组件更新
-      this.$emit('update:selectedContact', order.id)
-      this.$emit('update:showInput', false)
-      this.$emit('update:messages', messages)
-      console.log('OrderList: 已从缓存获取工单消息', order.id)
-    },
-    /**
-     * 更新工单
-     * @param {Object} id - 工单id
-     */
-    updateOrder(id) {
-      // 调用更新工单消息状态接口
-      try {
-        updateMessageStatus(id, 'READ')
-        console.log('工单消息状态更新成功:', id)
-      } catch (error) {
-        console.error('更新工单消息状态失败:', error)
-      }
-    },
-    /**
-     * 回到当前聊天会话
-     */
-    backToCurrentChat() {
-      this.$emit('back-to-current')
-    },
-    /**
-     * 处理刷新工单列表
-     */
-    handleRefreshOrders() {
-      if (this.$refs.orderItemList) {
-        this.$refs.orderItemList.fetchHistoryOrders()
-      }
-    }
-  },
-  created() {
-    // 初始化调整大小方法
-    this.resizeMethods = createResizeMethods(this, {
-      widthKey: 'contactsWidth',
-      resizingKey: 'isResizing',
-      minWidth: 200,
-      maxWidth: 500
-    })
-    // 绑定方法到当前实例
-    this.resizeMethods.startResizing = this.resizeMethods.startResizing.bind(this)
-    this.resizeMethods.onResizing = this.resizeMethods.onResizing.bind(this)
-    this.resizeMethods.stopResizing = this.resizeMethods.stopResizing.bind(this)
+  isSending: {
+    type: Boolean,
+    default: false
   }
+})
+
+// Emits
+const emit = defineEmits([
+  'update:selectedContact',
+  'update:showInput',
+  'update:messages',
+  'back-to-current'
+])
+
+// 响应式数据
+const searchQuery = ref('')
+const contactsWidth = ref(300)
+const isResizing = ref(false)
+const resizeMethods = ref(null)
+
+// 模板引用
+const orderItemList = ref(null)
+
+// 计算属性
+const isCurrentChatSelected = computed(() => {
+  return props.selectedContact === props.currentChatSession
+})
+
+/**
+ * 处理选择工单（禁用状态）
+ * @param {Object} order - 工单对象
+ */
+const handleSelectOrder = async (order) => {
+  if (props.isSending) {
+    console.log('正在发送消息中，无法切换会话')
+    return
+  }
+  await selectOrder(order)
+}
+
+/**
+ * 处理回到当前聊天（禁用状态）
+ */
+const handleBackToCurrent = () => {
+  if (props.isSending) {
+    return
+  }
+  emit('back-to-current')
+}
+
+/**
+ * 处理搜索
+ * @param {string} query - 搜索关键词
+ */
+const handleSearch = (query) => {
+  searchQuery.value = query
+}
+
+/**
+ * 选择工单
+ * @param {Object} order - 工单对象
+ */
+const selectOrder = async (order) => {
+  console.log('OrderList: 选择工单', order)
+  const messages = await messageService.selectOrder(order)
+  emit('update:selectedContact', order.id)
+  emit('update:showInput', false)
+  emit('update:messages', messages)
+  console.log('OrderList: 已从缓存获取工单消息', order.id)
+}
+
+/**
+ * 更新工单
+ * @param {Object} id - 工单id
+ */
+const updateOrder = (id) => {
+  try {
+    updateMessageStatus(id, 'READ')
+    console.log('工单消息状态更新成功:', id)
+  } catch (error) {
+    console.error('更新工单消息状态失败:', error)
+  }
+}
+
+/**
+ * 回到当前聊天会话
+ */
+const backToCurrentChat = () => {
+  emit('back-to-current')
+}
+
+/**
+ * 处理刷新工单列表
+ */
+const handleRefreshOrders = () => {
+  if (orderItemList.value && orderItemList.value.fetchHistoryOrders) {
+    orderItemList.value.fetchHistoryOrders()
+  }
+}
+
+// 初始化调整大小方法
+resizeMethods.value = createResizeMethods({
+  widthKey: 'contactsWidth',
+  resizingKey: 'isResizing',
+  minWidth: 200,
+  maxWidth: 500
+})
+
+// 绑定方法到当前实例
+if (resizeMethods.value) {
+  resizeMethods.value.startResizing = resizeMethods.value.startResizing.bind({
+    contactsWidth: contactsWidth.value,
+    isResizing: isResizing.value
+  })
+  resizeMethods.value.onResizing = resizeMethods.value.onResizing.bind({
+    contactsWidth: contactsWidth.value,
+    isResizing: isResizing.value
+  })
+  resizeMethods.value.stopResizing = resizeMethods.value.stopResizing.bind({
+    isResizing: isResizing.value
+  })
 }
 </script>
 

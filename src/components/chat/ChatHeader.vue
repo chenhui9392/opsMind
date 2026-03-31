@@ -38,120 +38,128 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import socketService from '../../utils/socketService'
 import MessagePopup from '../common/MessagePopup.vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { isDev } from '../../config/env.js'
 
-export default {
-  components: {
-    MessagePopup,
-    SvgIcon
+// Props
+const props = defineProps({
+  title: {
+    type: String,
+    default: '智能助手'
   },
-  name: 'ChatHeader',
-  props: {
-    title: {
-      type: String,
-      default: '智能助手'
-    },
-    status: {
-      type: String,
-      default: '在线'
-    },
-    userName: {
-      type: String,
-      default: ''
+  status: {
+    type: String,
+    default: '在线'
+  },
+  userName: {
+    type: String,
+    default: ''
+  }
+})
+
+// Emits
+const emit = defineEmits(['create-new-session', 'navigate-to-session', 'refresh-orders'])
+
+// 响应式数据
+const hasNotification = ref(false)
+const showMessagePopup = ref(false)
+const messages = ref([])
+const recentSessionId = ref(null)
+const isDevEnv = ref(false)
+
+// 计算属性
+const displayTitle = computed(() => {
+  return isDevEnv.value ? `${props.title}（测试）` : props.title
+})
+
+// 方法
+const createNewSession = () => {
+  emit('create-new-session')
+}
+
+const handleSocketMessage = (data) => {
+  console.log('收到 Socket 消息:', data)
+  if (data.type === 'broadcast' && data.message) {
+    hasNotification.value = true
+    const message = {
+      id: Date.now(),
+      sessionId: data.id || 1,
+      content: data.message,
+      time: new Date().toLocaleString('zh-CN')
     }
-  },
-  emits: ['create-new-session', 'navigate-to-session', 'refresh-orders'],
-  data() {
-    return {
-      hasNotification: false,
-      showMessagePopup: false,
-      messages: [], // 消息列表
-      recentSessionId: null,
-      isDev: false // 是否为开发环境
+    messages.value.unshift(message)
+    if (messages.value.length > 5) {
+      messages.value = messages.value.slice(0, 5)
     }
-  },
-  computed: {
-    // 根据环境显示标题，开发环境显示"智能助手（测试）"
-    displayTitle() {
-      return this.isDev ? `${this.title}（测试）` : this.title
-    }
-  },
-  methods: {
-    createNewSession() {
-      this.$emit('create-new-session');
-    },
-    handleSocketMessage(data) {
-      console.log('收到 Socket 消息:', data)
-      // 这里可以根据实际消息内容判断是否显示通知
-      // 保存消息到列表
-      if (data.type === 'broadcast' && data.message) {
-        this.hasNotification = true
-        const message = {
-          id: Date.now(),
-          sessionId: data.id || 1, // 默认会话 ID
-          content: data.message,
-          time: new Date().toLocaleString('zh-CN')
-        }
-        this.messages.unshift(message) // 添加到列表开头
-        // 限制消息列表长度navigate-to-session
-        if (this.messages.length > 5) {
-          this.messages = this.messages.slice(0, 5)
-        }
-        this.recentSessionId = data.sessionId || 1
-      }
-    },
-    /**
-     * 处理消息点击 - 先刷新历史工单，再导航到会话
-     * @param {number} sessionId - 会话 ID
-     */
-    async handleMessageClick(sessionId) {
-      const targetSessionId = sessionId || this.recentSessionId
-
-      // 先触发刷新历史工单列表
-      this.$emit('refresh-orders')
-
-      // 等待刷新完成后再导航（给刷新操作一些时间）
-      await new Promise(resolve => setTimeout(resolve, 300))
-
-      // 触发导航事件，定位到历史工单
-      this.$emit('navigate-to-session', targetSessionId)
-
-      // 点击后隐藏弹窗
-      this.showMessagePopup = false
-
-      // 从消息列表中删除对应的会话记录
-      this.messages = this.messages.filter(msg => msg.sessionId !== targetSessionId)
-
-      // 检查是否还有离线会话数据
-      this.hasNotification = this.messages.length > 0
-    },
-    navigateToSession(sessionId) {
-      // 点击离线会话或消息项，定位到历史会话列表
-      const targetSessionId = sessionId || this.recentSessionId
-
-      // 先触发导航事件，定位到历史工单
-      this.$emit('navigate-to-session', targetSessionId)
-
-      // 点击后隐藏弹窗
-      this.showMessagePopup = false
-
-      // 从消息列表中删除对应的会话记录
-      this.messages = this.messages.filter(msg => msg.sessionId !== targetSessionId)
-
-      // 检查是否还有离线会话数据
-      this.hasNotification = this.messages.length > 0
-    }
-  },
-  mounted() {
-    // 判断是否为开发环境
-    this.isDev = isDev
-    console.log('ChatHeader - isDev:', this.isDev)
+    recentSessionId.value = data.sessionId || 1
   }
 }
+
+/**
+ * 处理消息点击 - 先刷新历史工单，再导航到会话
+ * @param {number} sessionId - 会话 ID
+ */
+const handleMessageClick = async (sessionId) => {
+  const targetSessionId = sessionId || recentSessionId.value
+
+  emit('refresh-orders')
+
+  await new Promise(resolve => setTimeout(resolve, 300))
+
+  emit('navigate-to-session', targetSessionId)
+
+  showMessagePopup.value = false
+
+  messages.value = messages.value.filter(msg => msg.sessionId !== targetSessionId)
+
+  hasNotification.value = messages.value.length > 0
+}
+
+const navigateToSession = (sessionId) => {
+  const targetSessionId = sessionId || recentSessionId.value
+
+  emit('navigate-to-session', targetSessionId)
+
+  showMessagePopup.value = false
+
+  messages.value = messages.value.filter(msg => msg.sessionId !== targetSessionId)
+
+  hasNotification.value = messages.value.length > 0
+}
+
+// 建立 Socket 连接
+const initSocketConnection = () => {
+  socketService.on('message', handleSocketMessage)
+  
+  socketService.connect().then(() => {
+    console.log('ChatHeader - Socket 连接成功')
+  }).catch(error => {
+    console.error('ChatHeader - Socket 连接失败:', error)
+  })
+}
+
+// 断开 Socket 连接
+const disconnectSocket = () => {
+  socketService.off('message', handleSocketMessage)
+}
+
+// 生命周期钩子
+onMounted(() => {
+  isDevEnv.value = isDev
+  console.log('ChatHeader - isDev:', isDevEnv.value)
+  
+  // 初始化 Socket 连接
+  initSocketConnection()
+})
+
+// 组件卸载时断开连接
+onUnmounted(() => {
+  disconnectSocket()
+})
 </script>
 
 <style scoped>

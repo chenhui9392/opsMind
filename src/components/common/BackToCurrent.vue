@@ -1,10 +1,3 @@
-<!--
- * @Author: hui.chenn
- * @Description: 
- * @Date: 2026-03-30 14:16:22
- * @LastEditTime: 2026-03-30 14:16:29
- * @LastEditors: hui.chenn
--->
 <template>
   <div class="back-to-current" @click="handleClick">
     <div class="back-to-current-text">回到当前聊天</div>
@@ -14,23 +7,17 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 
-export default {
-  name: 'BackToCurrent',
-  components: {
-    SvgIcon
-  },
-  emits: ['click'],
-  methods: {
-    /**
-     * 处理点击事件
-     */
-    handleClick() {
-      this.$emit('click')
-    }
-  }
+// Emits
+const emit = defineEmits(['click'])
+
+/**
+ * 处理点击事件
+ */
+const handleClick = () => {
+  emit('click')
 }
 </script>
 

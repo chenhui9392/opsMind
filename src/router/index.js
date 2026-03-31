@@ -13,7 +13,7 @@
  * @LastEditors: hui.chenn
  */
 import { createRouter, createWebHashHistory } from 'vue-router'
-import chatView from '../page/chatView.vue'
+import chatView from '../page/ChatView.vue'
 import floatingBall from '../page/floatingBall.vue'
 
 const routes = [

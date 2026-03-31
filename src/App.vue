@@ -11,8 +11,6 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'App'
-}
+<script setup>
+// App.vue - 应用入口组件
 </script>

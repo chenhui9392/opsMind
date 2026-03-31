@@ -76,10 +76,11 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { getHistoryOrders } from '../../api/index'
-import {getSystemUsername} from "../../utils/system";
+import { getSystemUsername } from '../../utils/system'
 
 const ORDER_TYPE_MAP = {
   CONSULTATION: '咨询',
@@ -87,222 +88,222 @@ const ORDER_TYPE_MAP = {
   BUG: 'BUG',
   DATA_CHANGE: '数据变更',
 }
-export default {
-  name: 'OrderItemList',
-  components: {
-    SvgIcon
+
+// Props
+const props = defineProps({
+  selectedContact: {
+    type: String,
+    default: ''
   },
-  props: {
-    selectedContact: {
-      type: String,
-      default: ''
-    },
-    searchQuery: {
-      type: String,
-      default: ''
-    }
-  },
-  data() {
-    return {
-      historyOrders: [], // 历史工单列表
-      isLoading: false, // 加载状态
-      isLoadingMore: false, // 加载更多状态
-      fetchAttempted: false, // 是否已尝试获取数据
-      currentPage: 1, // 当前页码
-      pageSize: 10, // 每页大小
-      hasMoreData: true, // 是否有更多数据
-      error: null, // 错误信息
-      scrollListenerAdded: false // 滚动事件监听器是否已添加
-    }
-  },
-  computed: {
-    /**
-     * 过滤后的工单列表
-     */
-    filteredOrders() {
-      if (!this.searchQuery) {
-        return this.historyOrders
-      }
-      const query = this.searchQuery.toLowerCase()
-      return this.historyOrders.filter(order => {
-        return (
-          (order.orderTitle && order.orderTitle.toLowerCase().includes(query)) ||
-          (order.userMessage && order.userMessage.toLowerCase().includes(query)) ||
-          (order.orderType && order.orderType.toLowerCase().includes(query))
-        )
-      })
-    }
-  },
-  methods: {
-    /**
-     * 选择工单
-     * @param {Object} order - 工单对象
-     */
-    async selectOrder(order) {
-      // 触发自定义事件，将工单信息传递给父组件
-      this.$emit('select-order', order)
-    },
-    /**
-     * 滚动到底部
-     */
-    scrollToBottom() {
-      setTimeout(() => {
-        const contactsList = this.$refs.contactsList
-        if (contactsList) {
-          contactsList.scrollTop = contactsList.scrollHeight
-        }
-      }, 100)
-    },
-    /**
-     * 滚动到顶部
-     */
-    scrollToTop() {
-      setTimeout(() => {
-        const contactsList = this.$refs.contactsList
-        if (contactsList) {
-          contactsList.scrollTop = 0
-        }
-      }, 100)
-    },
-    /**
-     * 获取历史工单列表
-     */
-    async fetchHistoryOrders(isLoadMore = false) {
-      if (isLoadMore) {
-        this.isLoadingMore = true
-      } else {
-        // 刷新时暂时移除滚动事件监听器，防止触发加载更多
-        this.removeScrollListener()
+  searchQuery: {
+    type: String,
+    default: ''
+  }
+})
 
-        this.isLoading = true // 开始加载
-        this.fetchAttempted = true
-        this.currentPage = 1
-        this.historyOrders = []
-        this.hasMoreData = true
-        this.error = null
-        // 刷新时滚动到顶部
-        this.scrollToTop()
-      }
+// Emits
+const emit = defineEmits(['select-order'])
 
-      try {
-        const userName = await getSystemUsername()
-        const response = await getHistoryOrders({
-          pageNo: isLoadMore ? this.currentPage + 1 : 1,
-          pageSize: this.pageSize,
-          userName: userName
-        })
+// 响应式数据
+const historyOrders = ref([])
+const isLoading = ref(false)
+const isLoadingMore = ref(false)
+const fetchAttempted = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const hasMoreData = ref(true)
+const error = ref(null)
+const scrollListenerAdded = ref(false)
 
-        if (response && response.data) {
-          // 尝试多种可能的数据结构
-          const newOrders = response.data.records || response.data.list || response.data.data || []
+// 模板引用
+const contactsList = ref(null)
 
-          if (isLoadMore) {
-            this.historyOrders = [...this.historyOrders, ...newOrders]
-            this.currentPage++
-          } else {
-            this.historyOrders = newOrders
-          }
+// 计算属性
+const filteredOrders = computed(() => {
+  if (!props.searchQuery) {
+    return historyOrders.value
+  }
+  const query = props.searchQuery.toLowerCase()
+  return historyOrders.value.filter(order => {
+    return (
+      (order.orderTitle && order.orderTitle.toLowerCase().includes(query)) ||
+      (order.userMessage && order.userMessage.toLowerCase().includes(query)) ||
+      (order.orderType && order.orderType.toLowerCase().includes(query))
+    )
+  })
+})
 
-          // 判断是否还有更多数据
-          this.hasMoreData = newOrders.length === this.pageSize
-        } else {
-          if (!isLoadMore) {
-            this.historyOrders = []
-          }
-          this.hasMoreData = false
-        }
-      } catch (error) {
-        console.error('获取历史工单失败:', error)
-        this.error = '加载失败，请稍后重试'
-        if (!isLoadMore) {
-          this.historyOrders = []
-        }
-      } finally {
-        this.isLoading = false // 加载完成
-        this.isLoadingMore = false
-
-        // 刷新完成后重新添加滚动事件监听器
-        if (!isLoadMore) {
-          setTimeout(() => {
-            this.addScrollListener()
-          }, 500)
-        }
-      }
-    },
-    /**
-     * 添加滚动事件监听器
-     */
-    addScrollListener() {
-      const contactsList = this.$refs.contactsList
-      if (contactsList && !this.scrollListenerAdded) {
-        contactsList.addEventListener('scroll', this.handleScroll)
-        this.scrollListenerAdded = true
-      }
-    },
-    /**
-     * 移除滚动事件监听器
-     */
-    removeScrollListener() {
-      const contactsList = this.$refs.contactsList
-      if (contactsList && this.scrollListenerAdded) {
-        contactsList.removeEventListener('scroll', this.handleScroll)
-        this.scrollListenerAdded = false
-      }
-    },
-    /**
-     * 格式化日期
-     * @param {string} dateStr - 日期字符串
-     * @returns {string} - 格式化后的日期
-     */
-    formatDate(dateStr) {
-      if (!dateStr) return ''
-      const date = new Date(dateStr)
-      const year = date.getFullYear()
-      const month = (date.getMonth() + 1).toString().padStart(2, '0')
-      const day = date.getDate().toString().padStart(2, '0')
-      const hours = date.getHours().toString().padStart(2, '0')
-      const minutes = date.getMinutes().toString().padStart(2, '0')
-      const seconds = date.getSeconds().toString().padStart(2, '0')
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-    },
-    orderTypeText(orderType) {
-      return ORDER_TYPE_MAP[orderType] || ''
-    },
-    /**
-     * 处理滚动事件
-     */
-    handleScroll() {
-      const contactsList = this.$refs.contactsList
-      if (!contactsList) return
-
-      const { scrollTop, scrollHeight, clientHeight } = contactsList
-      const distanceToBottom = scrollHeight - scrollTop - clientHeight
-
-      // 当距离底部300px且不是正在加载，且有更多数据时，加载更多
-      if (distanceToBottom < 300 && !this.isLoadingMore && this.hasMoreData) {
-        console.log('触发加载更多数据')
-        this.fetchHistoryOrders(true)
-      }
-    }
-  },
-  mounted() {
-    // 组件挂载时加载历史工单
-    this.fetchHistoryOrders()
-
-    // 使用nextTick确保DOM已经更新
-    this.$nextTick(() => {
-      // 添加滚动事件监听器
-      this.addScrollListener()
-    })
-  },
-  beforeUnmount() {
-    // 使用nextTick确保DOM仍然存在
-    this.$nextTick(() => {
-      // 移除滚动事件监听器
-      this.removeScrollListener()
-    })
-  },
+/**
+ * 选择工单
+ * @param {Object} order - 工单对象
+ */
+const selectOrder = (order) => {
+  emit('select-order', order)
 }
+
+/**
+ * 滚动到底部
+ */
+const scrollToBottom = () => {
+  setTimeout(() => {
+    const list = contactsList.value
+    if (list) {
+      list.scrollTop = list.scrollHeight
+    }
+  }, 100)
+}
+
+/**
+ * 滚动到顶部
+ */
+const scrollToTop = () => {
+  setTimeout(() => {
+    const list = contactsList.value
+    if (list) {
+      list.scrollTop = 0
+    }
+  }, 100)
+}
+
+/**
+ * 获取历史工单列表
+ */
+const fetchHistoryOrders = async (isLoadMore = false) => {
+  if (isLoadMore) {
+    isLoadingMore.value = true
+  } else {
+    removeScrollListener()
+    isLoading.value = true
+    fetchAttempted.value = true
+    currentPage.value = 1
+    historyOrders.value = []
+    hasMoreData.value = true
+    error.value = null
+    scrollToTop()
+  }
+
+  try {
+    const userName = await getSystemUsername()
+    const response = await getHistoryOrders({
+      pageNo: isLoadMore ? currentPage.value + 1 : 1,
+      pageSize: pageSize.value,
+      userName: userName
+    })
+
+    if (response && response.data) {
+      const newOrders = response.data.records || response.data.list || response.data.data || []
+
+      if (isLoadMore) {
+        historyOrders.value = [...historyOrders.value, ...newOrders]
+        currentPage.value++
+      } else {
+        historyOrders.value = newOrders
+      }
+
+      hasMoreData.value = newOrders.length === pageSize.value
+    } else {
+      if (!isLoadMore) {
+        historyOrders.value = []
+      }
+      hasMoreData.value = false
+    }
+  } catch (err) {
+    console.error('获取历史工单失败:', err)
+    error.value = '加载失败，请稍后重试'
+    if (!isLoadMore) {
+      historyOrders.value = []
+    }
+  } finally {
+    isLoading.value = false
+    isLoadingMore.value = false
+
+    if (!isLoadMore) {
+      setTimeout(() => {
+        addScrollListener()
+      }, 500)
+    }
+  }
+}
+
+/**
+ * 添加滚动事件监听器
+ */
+const addScrollListener = () => {
+  const list = contactsList.value
+  if (list && !scrollListenerAdded.value) {
+    list.addEventListener('scroll', handleScroll)
+    scrollListenerAdded.value = true
+  }
+}
+
+/**
+ * 移除滚动事件监听器
+ */
+const removeScrollListener = () => {
+  const list = contactsList.value
+  if (list && scrollListenerAdded.value) {
+    list.removeEventListener('scroll', handleScroll)
+    scrollListenerAdded.value = false
+  }
+}
+
+/**
+ * 格式化日期
+ * @param {string} dateStr - 日期字符串
+ * @returns {string} - 格式化后的日期
+ */
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const day = date.getDate().toString().padStart(2, '0')
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  const seconds = date.getSeconds().toString().padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+const orderTypeText = (orderType) => {
+  return ORDER_TYPE_MAP[orderType] || ''
+}
+
+/**
+ * 处理滚动事件
+ */
+const handleScroll = () => {
+  const list = contactsList.value
+  if (!list) return
+
+  const { scrollTop, scrollHeight, clientHeight } = list
+  const distanceToBottom = scrollHeight - scrollTop - clientHeight
+
+  if (distanceToBottom < 300 && !isLoadingMore.value && hasMoreData.value) {
+    console.log('触发加载更多数据')
+    fetchHistoryOrders(true)
+  }
+}
+
+// 生命周期钩子
+onMounted(() => {
+  fetchHistoryOrders()
+  nextTick(() => {
+    addScrollListener()
+  })
+})
+
+onBeforeUnmount(() => {
+  nextTick(() => {
+    removeScrollListener()
+  })
+})
+
+// 暴露方法给父组件
+defineExpose({
+  historyOrders,
+  scrollToTop,
+  fetchHistoryOrders
+})
 </script>
 
 <style scoped>
@@ -385,9 +386,9 @@ export default {
   color: #333;
   font-size: 15px;
   flex: 1;
-  white-space: nowrap; /* 防止文本换行 */
-  overflow: hidden; /* 隐藏溢出的内容 */
-  text-overflow: ellipsis; /* 溢出内容显示为省略号 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 

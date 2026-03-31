@@ -31,53 +31,58 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ImagePreview',
-  props: {
-    show: {
-      type: Boolean,
-      default: false
-    },
-    images: {
-      type: Array,
-      default: () => []
-    },
-    currentIndex: {
-      type: Number,
-      default: 0
-    }
+<script setup>
+import { ref } from 'vue'
+
+// Props
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false
   },
-  data() {
-    return {
-      scale: 1
-    }
+  images: {
+    type: Array,
+    default: () => []
   },
-  methods: {
-    close() {
-      this.scale = 1
-      this.$emit('close')
-    },
-    navigate(direction) {
-      const newIndex = this.currentIndex + direction
-      if (newIndex >= 0 && newIndex < this.images.length) {
-        this.$emit('navigate', newIndex)
-      }
-    },
-    zoomIn() {
-      if (this.scale < 3) {
-        this.scale += 0.2
-      }
-    },
-    zoomOut() {
-      if (this.scale > 0.5) {
-        this.scale -= 0.2
-      }
-    },
-    resetZoom() {
-      this.scale = 1
-    }
+  currentIndex: {
+    type: Number,
+    default: 0
   }
+})
+
+// Emits
+const emit = defineEmits(['close', 'navigate'])
+
+// 响应式数据
+const scale = ref(1)
+
+// 方法
+const close = () => {
+  scale.value = 1
+  emit('close')
+}
+
+const navigate = (direction) => {
+  const newIndex = props.currentIndex + direction
+  if (newIndex >= 0 && newIndex < props.images.length) {
+    emit('navigate', newIndex)
+  }
+}
+
+const zoomIn = () => {
+  if (scale.value < 3) {
+    scale.value += 0.2
+  }
+}
+
+const zoomOut = () => {
+  if (scale.value > 0.5) {
+    scale.value -= 0.2
+  }
+}
+
+const resetZoom = () => {
+  scale.value = 1
 }
 </script>
 
