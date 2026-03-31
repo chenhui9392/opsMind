@@ -150,7 +150,7 @@ class TrayManager {
       ])
 
       // 设置托盘图标提示
-      this.tray.setToolTip('运维智能助手')
+      this.tray.setToolTip('AIT Claw')
       // 设置托盘菜单
       this.tray.setContextMenu(contextMenu)
 

@@ -1,5 +1,6 @@
-const { BrowserWindow } = require('electron')
+const { BrowserWindow, nativeImage } = require('electron')
 const path = require('path')
+const fs = require('fs')
 
 class WindowManager {
   constructor() {
@@ -7,12 +8,35 @@ class WindowManager {
   }
 
   /**
+   * 获取窗口图标路径
+   * @returns {string|null} - 图标路径或null
+   */
+  getIconPath() {
+    let iconPath
+    const { app } = require('electron')
+
+    if (app.isPackaged) {
+      // 生产环境
+      iconPath = path.join(process.resourcesPath, 'app.asar', 'public', 'app.png')
+      if (!fs.existsSync(iconPath)) {
+        iconPath = path.join(process.resourcesPath, 'public', 'app.png')
+      }
+    } else {
+      // 开发环境
+      iconPath = path.join(__dirname, '../../../public', 'app.png')
+    }
+
+    return fs.existsSync(iconPath) ? iconPath : null
+  }
+
+  /**
    * 创建主窗口
    * @returns {BrowserWindow} - 主窗口实例
    */
   createWindow() {
-    // 创建窗口
-    this.mainWindow = new BrowserWindow({
+    // 获取图标路径
+    const iconPath = this.getIconPath()
+    const windowOptions = {
       width: 1000,
       height: 700,
       webPreferences: {
@@ -23,7 +47,23 @@ class WindowManager {
       alwaysOnTop: true, // 确保窗口在最前面
       transparent: false, // 确保窗口不透明
       frame: true // 确保窗口有边框
-    })
+    }
+
+    // 如果图标存在，设置窗口图标
+    if (iconPath) {
+      try {
+        // Windows 上直接使用路径字符串更可靠
+        windowOptions.icon = iconPath
+        console.log('Window icon set to:', iconPath)
+      } catch (error) {
+        console.error('Error setting window icon:', error)
+      }
+    } else {
+      console.log('Window icon path not found')
+    }
+
+    // 创建窗口
+    this.mainWindow = new BrowserWindow(windowOptions)
 
     // 检查是否为开发模式
     const isDev = !require('electron').app.isPackaged
