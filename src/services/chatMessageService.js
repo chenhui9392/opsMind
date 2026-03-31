@@ -163,6 +163,7 @@ class ChatMessageService {
         if (parsedContent.type === 'install' && parsedContent.id) {
           isInstallType = true
           installId = parsedContent.id
+          content = parsedContent?.message
         }
       } catch (parseError) {
         // 如果解析失败，使用原始 content
@@ -171,13 +172,15 @@ class ChatMessageService {
 
       // 如果是安装类型消息，调用下载接口并显示响应
       if (isInstallType && installId) {
-        // 调用下载接口
-        const message = this.handleDownloadSoftware(installId)
-        // 确保提示消息被添加到当前会话
-        if (this.messageStore[this.currentChatSession]) {
-          this.messageStore[this.currentChatSession].push(message)
-        }
-        return message
+        // // 调用下载接口
+        // const message = this.handleDownloadSoftware(installId)
+        // // 确保提示消息被添加到当前会话
+        // if (this.messageStore[this.currentChatSession]) {
+        //   this.messageStore[this.currentChatSession].push(message)
+        // }
+        // return message
+        // this.handleDownloadSoftware(installId)
+         downloadSoftware(installId)
       }
 
       // 创建响应消息
