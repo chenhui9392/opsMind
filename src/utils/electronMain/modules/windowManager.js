@@ -1,4 +1,4 @@
-const { BrowserWindow, nativeImage } = require('electron')
+const { BrowserWindow, nativeImage, app } = require('electron')
 const path = require('path')
 const fs = require('fs')
 
@@ -40,7 +40,7 @@ class WindowManager {
       width: 1000,
       height: 700,
       webPreferences: {
-        preload: path.join(__dirname, '../../../preload.js'),
+        preload: path.join(app.getAppPath(), 'preload.js'),
         devTools: true
       },
       show: true,
@@ -71,8 +71,9 @@ class WindowManager {
 
     if (isDev) {
       // 开发模式：加载Vite开发服务器
-      console.log('Loading Vite dev server at http://localhost:9090')
-      this.mainWindow.loadURL('http://localhost:9090')
+      const devPort = process.env.VITE_DEV_SERVER_PORT || 9090
+      console.log(`Loading Vite dev server at http://localhost:${devPort}`)
+      this.mainWindow.loadURL(`http://localhost:${devPort}`)
     } else {
       // 生产模式：加载静态文件
       console.log('Loading static file at dist/index.html')

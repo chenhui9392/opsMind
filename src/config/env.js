@@ -26,5 +26,6 @@ export const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL
 export const UPDATE_API_BASE_URL = import.meta.env.VITE_UPDATE_API_BASE_URL
 
 // 环境标识
-export const isDev = import.meta.env.DEV
-export const isProd = import.meta.env.PROD
+// 使用 VITE_APP_ENV 环境变量来判断，因为 import.meta.env.DEV 在构建后始终为 false
+export const isDev = import.meta.env.VITE_APP_ENV === 'development'
+export const isProd = import.meta.env.VITE_APP_ENV === 'production'

@@ -27,7 +27,7 @@ if (!gotTheLock) {
 }
 
 // 构建正确的menu模块路径
-const menuPath = path.join(__dirname, '../utils', 'menu.js')
+const menuPath = path.join(__dirname, '..', 'menu.js')
 const { createMenu } = require(menuPath)
 
 // 获取系统用户名
@@ -80,7 +80,8 @@ app.whenReady().then(() => {
   )
   
   // 创建悬浮球
-  floatingBallManager.createFloatingBall()
+  const isDev = !require('electron').app.isPackaged
+  floatingBallManager.createFloatingBall(isDev)
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) {

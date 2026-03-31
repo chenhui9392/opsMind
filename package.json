@@ -40,7 +40,7 @@
       "dist/**/*",
       "main.js",
       "preload.js",
-      "src/main/**/*",
+      "src/utils/electronMain/**/*",
       "src/utils/menu.js",
       "public/**/*"
     ],
@@ -60,7 +60,8 @@
   "dependencies": {
     "crypto-js": "^4.2.0",
     "marked": "^17.0.4",
-    "vue": "^3.5.30"
+    "vue": "^3.5.30",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.4",

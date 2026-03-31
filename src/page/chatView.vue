@@ -44,15 +44,15 @@
 </template>
 
 <script>
-import OrderList from './order/OrderList.vue'
-import Chat from './chat/Chat.vue'
-import UpdateDialog from './common/UpdateDialog.vue'
+import OrderList from '../components/order/OrderList.vue'
+import Chat from '../components/chat/Chat.vue'
+import UpdateDialog from '../components/common/UpdateDialog.vue'
 import {initialMessages} from '../mock/data'
 import messageService from '../services/messageService'
 import updateService from '../services/updateService'
 
 export default {
-  name: 'MainApp',
+  name: 'chatView',
   components: {
     OrderList,
     Chat,

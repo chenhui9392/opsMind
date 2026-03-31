@@ -1,4 +1,4 @@
-const { Tray, Menu, nativeImage } = require('electron')
+const { Tray, Menu, nativeImage, app } = require('electron')
 const path = require('path')
 const fs = require('fs')
 
@@ -27,7 +27,7 @@ class TrayManager {
         }
       } else {
         // 开发环境：使用项目根目录下的public文件夹
-        iconPath = path.join(__dirname, '../../../public', 'app.png')
+        iconPath = path.join(app.getAppPath(), 'public', 'app.png')
       }
 
       console.log('Trying tray icon path (PNG):', iconPath)
@@ -56,7 +56,7 @@ class TrayManager {
               iconPath = path.join(process.resourcesPath, 'public', 'app.ico')
             }
           } else {
-            iconPath = path.join(__dirname, '../../../public', 'app.ico')
+            iconPath = path.join(app.getAppPath(), 'public', 'app.ico')
           }
 
           console.log('Trying tray icon path (ICO):', iconPath)

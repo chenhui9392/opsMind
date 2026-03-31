@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
     plugins: [vue()],
     base: './',
     server: {
-      port: 9090,
+      port: parseInt(env.VITE_DEV_SERVER_PORT) || 9090,
       strictPort: false,
       webSecurity: false,
       proxy: {

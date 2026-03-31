@@ -1,21 +1,18 @@
 <!--
  * @Author: hui.chenn
- * @Description: 
+ * @Description: 应用入口 - 路由页面容器
  * @Date: 2026-03-17 18:17:55
- * @LastEditTime: 2026-03-19 13:36:27
+ * @LastEditTime: 2026-03-31 09:30:00
  * @LastEditors: hui.chenn
 -->
 <template>
-  <MainApp />
+  <div id="app">
+    <router-view></router-view>
+  </div>
 </template>
 
 <script>
-import MainApp from './components/MainApp.vue'
-
 export default {
-  name: 'App',
-  components: {
-    MainApp
-  }
+  name: 'App'
 }
 </script>

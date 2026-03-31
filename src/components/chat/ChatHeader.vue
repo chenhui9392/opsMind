@@ -42,6 +42,7 @@
 import socketService from '../../utils/socketService'
 import MessagePopup from '../common/MessagePopup.vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
+import { isDev } from '../../config/env.js'
 
 export default {
   components: {
@@ -147,7 +148,8 @@ export default {
   },
   mounted() {
     // 判断是否为开发环境
-    this.isDev = import.meta.env?.DEV || false
+    this.isDev = isDev
+    console.log('ChatHeader - isDev:', this.isDev)
   }
 }
 </script>

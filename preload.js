@@ -54,6 +54,28 @@ contextBridge.exposeInMainWorld('appUpdater', {
   }
 })
 
+// 暴露悬浮球相关接口给渲染进程
+contextBridge.exposeInMainWorld('electronAPI', {
+  // 获取窗口位置
+  getWindowPosition: async () => {
+    try {
+      const pos = await ipcRenderer.invoke('getWindowPosition')
+      return pos
+    } catch (error) {
+      console.error('Error getting window position:', error)
+      return { x: 0, y: 0 }
+    }
+  },
+  // 更新窗口位置
+  updateWindowPosition: (pos) => {
+    ipcRenderer.send('updateWindowPosition', pos)
+  },
+  // 切换主窗口显示/隐藏
+  toggleMainWindow: () => {
+    ipcRenderer.send('toggleMainWindow')
+  }
+})
+
 console.log('preload.js loaded and APIs exposed')
 
 window.addEventListener('DOMContentLoaded', () => {
