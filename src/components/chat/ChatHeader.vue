@@ -134,7 +134,7 @@ const navigateToSession = (sessionId) => {
 // 建立 Socket 连接
 const initSocketConnection = () => {
   socketService.on('message', handleSocketMessage)
-  
+
   socketService.connect().then(() => {
     console.log('ChatHeader - Socket 连接成功')
   }).catch(error => {
@@ -151,15 +151,15 @@ const disconnectSocket = () => {
 onMounted(() => {
   isDevEnv.value = isDev
   console.log('ChatHeader - isDev:', isDevEnv.value)
-  
+
   // 初始化 Socket 连接
-  initSocketConnection()
+  // initSocketConnection()
 })
 
 // 组件卸载时断开连接
-onUnmounted(() => {
-  disconnectSocket()
-})
+// onUnmounted(() => {
+//   disconnectSocket()
+// })
 </script>
 
 <style scoped>
