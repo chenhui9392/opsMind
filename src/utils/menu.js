@@ -1,7 +1,42 @@
 const { Menu, app } = require('electron');
 
 // 创建中文菜单栏
-function createMenu() {
+function createMenu(isDev = false) {
+  // 视图菜单的子菜单
+  const viewSubmenu = [
+    {
+      label: '刷新',
+      accelerator: 'CmdOrCtrl+R',
+      click: function(item, focusedWindow) {
+        if (focusedWindow) {
+          focusedWindow.reload();
+        }
+      }
+    },
+    {
+      label: '切换全屏',
+      accelerator: process.platform === 'darwin' ? 'Ctrl+Command+F' : 'F11',
+      click: function(item, focusedWindow) {
+        if (focusedWindow) {
+          focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+        }
+      }
+    }
+  ];
+
+  // 开发环境显示开发者工具
+  if (isDev) {
+    viewSubmenu.push({
+      label: '开发者工具',
+      accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+      click: function(item, focusedWindow) {
+        if (focusedWindow) {
+          focusedWindow.webContents.toggleDevTools();
+        }
+      }
+    });
+  }
+
   const template = [
     {
       label: '文件',
@@ -53,35 +88,7 @@ function createMenu() {
     },
     {
       label: '视图',
-      submenu: [
-        {
-          label: '刷新',
-          accelerator: 'CmdOrCtrl+R',
-          click: function(item, focusedWindow) {
-            if (focusedWindow) {
-              focusedWindow.reload();
-            }
-          }
-        },
-        {
-          label: '切换全屏',
-          accelerator: process.platform === 'darwin' ? 'Ctrl+Command+F' : 'F11',
-          click: function(item, focusedWindow) {
-            if (focusedWindow) {
-              focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
-            }
-          }
-        },
-        {
-          label: '开发者工具',
-          accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
-          click: function(item, focusedWindow) {
-            if (focusedWindow) {
-              focusedWindow.webContents.toggleDevTools();
-            }
-          }
-        }
-      ]
+      submenu: viewSubmenu
     },
     {
       label: '窗口',

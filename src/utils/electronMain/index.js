@@ -64,11 +64,14 @@ app.whenReady().then(() => {
     }
   })
   
+  // 判断是否为开发环境
+  const isDev = !require('electron').app.isPackaged
+  
   // 创建窗口
   windowManager.createWindow()
   
-  // 创建菜单
-  createMenu()
+  // 创建菜单（开发环境显示开发者工具）
+  createMenu(isDev)
   
   // 创建托盘
   trayManager.createTray(
@@ -80,7 +83,6 @@ app.whenReady().then(() => {
   )
   
   // 创建悬浮球
-  const isDev = !require('electron').app.isPackaged
   floatingBallManager.createFloatingBall(isDev)
 
   app.on('activate', function () {
