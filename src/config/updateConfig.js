@@ -2,15 +2,16 @@
  * @Author: hui.chenn
  * @Description: 应用版本更新配置
  * @Date: 2026-03-27 17:10:00
- * @LastEditTime: 2026-03-27 17:10:00
+ * @LastEditTime: 2026-03-30 15:54:24
  * @LastEditors: hui.chenn
  */
 
 import { md5 } from '../utils/md5'
 import { UPDATE_API_BASE_URL } from './env'
 
-// 当前应用版本号（与package.json保持一致）
-export const APP_VERSION = '1.0.0'
+// 从 package.json 读取应用版本号
+import packageJson from '../../package.json'
+export const APP_VERSION = packageJson.version || '1.0.0'
 
 // 判断是否为开发环境
 const isDev = import.meta.env?.DEV || false
@@ -31,8 +32,8 @@ const UPDATE_API_CONFIG = {
   // 路径参数
   pathParams: {
     clientId: '42933cfc0f3490b76fd51a6cf3d09d5c',
-    appName: 'tineco_css_e',
-    packageName: 'tineco_css',
+    appName: 'tineco_ops_w',
+    packageName: 'tineco_ops',
     packageVersion: '1'
   }
 }
@@ -53,12 +54,12 @@ function getYYYYMMDDHHMMSS() {
 
 /**
  * 获取应用代码
- * Electron环境返回 'tineco_css_e'
+ * Electron环境返回 
  * @returns {string} 应用代码
  */
 function getAppCode() {
-  // Electron 环境使用 tineco_css_e
-  return 'tineco_css_e'
+  // Electron 环境使用 
+  return 'tineco_ops_w'
 }
 
 /**
@@ -108,8 +109,8 @@ function generateAuthSign(timeSpan) {
     'appCode=' + appCode +
     'appVersion=' + appVersion +
     'authTimespan=' + timeSpan +
-    'c=tineco_css' +
-    'channel=tineco_css' +
+    'c=tineco_ops' +
+    'channel=tineco_ops' +
     'ct=1' +
     'deviceId=' + deviceId +
     'deviceType=' + deviceType +
@@ -149,7 +150,7 @@ export function getVersionCheckUrl() {
     authAppkey: AUTH_CONFIG.authAppkey,
     authSign: authSign,
     authTimespan: timeSpan,
-    c: 'tineco_css',
+    c: 'tineco_ops',
     ct: '1',
     it: timeSpan,
     n: getAppCode(),

@@ -6,7 +6,10 @@
       </div>
       <div class="header-info">
         <div class="chat-name-container">
-          <span class="chat-name">{{ title }}</span>
+          <span class="chat-name">
+            {{ title }}
+            <span v-if="isDev" class="env-tag">（测试）</span>
+          </span>
           <button class="new-session-button" @click="createNewSession">
             + 新建会话
           </button>
@@ -66,7 +69,14 @@ export default {
       hasNotification: false,
       showMessagePopup: false,
       messages: [], // 消息列表
-      recentSessionId: null
+      recentSessionId: null,
+      isDev: false // 是否为开发环境
+    }
+  },
+  computed: {
+    // 根据环境显示标题，开发环境显示"智能助手（测试）"
+    displayTitle() {
+      return this.isDev ? `${this.title}（测试）` : this.title
     }
   },
   methods: {
@@ -136,17 +146,8 @@ export default {
     }
   },
   mounted() {
-    // 连接 Socket
-    socketService.connect().catch(error => {
-      console.error('Socket 连接失败:', error)
-    })
-
-    // 添加消息监听器
-    socketService.on('message', this.handleSocketMessage)
-  },
-  beforeUnmount() {
-    // 移除监听器
-    socketService.off('message', this.handleSocketMessage)
+    // 判断是否为开发环境
+    this.isDev = import.meta.env?.DEV || false
   }
 }
 </script>
@@ -196,6 +197,12 @@ export default {
   color: white;
   margin-right: 0;
   margin-bottom: 4px;
+}
+
+.env-tag {
+  color: #ffd700;
+  font-weight: bold;
+  margin-left: 4px;
 }
 
 .chat-name-container {

@@ -16,6 +16,9 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 // 聊天接口域名
 export const CHAT_API_BASE_URL = import.meta.env.VITE_CHAT_API_BASE_URL
 
+// 下载接口域名
+export const DOWNLOAD_API_BASE_URL = import.meta.env.VITE_DOWNLOAD_API_BASE_URL
+
 // WebSocket 服务器地址
 export const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL
 

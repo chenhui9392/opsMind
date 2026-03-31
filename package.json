@@ -1,9 +1,10 @@
 {
   "name": "opsmind",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "main": "main.js",
   "scripts": {
     "dev": "vite",
+    "dev:prod": "vite --mode production",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "build:prod": "vite build --mode production",
@@ -13,8 +14,8 @@
     "electron:build:prod": "npm run build:prod && electron-builder"
   },
   "build": {
-    "appId": "com.opsmind.app",
-    "productName": "运维智能助手",
+    "appId": "com.opsmin.app",
+    "productName": "AIT Claw",
     "directories": {
       "output": "release"
     },

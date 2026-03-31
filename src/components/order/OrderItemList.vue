@@ -79,6 +79,7 @@
 <script>
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { getHistoryOrders } from '../../api/index'
+import {getSystemUsername} from "../../utils/system";
 
 const ORDER_TYPE_MAP = {
   CONSULTATION: '咨询',
@@ -184,9 +185,11 @@ export default {
       }
 
       try {
+        const userName = await getSystemUsername()
         const response = await getHistoryOrders({
           pageNo: isLoadMore ? this.currentPage + 1 : 1,
-          pageSize: this.pageSize
+          pageSize: this.pageSize,
+          userName: userName
         })
 
         if (response && response.data) {

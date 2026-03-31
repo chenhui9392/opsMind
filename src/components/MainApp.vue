@@ -47,7 +47,7 @@
 import OrderList from './order/OrderList.vue'
 import Chat from './chat/Chat.vue'
 import UpdateDialog from './common/UpdateDialog.vue'
-import {contacts as mockContacts, initialMessages} from '../mock/data'
+import {initialMessages} from '../mock/data'
 import messageService from '../services/messageService'
 import updateService from '../services/updateService'
 
@@ -60,7 +60,7 @@ export default {
   },
   data() {
     return {
-      contacts: mockContacts,
+      contacts: [],
       selectedContact: 0,
       currentChatSession: null, // 当前正在进行的聊天会话
       messages: initialMessages,
@@ -210,9 +210,9 @@ export default {
     this.isNewSession = messageService.getIsNewSession()
 
     // 应用启动时检查版本更新（延迟执行，避免影响启动速度）
-    setTimeout(() => {
-      this.checkForAppUpdates()
-    }, 1000)
+    // setTimeout(() => {
+    //   this.checkForAppUpdates()
+    // }, 1000)
   },
   watch: {
     // 监听消息变化，同步新会话状态

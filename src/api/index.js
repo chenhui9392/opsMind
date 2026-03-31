@@ -6,7 +6,7 @@
  * @LastEditors: hui.chenn
  */
 import { upload, post, get } from '../utils/request'
-import { API_BASE_URL, CHAT_API_BASE_URL } from '../config/env'
+import { API_BASE_URL, CHAT_API_BASE_URL, DOWNLOAD_API_BASE_URL } from '../config/env'
 import { getVersionCheckUrl } from '../config/updateConfig'
 
 /**
@@ -34,7 +34,7 @@ export const sendChatMessage = (params, signal) => {
  * @returns {Promise<Object>}
  */
 export const downloadSoftware = (id) => {
-  return post(`http://10.108.112.202:8080/api/software/download/${id}`, {})
+  return post(`${DOWNLOAD_API_BASE_URL}/api/software/download/${id}`, {})
 }
 
 /**
