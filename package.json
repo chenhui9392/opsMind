@@ -14,7 +14,10 @@
     "electron:build:prod": "npm run build:prod && electron-builder",
     "electron:build:mac": "npm run build && electron-builder --mac",
     "electron:build:mac:intel": "npm run build && electron-builder --mac --x64",
-    "electron:build:mac:arm": "npm run build && electron-builder --mac --arm64"
+    "electron:build:mac:arm": "npm run build && electron-builder --mac --arm64",
+    "mac:build": "node build/build-mac.js build",
+    "mac:notarize": "node build/build-mac.js notarize",
+    "mac:all": "node build/build-mac.js all"
   },
   "build": {
     "appId": "com.opsmin.app",
@@ -42,11 +45,17 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "category": "public.app-category.productivity",
@@ -55,7 +64,7 @@
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "provisioningProfile": "certificate/dolphinappdev.provisionprofile"
+      "identity": "Suzhou Uni Technology Co.,Ltd. (CG65HC99F7)"
     },
     "dmg": {
       "sign": false
@@ -91,6 +100,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.4",
+    "dmg-builder": "^26.8.1",
     "electron": "^41.0.2",
     "electron-builder": "^26.8.1",
     "terser": "^5.46.1",
