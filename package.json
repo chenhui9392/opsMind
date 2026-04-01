@@ -11,7 +11,10 @@
     "electron:dev": "electron .",
     "electron:build": "npm run build && electron-builder",
     "electron:build:dev": "npm run build:dev && electron-builder",
-    "electron:build:prod": "npm run build:prod && electron-builder"
+    "electron:build:prod": "npm run build:prod && electron-builder",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:mac:intel": "npm run build && electron-builder --mac --x64",
+    "electron:build:mac:arm": "npm run build && electron-builder --mac --arm64"
   },
   "build": {
     "appId": "com.opsmin.app",
@@ -34,6 +37,28 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "public/app.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "provisioningProfile": "certificate/dolphinappdev.provisionprofile"
+    },
+    "dmg": {
+      "sign": false
     },
     "electronVersion": "41.0.2",
     "files": [
