@@ -1,0 +1,45 @@
+name: Build Mac App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ✅ 关键：先删 .npmrc（必须在 install 前）
+      - name: Remove npmrc
+        run: rm -f .npmrc
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # ✅ 再设置 registry
+      - run: npm config set registry https://registry.npmjs.org/
+
+      # ✅ install（此时不会被污染）
+      - run: npm install
+
+      - run: npm run build
+
+      - name: Build Electron App
+        run: npx electron-builder --mac --publish never
+        env:
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-build
+          path: release/*.dmg

@@ -82,9 +82,6 @@
     "asar": true,
     "asarUnpack": [],
     "electronDist": null,
-    "electronDownload": {
-      "mirror": "https://npmmirror.com/mirrors/electron/"
-    },
     "compression": "maximum",
     "removePackageScripts": true,
     "removePackageKeywords": true,
