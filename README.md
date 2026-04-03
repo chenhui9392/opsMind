@@ -221,6 +221,10 @@ npm run electron:build:dev
 
 # 生产环境打包
 npm run electron:build:prod
+
+npm run mac:build - 打包并签名
+npm run mac:notarize - 公证已打包应用
+npm run mac:all - 完整流程（打包+签名+公证）
 ```
 
 打包输出位于 `release/` 目录：
