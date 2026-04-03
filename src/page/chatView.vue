@@ -44,13 +44,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import OrderList from '../components/order/OrderList.vue'
 import Chat from '../components/chat/Chat.vue'
 import UpdateDialog from '../components/common/UpdateDialog.vue'
 import { initialMessages } from '../mock/data'
 import messageService from '../services/messageService'
 import updateService from '../services/updateService'
+import { initSocketConnection, disconnectSocket } from '../utils/socket'
 
 // 响应式数据
 const contacts = ref([])
@@ -115,7 +116,7 @@ const handleNavigateToSession = async (sessionId) => {
   if (contactsComponent.value && contactsComponent.value.$refs && contactsComponent.value.$refs.orderItemList && contactsComponent.value.$refs.orderItemList.historyOrders) {
     historyOrders = contactsComponent.value.$refs.orderItemList.historyOrders;
   }
-  
+
   // 更新状态
   messages.value = await messageService.handleNavigateToSession(sessionId, historyOrders);
   // 调用消息服务处理导航
@@ -212,10 +213,18 @@ onMounted(() => {
   // 同步新会话状态
   isNewSession.value = messageService.getIsNewSession()
 
+  // 初始化 Socket 连接
+  initSocketConnection()
+
   // 应用启动时检查版本更新（延迟执行，避免影响启动速度）
   // setTimeout(() => {
   //   checkForAppUpdates()
   // }, 1000)
+})
+
+onUnmounted(() => {
+  // 断开 Socket 连接
+  disconnectSocket()
 })
 </script>
 

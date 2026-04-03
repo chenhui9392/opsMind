@@ -40,7 +40,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import socketService from '../../utils/socketService'
 import MessagePopup from '../common/MessagePopup.vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { isDev } from '../../config/env.js'
@@ -71,18 +70,14 @@ const messages = ref([])
 const recentSessionId = ref(null)
 const isDevEnv = ref(false)
 
-// 计算属性
-const displayTitle = computed(() => {
-  return isDevEnv.value ? `${props.title}（测试）` : props.title
-})
-
 // 方法
 const createNewSession = () => {
   emit('create-new-session')
 }
 
-const handleSocketMessage = (data) => {
-  console.log('收到 Socket 消息:', data)
+const handleSocketBroadcast = (event) => {
+  const data = event.detail
+  console.log('ChatHeader 收到广播消息:', data)
   if (data.type === 'broadcast' && data.message) {
     hasNotification.value = true
     const message = {
@@ -119,47 +114,40 @@ const handleMessageClick = async (sessionId) => {
   hasNotification.value = messages.value.length > 0
 }
 
-const navigateToSession = (sessionId) => {
-  const targetSessionId = sessionId || recentSessionId.value
+// const navigateToSession = (sessionId) => {
+//   const targetSessionId = sessionId || recentSessionId.value
+//
+//   emit('navigate-to-session', targetSessionId)
+//
+//   showMessagePopup.value = false
+//
+//   messages.value = messages.value.filter(msg => msg.sessionId !== targetSessionId)
+//
+//   hasNotification.value = messages.value.length > 0
+// }
 
-  emit('navigate-to-session', targetSessionId)
-
-  showMessagePopup.value = false
-
-  messages.value = messages.value.filter(msg => msg.sessionId !== targetSessionId)
-
-  hasNotification.value = messages.value.length > 0
+// 注册 Socket 事件监听
+const initSocketListeners = () => {
+  window.addEventListener('socket:broadcast', handleSocketBroadcast)
 }
 
-// 建立 Socket 连接
-const initSocketConnection = () => {
-  socketService.on('message', handleSocketMessage)
-
-  socketService.connect().then(() => {
-    console.log('ChatHeader - Socket 连接成功')
-  }).catch(error => {
-    console.error('ChatHeader - Socket 连接失败:', error)
-  })
-}
-
-// 断开 Socket 连接
-const disconnectSocket = () => {
-  socketService.off('message', handleSocketMessage)
+// 移除 Socket 事件监听
+const removeSocketListeners = () => {
+  window.removeEventListener('socket:broadcast', handleSocketBroadcast)
 }
 
 // 生命周期钩子
 onMounted(() => {
   isDevEnv.value = isDev
-  console.log('ChatHeader - isDev:', isDevEnv.value)
 
-  // 初始化 Socket 连接
-  // initSocketConnection()
+  // 注册 Socket 事件监听
+  initSocketListeners()
 })
 
-// 组件卸载时断开连接
-// onUnmounted(() => {
-//   disconnectSocket()
-// })
+// 组件卸载时移除监听
+onUnmounted(() => {
+  removeSocketListeners()
+})
 </script>
 
 <style scoped>

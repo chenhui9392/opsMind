@@ -77,6 +77,7 @@ class FloatingBallManager {
   }
 
   /**
+   *
    * 获取悬浮球窗口实例
    * @returns {BrowserWindow|null} - 悬浮球窗口实例
    */
