@@ -13,10 +13,10 @@ import path from 'path'
 export default defineConfig(({ mode }) => {
   // 加载对应的环境变量文件 (.env.development 或 .env.production)
   const env = loadEnv(mode, path.resolve(__dirname), '')
-  
+
   // 获取版本检查域名用于代理配置
   const updateApiBaseUrl = env.VITE_UPDATE_API_BASE_URL || 'https://unitive-api.tineco.cn'
-  
+
   return {
     plugins: [vue()],
     base: './',
@@ -31,6 +31,20 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/api\/apprelease/, '/api/v2/apprelease')
+        },
+        // 版本检查接口代理
+        '/hinton-agent-mario-server': {
+          target: updateApiBaseUrl,
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/hinton-agent-mario-server/, '/hinton')
+        },
+        // cloud-test 环境接口代理
+        '/cloud-api': {
+          target: 'https://cloud-test.tineco.com',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/cloud-api/, '')
         }
       }
     },

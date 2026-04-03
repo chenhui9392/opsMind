@@ -1,6 +1,7 @@
 const { BrowserWindow, nativeImage, app } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const floatingBallManager = require('./floatingBallManager')
 
 class WindowManager {
   constructor() {
@@ -143,6 +144,13 @@ class WindowManager {
     if (this.mainWindow) {
       this.mainWindow.show()
       this.mainWindow.focus()
+
+      // 通知悬浮球窗口主窗口已显示
+      const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
+      if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
+        console.log('[WindowManager] 通知悬浮球主窗口已显示')
+        floatingBallWindow.webContents.send('main-window-shown', {})
+      }
     }
   }
 

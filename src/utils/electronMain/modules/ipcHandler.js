@@ -9,6 +9,7 @@ const windowManager = require('./windowManager')
 class IpcHandler {
   constructor() {
     this.setupHandlers()
+    this.setupMessageForwarders()
   }
 
   /**
@@ -73,6 +74,13 @@ class IpcHandler {
       } else {
         mainWindow.show()
         mainWindow.focus()
+
+        // 通知悬浮球窗口主窗口已显示
+        const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
+        if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
+          console.log('[IPC] 通知悬浮球主窗口已显示')
+          floatingBallWindow.webContents.send('main-window-shown', {})
+        }
       }
     }
   }
@@ -163,6 +171,30 @@ class IpcHandler {
         }
       }
     }
+  }
+
+  /**
+   * 设置消息转发器
+   * 用于在主窗口和悬浮球窗口之间转发消息
+   */
+  setupMessageForwarders() {
+    // 监听来自主窗口的未读消息通知
+    ipcMain.on('notify-unread-message', (event, data) => {
+      console.log('[IPC] 转发未读消息到悬浮球:', data)
+      const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
+      if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
+        floatingBallWindow.webContents.send('unread-message', data)
+      }
+    })
+
+    // 监听主窗口显示事件，通知悬浮球清空未读
+    ipcMain.on('main-window-shown', () => {
+      console.log('[IPC] 主窗口显示，通知悬浮球清空未读')
+      const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
+      if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
+        floatingBallWindow.webContents.send('main-window-shown', {})
+      }
+    })
   }
 
   /**

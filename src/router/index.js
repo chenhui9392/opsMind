@@ -1,6 +1,6 @@
 /*
  * @Author: hui.chenn
- * @Description: 
+ * @Description:
  * @Date: 2026-03-31 09:36:12
  * @LastEditTime: 2026-03-31 09:36:22
  * @LastEditors: hui.chenn
@@ -27,6 +27,7 @@ const routes = [
     name: 'floatingBall',
     component: floatingBall
   }
+
 ]
 
 const router = createRouter({

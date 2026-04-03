@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description: API接口服务 - 路径内置，仅接收参数
  * @Date: 2026-03-18 08:38:24
- * @LastEditTime: 2026-03-30 10:00:00
+ * @LastEditTime: 2026-04-03 17:30:37
  * @LastEditors: hui.chenn
  */
 import { upload, post, get } from '../utils/request'

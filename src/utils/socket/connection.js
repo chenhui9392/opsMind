@@ -44,10 +44,12 @@ export function initSocketConnection() {
  */
 function handleSocketMessage(data) {
   console.log('[SocketConnectionService] 收到消息:', data)
+  console.log('[SocketConnectionService] 消息类型:', data.type)
 
   // 根据消息类型分发处理
   switch (data.type) {
     case 'broadcast':
+      console.log('[SocketConnectionService] 分发到广播消息处理器')
       handleBroadcastMessage(data)
       break
     case 'system':
@@ -57,7 +59,7 @@ function handleSocketMessage(data) {
       handleChatMessage(data)
       break
     default:
-      // 其他类型消息
+      console.log('[SocketConnectionService] 未知消息类型:', data.type)
       break
   }
 }
@@ -67,10 +69,19 @@ function handleSocketMessage(data) {
  * @param {Object} data - 消息数据
  */
 function handleBroadcastMessage(data) {
+  console.log('[SocketConnectionService] 触发 socket:broadcast 事件:', data)
   // 触发自定义事件，供其他组件监听
   window.dispatchEvent(new CustomEvent('socket:broadcast', {
     detail: data
   }))
+
+  // 通过 IPC 发送未读消息通知到悬浮球窗口
+  if (data.type === 'broadcast' && data.message) {
+    console.log('[SocketConnectionService] 发送未读消息通知到悬浮球')
+    if (window.mainWindowAPI && window.mainWindowAPI.notifyUnreadMessage) {
+      window.mainWindowAPI.notifyUnreadMessage(data)
+    }
+  }
 }
 
 /**

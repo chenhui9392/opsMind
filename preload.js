@@ -73,6 +73,38 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 切换主窗口显示/隐藏
   toggleMainWindow: () => {
     ipcRenderer.send('toggleMainWindow')
+  },
+  // 监听未读消息通知（悬浮球窗口使用）
+  onUnreadMessage: (callback) => {
+    ipcRenderer.on('unread-message', (event, data) => {
+      callback(data)
+    })
+  },
+  // 移除未读消息监听（悬浮球窗口使用）
+  offUnreadMessage: (callback) => {
+    ipcRenderer.removeListener('unread-message', callback)
+  },
+  // 监听主窗口显示事件（悬浮球窗口使用）
+  onMainWindowShown: (callback) => {
+    ipcRenderer.on('main-window-shown', (event, data) => {
+      callback(data)
+    })
+  },
+  // 移除主窗口显示监听（悬浮球窗口使用）
+  offMainWindowShown: (callback) => {
+    ipcRenderer.removeListener('main-window-shown', callback)
+  }
+})
+
+// 暴露主窗口通知接口给渲染进程（主窗口使用）
+contextBridge.exposeInMainWorld('mainWindowAPI', {
+  // 发送未读消息通知到悬浮球
+  notifyUnreadMessage: (data) => {
+    ipcRenderer.send('notify-unread-message', data)
+  },
+  // 通知悬浮球主窗口已显示
+  notifyMainWindowShown: () => {
+    ipcRenderer.send('main-window-shown')
   }
 })
 
