@@ -70,6 +70,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateWindowPosition: (pos) => {
     ipcRenderer.send('updateWindowPosition', pos)
   },
+  // 获取所有显示器信息（用于多屏幕拖拽）
+  getAllDisplays: async () => {
+    try {
+      const displays = await ipcRenderer.invoke('getAllDisplays')
+      return displays
+    } catch (error) {
+      console.error('Error getting displays:', error)
+      return []
+    }
+  },
   // 切换主窗口显示/隐藏
   toggleMainWindow: () => {
     ipcRenderer.send('toggleMainWindow')

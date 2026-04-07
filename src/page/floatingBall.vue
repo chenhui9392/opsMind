@@ -9,7 +9,11 @@
   <div class="floating-ball-box">
     <div
       class="floating-ball"
-      :class="{ dragging: isDragging }"
+      :class="{ 
+        dragging: isDragging,
+        'snapped-left': snappedEdge === 'left',
+        'snapped-right': snappedEdge === 'right'
+      }"
       @mousedown="dragController.handleMouseDown"
       @mouseup="dragController.handleMouseUp"
     >
@@ -29,6 +33,7 @@ import { createFloatingBallDrag } from '../utils/drag'
 // 响应式数据
 const isDragging = ref(false)
 const unreadCount = ref(0)
+const snappedEdge = ref(null)  // 贴边状态: 'left', 'right', 或 null
 
 // 拖拽控制器
 let dragController = null
@@ -48,7 +53,10 @@ const initWindowPosition = async () => {
       },
 
       // 拖拽中 - 更新窗口位置
-      onDragMove: (x, y) => {
+      onDragMove: (x, y, deltaX, deltaY, edge) => {
+        // 更新贴边状态
+        snappedEdge.value = edge
+        
         window.electronAPI.updateWindowPosition({
           x: Math.round(x),
           y: Math.round(y)
@@ -69,6 +77,9 @@ const initWindowPosition = async () => {
 
     // 设置初始位置
     dragController.setPosition(pos.x, pos.y)
+
+    // 初始化多显示器信息
+    await dragController.initDisplays()
 
     // 绑定全局事件
     document.addEventListener('mousemove', dragController.handleMouseMove)
@@ -110,10 +121,20 @@ const handleMainWindowShown = () => {
   unreadCount.value = 0
 }
 
+/**
+ * 处理屏幕配置变化（多显示器热插拔）
+ */
+const handleDisplayChange = async () => {
+  console.log('[FloatingBall] 检测到屏幕配置变化，更新显示器信息')
+  if (dragController && dragController.initDisplays) {
+    await dragController.initDisplays()
+  }
+}
+
 // 生命周期钩子
-onMounted(() => {
+onMounted(async () => {
   // 初始化窗口位置和拖拽
-  initWindowPosition()
+  await initWindowPosition()
 
   // 注册 IPC 消息监听（从主窗口接收未读消息通知）
   if (window.electronAPI && window.electronAPI.onUnreadMessage) {
@@ -129,9 +150,17 @@ onMounted(() => {
   if (window.electronAPI && window.electronAPI.onMainWindowShown) {
     window.electronAPI.onMainWindowShown(handleMainWindowShown)
   }
+
+  // 监听屏幕配置变化（多显示器支持）
+  window.addEventListener('resize', handleDisplayChange)
+  window.addEventListener('displayChanged', handleDisplayChange)
 })
 
 onBeforeUnmount(() => {
+  // 移除屏幕变化监听
+  window.removeEventListener('resize', handleDisplayChange)
+  window.removeEventListener('displayChanged', handleDisplayChange)
+
   // 移除全局事件监听
   if (dragController) {
     document.removeEventListener('mousemove', dragController.handleMouseMove)
@@ -196,7 +225,6 @@ html, body {
   border-radius: 50%;
   cursor: move;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: box-shadow 0.2s;
   overflow: visible;
   display: flex;
   align-items: center;
@@ -205,8 +233,13 @@ html, body {
   position: relative;
 }
 
+.floating-ball:not(.dragging) {
+  transition: all 0.2s ease-out;
+}
+
 .floating-ball.dragging {
   cursor: grabbing;
+  transition: none;
 }
 
 .floating-ball img {

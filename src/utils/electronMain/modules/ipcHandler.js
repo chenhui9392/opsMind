@@ -1,4 +1,4 @@
-const { ipcMain, shell, dialog } = require('electron')
+const { ipcMain, shell, dialog, screen } = require('electron')
 const os = require('os')
 const https = require('https')
 const fs = require('fs')
@@ -33,6 +33,18 @@ class IpcHandler {
 
     ipcMain.on('updateWindowPosition', (event, pos) => {
       floatingBallManager.updateWindowPosition(pos)
+    })
+
+    // 获取所有显示器信息（用于多屏幕拖拽）
+    ipcMain.handle('getAllDisplays', () => {
+      const displays = screen.getAllDisplays()
+      return displays.map(display => ({
+        id: display.id,
+        bounds: display.bounds,
+        workArea: display.workArea,
+        scaleFactor: display.scaleFactor,
+        isPrimary: display.bounds.x === 0 && display.bounds.y === 0
+      }))
     })
 
     ipcMain.on('toggleMainWindow', () => {

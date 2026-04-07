@@ -16,7 +16,8 @@ export const DEFAULT_CONFIG = {
   dragThreshold: 5,
   clickMaxDuration: 300,
   minClickDuration: 50,
-  moveThrottle: 2
+  moveThrottle: 2,
+  edgeSnapThreshold: 30  // 贴边触发阈值（像素）
 }
 
 /**
@@ -47,7 +48,9 @@ export function createFloatingBallDrag(callbacks = {}, config = {}) {
     windowX: 0,
     windowY: 0,
     lastX: 0,
-    lastY: 0
+    lastY: 0,
+    snappedEdge: null,  // 当前贴边状态: 'left', 'right', 或 null
+    displays: []  // 缓存的显示器信息
   }
 
   /**
@@ -73,30 +76,113 @@ export function createFloatingBallDrag(callbacks = {}, config = {}) {
 
   /**
    * 获取拖拽状态
-   * @returns {Object} { isDragging, hasDragged }
+   * @returns {Object} { isDragging, hasDragged, snappedEdge }
    */
   const getDragState = () => ({
     isDragging: state.isDragging,
-    hasDragged: state.hasDragged
+    hasDragged: state.hasDragged,
+    snappedEdge: state.snappedEdge
   })
 
   /**
-   * 边界限制
-   * @param {number} x - X 坐标
-   * @param {number} y - Y 坐标
-   * @returns {Object} { x, y }
+   * 异步初始化显示器信息
+   * @returns {Promise<void>}
    */
-  const clampToScreen = (x, y) => {
-    const screenWidth = window.screen.width
-    const screenHeight = window.screen.height
-    return {
-      x: Math.max(0, Math.min(x, screenWidth - options.windowSize)),
-      y: Math.max(0, Math.min(y, screenHeight - options.windowSize))
+  const initDisplays = async () => {
+    try {
+      if (window.electronAPI && window.electronAPI.getAllDisplays) {
+        const displays = await window.electronAPI.getAllDisplays()
+        if (displays && displays.length > 0) {
+          state.displays = displays
+          console.log('[FloatingBallDrag] 显示器信息已更新:', displays.length, '个显示器')
+        }
+      }
+    } catch (error) {
+      console.error('[FloatingBallDrag] 获取显示器信息失败:', error)
     }
   }
 
   /**
-   * 更新窗口位置
+   * 获取当前鼠标所在的显示器信息
+   * @param {number} mouseX - 鼠标 X 坐标
+   * @param {number} mouseY - 鼠标 Y 坐标
+   * @returns {Object} 显示器信息 { x, y, width, height }
+   */
+  const getCurrentDisplay = (mouseX, mouseY) => {
+    // 使用缓存的显示器信息
+    const displays = state.displays
+    if (displays && displays.length > 0) {
+      // 查找鼠标所在的显示器
+      for (const display of displays) {
+        const { x, y, width, height } = display.workArea || display.bounds
+        if (
+          mouseX >= x &&
+          mouseX < x + width &&
+          mouseY >= y &&
+          mouseY < y + height
+        ) {
+          return { x, y, width, height }
+        }
+      }
+      // 如果没找到，返回主显示器
+      return {
+        x: displays[0].workArea?.x || 0,
+        y: displays[0].workArea?.y || 0,
+        width: displays[0].workArea?.width || displays[0].bounds?.width || window.screen.width,
+        height: displays[0].workArea?.height || displays[0].bounds?.height || window.screen.height
+      }
+    }
+
+    // 降级方案：使用浏览器 API（单显示器）
+    return {
+      x: window.screenLeft || window.screenX,
+      y: window.screenTop || window.screenY,
+      width: window.screen.width,
+      height: window.screen.height
+    }
+  }
+
+  /**
+   * 边界限制（带贴边吸附，支持多显示器）
+   * @param {number} x - X 坐标
+   * @param {number} y - Y 坐标
+   * @param {number} mouseX - 鼠标 X 坐标（用于判断所在显示器）
+   * @param {number} mouseY - 鼠标 Y 坐标（用于判断所在显示器）
+   * @returns {Object} { x, y, snapped } 返回坐标和是否贴边
+   */
+  const clampToScreen = (x, y, mouseX, mouseY) => {
+    // 获取当前鼠标所在的显示器
+    const display = getCurrentDisplay(mouseX, mouseY)
+    const { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = display
+    
+    const snapped = { left: false, right: false }
+    
+    let newX = x
+    let newY = y
+    
+    // Y轴边界限制（相对于当前显示器）
+    newY = Math.max(displayY, Math.min(y, displayY + displayHeight - options.windowSize))
+    
+    // 检查是否接近左边缘（相对于当前显示器）
+    if (newX <= displayX + options.edgeSnapThreshold) {
+      newX = displayX
+      snapped.left = true
+    }
+    // 检查是否接近右边缘（相对于当前显示器）
+    else if (newX >= displayX + displayWidth - options.windowSize - options.edgeSnapThreshold) {
+      newX = displayX + displayWidth - options.windowSize
+      snapped.right = true
+    }
+    // 正常边界限制（在当前显示器内）
+    else {
+      newX = Math.max(displayX, Math.min(newX, displayX + displayWidth - options.windowSize))
+    }
+    
+    return { x: newX, y: newY, snapped }
+  }
+
+  /**
+   * 更新窗口位置（带贴边处理，支持多显示器）
    * @param {number} screenX - 当前鼠标 X
    * @param {number} screenY - 当前鼠标 Y
    */
@@ -110,8 +196,8 @@ export function createFloatingBallDrag(callbacks = {}, config = {}) {
     let newX = state.windowX + deltaX
     let newY = state.windowY + deltaY
 
-    // 边界限制
-    const clamped = clampToScreen(newX, newY)
+    // 边界限制（含贴边处理，传入鼠标位置用于多显示器判断）
+    const clamped = clampToScreen(newX, newY, screenX, screenY)
     newX = clamped.x
     newY = clamped.y
 
@@ -124,10 +210,17 @@ export function createFloatingBallDrag(callbacks = {}, config = {}) {
     // 更新位置记录
     state.lastX = newX
     state.lastY = newY
+    
+    // 更新贴边状态
+    if (clamped.snapped) {
+      state.snappedEdge = clamped.snapped.left ? 'left' : (clamped.snapped.right ? 'right' : null)
+    } else {
+      state.snappedEdge = null
+    }
 
     // 触发移动回调
     if (typeof onDragMove === 'function') {
-      onDragMove(newX, newY, deltaX, deltaY)
+      onDragMove(newX, newY, deltaX, deltaY, state.snappedEdge)
     }
   }
 
@@ -281,6 +374,7 @@ export function createFloatingBallDrag(callbacks = {}, config = {}) {
     state.isDragging = false
     state.isMouseDown = false
     state.hasDragged = false
+    state.snappedEdge = null
   }
 
   // 返回公共接口
@@ -299,6 +393,9 @@ export function createFloatingBallDrag(callbacks = {}, config = {}) {
 
     // 工具方法
     clampToScreen,
+
+    // 多显示器支持
+    initDisplays,
 
     // 清理
     destroy
