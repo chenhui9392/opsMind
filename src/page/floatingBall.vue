@@ -86,12 +86,20 @@ const initWindowPosition = async () => {
  * @param {Object} data - 消息数据
  */
 const handleUnreadMessage = (data) => {
-  console.log('[FloatingBall] 收到未读消息通知:', data)
 
   // 只对 broadcast 类型的消息进行计数
   if (data.type === 'broadcast' && data.message) {
     unreadCount.value++
-    console.log('[FloatingBall] 当前未读消息数:', unreadCount.value)
+  }
+}
+
+/**
+ * 处理未读消息计数同步
+ * @param {Object} data - 同步数据，包含 count 字段
+ */
+const handleSyncUnreadCount = (data) => {
+  if (data && typeof data.count === 'number') {
+    unreadCount.value = data.count
   }
 }
 
@@ -99,29 +107,28 @@ const handleUnreadMessage = (data) => {
  * 处理主窗口显示事件 - 清空未读计数
  */
 const handleMainWindowShown = () => {
-  console.log('[FloatingBall] 主窗口已显示，清空未读消息')
   unreadCount.value = 0
 }
 
 // 生命周期钩子
 onMounted(() => {
-  console.log('[FloatingBall] 组件挂载开始')
-
   // 初始化窗口位置和拖拽
   initWindowPosition()
 
   // 注册 IPC 消息监听（从主窗口接收未读消息通知）
-  console.log('[FloatingBall] 注册 IPC 未读消息监听')
   if (window.electronAPI && window.electronAPI.onUnreadMessage) {
     window.electronAPI.onUnreadMessage(handleUnreadMessage)
+  }
+
+  // 注册未读消息计数同步监听
+  if (window.electronAPI && window.electronAPI.onSyncUnreadCount) {
+    window.electronAPI.onSyncUnreadCount(handleSyncUnreadCount)
   }
 
   // 监听主窗口显示事件
   if (window.electronAPI && window.electronAPI.onMainWindowShown) {
     window.electronAPI.onMainWindowShown(handleMainWindowShown)
   }
-
-  console.log('[FloatingBall] 组件挂载完成')
 })
 
 onBeforeUnmount(() => {
@@ -140,6 +147,11 @@ onBeforeUnmount(() => {
   // 移除 IPC 消息监听
   if (window.electronAPI && window.electronAPI.offUnreadMessage) {
     window.electronAPI.offUnreadMessage(handleUnreadMessage)
+  }
+
+  // 移除未读消息计数同步监听
+  if (window.electronAPI && window.electronAPI.offSyncUnreadCount) {
+    window.electronAPI.offSyncUnreadCount(handleSyncUnreadCount)
   }
 
   // 移除主窗口显示监听
@@ -191,10 +203,6 @@ html, body {
   justify-content: center;
   background: transparent;
   position: relative;
-}
-
-.floating-ball:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 .floating-ball.dragging {

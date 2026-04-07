@@ -91,6 +91,8 @@ const handleSocketBroadcast = (event) => {
       messages.value = messages.value.slice(0, 5)
     }
     recentSessionId.value = data.sessionId || 1
+
+
   }
 }
 
@@ -112,6 +114,13 @@ const handleMessageClick = async (sessionId) => {
   messages.value = messages.value.filter(msg => msg.sessionId !== targetSessionId)
 
   hasNotification.value = messages.value.length > 0
+
+  // 同步未读消息计数到悬浮球
+  const remainingCount = messages.value.length
+  console.log('[ChatHeader] 同步未读消息计数到悬浮球:', remainingCount)
+  if (window.mainWindowAPI && window.mainWindowAPI.syncUnreadCount) {
+    window.mainWindowAPI.syncUnreadCount(remainingCount)
+  }
 }
 
 // const navigateToSession = (sessionId) => {

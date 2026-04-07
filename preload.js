@@ -93,6 +93,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 移除主窗口显示监听（悬浮球窗口使用）
   offMainWindowShown: (callback) => {
     ipcRenderer.removeListener('main-window-shown', callback)
+  },
+  // 监听未读消息计数同步（悬浮球窗口使用）
+  onSyncUnreadCount: (callback) => {
+    ipcRenderer.on('sync-unread-count', (event, data) => {
+      callback(data)
+    })
+  },
+  // 移除未读消息计数同步监听（悬浮球窗口使用）
+  offSyncUnreadCount: (callback) => {
+    ipcRenderer.removeListener('sync-unread-count', callback)
   }
 })
 
@@ -105,6 +115,14 @@ contextBridge.exposeInMainWorld('mainWindowAPI', {
   // 通知悬浮球主窗口已显示
   notifyMainWindowShown: () => {
     ipcRenderer.send('main-window-shown')
+  },
+  // 同步未读消息计数到悬浮球（点击消息时调用）
+  syncUnreadCount: (count) => {
+    ipcRenderer.send('sync-unread-count', { count })
+  },
+  // 同步未读消息总数到悬浮球（初始加载时调用）
+  syncTotalUnreadCount: (count) => {
+    ipcRenderer.send('sync-total-unread-count', { count })
   }
 })
 

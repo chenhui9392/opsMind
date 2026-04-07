@@ -195,6 +195,24 @@ class IpcHandler {
         floatingBallWindow.webContents.send('main-window-shown', {})
       }
     })
+
+    // 监听未读消息计数同步（从主窗口到悬浮球）
+    ipcMain.on('sync-unread-count', (event, data) => {
+      console.log('[IPC] 同步未读消息计数到悬浮球:', data)
+      const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
+      if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
+        floatingBallWindow.webContents.send('sync-unread-count', data)
+      }
+    })
+
+    // 监听未读消息总数同步（从主窗口到悬浮球，用于初始加载）
+    ipcMain.on('sync-total-unread-count', (event, data) => {
+      console.log('[IPC] 同步未读消息总数到悬浮球:', data)
+      const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
+      if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
+        floatingBallWindow.webContents.send('sync-unread-count', data)
+      }
+    })
   }
 
   /**
