@@ -25,7 +25,7 @@ export const uploadImage = (formData) => {
  * @returns {Promise<Object>}
  */
 export const sendChatMessage = (params, signal) => {
-  return post(`${CHAT_API_BASE_URL}/omp/api/agentChat/chat`, params, signal)
+  return post(`${CHAT_API_BASE_URL}/hinton-agent-mario-server/api/agentChat/chat`, params, signal)
 }
 
 /**
@@ -43,7 +43,7 @@ export const downloadSoftware = (id) => {
  * @returns {Promise<Object>}
  */
 export const getHistoryOrders = (params) => {
-  return post(`${CHAT_API_BASE_URL}/omp/api/agentOrder/pageList`, params)
+  return post(`${CHAT_API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/pageList`, params)
 }
 
 /**
@@ -52,7 +52,7 @@ export const getHistoryOrders = (params) => {
  * @returns {Promise<Object>}
  */
 export const getHistoryOrderDetail = (conversationId) => {
-  return get(`${CHAT_API_BASE_URL}/omp/api/agentChat/history/${conversationId}`)
+  return get(`${CHAT_API_BASE_URL}/hinton-agent-mario-server/api/agentChat/history/${conversationId}`)
 }
 
 /**
@@ -61,7 +61,7 @@ export const getHistoryOrderDetail = (conversationId) => {
  * @returns {Promise<Object>}
  */
 export const updateMessageStatus = (params) => {
-  return post(`${CHAT_API_BASE_URL}/omp/api/agentOrder/updateMessageStatus`, params)
+  return post(`${CHAT_API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/updateMessageStatus`, params)
 }
 
 /**
