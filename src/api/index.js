@@ -6,7 +6,7 @@
  * @LastEditors: hui.chenn
  */
 import { upload, post, get } from '../utils/request'
-import { API_BASE_URL, CHAT_API_BASE_URL, DOWNLOAD_API_BASE_URL } from '../config/env'
+import { API_BASE_URL, API_UPLOAD_URL, DOWNLOAD_API_BASE_URL } from '../config/env'
 import { getVersionCheckUrl } from '../config/updateConfig'
 
 /**
@@ -15,7 +15,7 @@ import { getVersionCheckUrl } from '../config/updateConfig'
  * @returns {Promise<Object>}
  */
 export const uploadImage = (formData) => {
-  return upload(`${API_BASE_URL}/gateway/fileServer/v4/upload/single`, formData)
+  return upload(`${API_UPLOAD_URL}/gateway/fileServer/v4/upload/single`, formData)
 }
 
 /**
@@ -25,7 +25,7 @@ export const uploadImage = (formData) => {
  * @returns {Promise<Object>}
  */
 export const sendChatMessage = (params, signal) => {
-  return post(`${CHAT_API_BASE_URL}/hinton-agent-mario-server/api/agentChat/chat`, params, signal)
+  return post(`${API_BASE_URL}/hinton-agent-mario-server/api/agentChat/chat`, params, signal)
 }
 
 /**
@@ -43,7 +43,7 @@ export const downloadSoftware = (id) => {
  * @returns {Promise<Object>}
  */
 export const getHistoryOrders = (params) => {
-  return post(`${CHAT_API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/pageList`, params)
+  return post(`${API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/pageList`, params)
 }
 
 /**
@@ -52,7 +52,7 @@ export const getHistoryOrders = (params) => {
  * @returns {Promise<Object>}
  */
 export const getHistoryOrderDetail = (conversationId) => {
-  return get(`${CHAT_API_BASE_URL}/hinton-agent-mario-server/api/agentChat/history/${conversationId}`)
+  return get(`${API_BASE_URL}/hinton-agent-mario-server/api/agentChat/history/${conversationId}`)
 }
 
 /**
@@ -61,7 +61,7 @@ export const getHistoryOrderDetail = (conversationId) => {
  * @returns {Promise<Object>}
  */
 export const updateMessageStatus = (params) => {
-  return post(`${CHAT_API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/updateMessageStatus`, params)
+  return post(`${API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/updateMessageStatus`, params)
 }
 
 /**
