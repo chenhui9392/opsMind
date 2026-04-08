@@ -9,7 +9,7 @@
   <div class="floating-ball-box">
     <div
       class="floating-ball"
-      :class="{ 
+      :class="{
         dragging: isDragging,
         'snapped-left': snappedEdge === 'left',
         'snapped-right': snappedEdge === 'right'
@@ -19,9 +19,9 @@
     >
       <img src="/app.png" alt="AIT Claw" />
       <!-- 未读消息红点 -->
-      <div v-if="unreadCount > 0" class="notification-badge">
-        <span class="notification-count">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
-      </div>
+<!--      <div v-if="unreadCount > 0" class="notification-badge">-->
+<!--        <span class="notification-count">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>-->
+<!--      </div>-->
     </div>
   </div>
 </template>
@@ -56,7 +56,7 @@ const initWindowPosition = async () => {
       onDragMove: (x, y, deltaX, deltaY, edge) => {
         // 更新贴边状态
         snappedEdge.value = edge
-        
+
         window.electronAPI.updateWindowPosition({
           x: Math.round(x),
           y: Math.round(y)
