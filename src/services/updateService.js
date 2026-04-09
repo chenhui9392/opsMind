@@ -1,8 +1,8 @@
 /*
  * @Author: hui.chenn
- * @Description: 
+ * @Description:
  * @Date: 2026-03-30 09:01:37
- * @LastEditTime: 2026-03-30 09:01:43
+ * @LastEditTime: 2026-04-09 17:10:23
  * @LastEditors: hui.chenn
  */
 /**
@@ -48,18 +48,18 @@ class UpdateService {
 
     try {
       console.log('开始检查应用版本更新...')
-      
+
       const response = await checkAppVersion()
       this.lastCheckTime = Date.now()
 
       // 解析响应数据
       const updateInfo = this.parseUpdateResponse(response)
-      
+
       // parseUpdateResponse 返回 null 表示已是最新版本 (r === 0)
       if (!updateInfo) {
         console.log('当前已是最新版本，无需更新')
-        return { 
-          hasUpdate: false, 
+        return {
+          hasUpdate: false,
           currentVersion: getCurrentVersion(),
           message: '当前已是最新版本'
         }
@@ -80,16 +80,16 @@ class UpdateService {
       return result
     } catch (error) {
       console.error('版本检查失败:', error)
-      
+
       if (!silent) {
         // 非静默模式下可以抛出错误或返回错误信息
-        return { 
-          hasUpdate: false, 
+        return {
+          hasUpdate: false,
           error: error.message || '版本检查失败',
-          errorCode: error.code 
+          errorCode: error.code
         }
       }
-      
+
       return { hasUpdate: false, error: error.message }
     } finally {
       this.isChecking = false
@@ -129,8 +129,7 @@ class UpdateService {
     }
 
     // 根据接口规范判断是否需要更新
-    // r === 0: 已是最新版本，无需更新
-    // r !== 0: 需要更新
+    // r: 更新说明	0:无更新、1 有更新，只是提示 2、必须更新
     if (data.r === 0) {
       console.log('当前已是最新版本 (r=0)')
       return null

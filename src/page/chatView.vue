@@ -217,9 +217,9 @@ onMounted(() => {
   initSocketConnection()
 
   // 应用启动时检查版本更新（延迟执行，避免影响启动速度）
-  // setTimeout(() => {
-  //   checkForAppUpdates()
-  // }, 1000)
+  setTimeout(() => {
+    checkForAppUpdates()
+  }, 1000)
 })
 
 onUnmounted(() => {
