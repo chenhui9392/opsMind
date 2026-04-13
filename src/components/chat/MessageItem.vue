@@ -6,7 +6,7 @@
     <div class="message-avatar" v-if="message.sender === 'bot'">
       <div class="avatar-icon">🤖</div>
     </div>
-    <div>
+    <div class="message-wrapper">
       <!-- 消息内容 -->
       <div class="message-content" v-if="message.text">
         <!-- 文本 -->
@@ -36,15 +36,31 @@
           <div class="file-download-icon">⬇</div>
         </div>
       </div>
-      <!-- 时间 -->
-      <div class="message-time">{{ message.time }}</div>
+
+      <!-- 消息底部：时间和复制按钮 -->
+      <div class="message-footer">
+        <span class="message-time">{{ formattedTime }}</span>
+        <!-- 复制按钮 -->
+        <button
+          v-if="message.text && message.sender === 'bot'"
+          class="copy-btn"
+          @click="handleCopy"
+          title="复制"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { marked } from 'marked'
+import SvgIcon from '../../assets/svg/SvgIcon.vue'
 
 // 配置 marked 选项
 marked.setOptions({
@@ -64,12 +80,39 @@ const props = defineProps({
 // Emits
 const emit = defineEmits(['image-click', 'file-click'])
 
+// 响应式数据
+const copySuccess = ref(false)
+const copyTimer = ref(null)
+
 // 计算属性
 const renderedText = computed(() => {
   if (!props.message.text) return ''
   const textStr = String(props.message.text)
   const escapedText = textStr.replace(/</g, '&lt;')
   return marked(escapedText)
+})
+
+/**
+ * 格式化时间，只显示时分
+ */
+const formattedTime = computed(() => {
+  if (!props.message.time) return ''
+  // 如果时间是 HH:mm 格式，直接返回
+  if (/^\d{2}:\d{2}$/.test(props.message.time)) {
+    return props.message.time
+  }
+  // 尝试解析时间字符串
+  try {
+    const date = new Date(props.message.time)
+    if (!isNaN(date.getTime())) {
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      return `${hours}:${minutes}`
+    }
+  } catch (e) {
+    // 解析失败，返回原始时间
+  }
+  return props.message.time
 })
 
 // 方法
@@ -102,6 +145,47 @@ const getFileIcon = (fileName) => {
 const getFileIconClass = (fileName) => {
   const extension = fileName.toLowerCase().split('.').pop()
   return `file-icon-${extension}`
+}
+
+/**
+ * 处理复制消息内容
+ */
+const handleCopy = async () => {
+  if (!props.message.text) return
+
+  try {
+    await navigator.clipboard.writeText(props.message.text)
+    copySuccess.value = true
+
+    // 清除之前的定时器
+    if (copyTimer.value) {
+      clearTimeout(copyTimer.value)
+    }
+
+    // 2秒后恢复按钮状态
+    copyTimer.value = setTimeout(() => {
+      copySuccess.value = false
+    }, 2000)
+  } catch (error) {
+    console.error('复制失败:', error)
+    // 降级方案：使用传统的复制方法
+    const textarea = document.createElement('textarea')
+    textarea.value = props.message.text
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    try {
+      document.execCommand('copy')
+      copySuccess.value = true
+      copyTimer.value = setTimeout(() => {
+        copySuccess.value = false
+      }, 2000)
+    } catch (err) {
+      console.error('复制失败:', err)
+    }
+    document.body.removeChild(textarea)
+  }
 }
 </script>
 
@@ -273,19 +357,47 @@ const getFileIconClass = (fileName) => {
   transform: translateY(-1px);
 }
 
+.message-wrapper {
+  flex: 1;
+  max-width: 80%;
+}
+
+.message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  gap: 12px;
+}
+
 .message-time {
   font-size: 12px;
   color: #999;
-  margin-top: 8px;
-  text-align: right;
 }
 
-.message-user .message-time {
-  text-align: right;
+.message-user .message-footer {
+  flex-direction: row-reverse;
 }
 
-.message-bot .message-time {
-  text-align: left;
+/* 复制按钮样式 */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background-color: transparent;
+  color: #c0c0c0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  margin-left: 6px;
+  padding: 0;
+  vertical-align: middle;
+}
+
+.copy-btn:hover {
+  color: #666;
 }
 
 /* Markdown样式 */

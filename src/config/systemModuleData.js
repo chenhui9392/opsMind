@@ -14,11 +14,11 @@ export const systemModuleData = {
   systems: [
     {
       code: 'GOMS_DOMESTIC',
-      name: 'GOMS-国内'
+      name: '国内GOMS'
     },
     {
       code: 'GOMS_INTERNATIONAL',
-      name: 'GOMS-国际'
+      name: '国际GOMS'
     },
     {
       code: 'DESKTOP_OPS',

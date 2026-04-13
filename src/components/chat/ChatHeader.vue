@@ -1,171 +1,112 @@
 <template>
   <div class="chat-header">
     <div class="chat-title">
-      <div class="avatar">
-        <div class="avatar-icon">🤖</div>
-      </div>
-      <div class="header-info">
-        <div class="chat-name-container">
-          <span class="chat-name">
-            {{ title }}
-            <span v-if="isDev" class="env-tag">（测试）</span>
+      <!-- 左侧：收起/展开按钮 + 标题 -->
+      <div class="header-left">
+        <button
+          class="sidebar-toggle-btn"
+          @click="toggleSidebar"
+          :title="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+        >
+          <SvgIcon
+            :name="isSidebarCollapsed ? 'chevronRight' : 'chevronLeft'"
+            width="18"
+            height="18"
+          />
+        </button>
+
+        <button class="new-session-button" @click="createNewSession" title="新建会话">
+          <SvgIcon name="plus" width="16" height="16" />
+        </button>
+
+        <div class="header-info">
+          <span class="chat-name" :title="displayTitle">
+            {{ truncatedTitle }}
           </span>
-          <button class="new-session-button" @click="createNewSession">
-            + 新建会话
-          </button>
-        </div>
-        <span class="chat-status">{{ status }}</span>
-      </div>
-
-      <div class="offline-session-box"  @mouseenter="showMessagePopup = true" @mouseleave="showMessagePopup = false">
-        <div class="offline-session-container"  >
-        <SvgIcon name="bell" width="14" height="14" class="bell-icon" />
-        <span class="offline-session">消息通知</span>
-        <div class="notification-dot" v-if="hasNotification"></div>
-        <!-- 消息弹窗 -->
-        <MessagePopup
-          v-if="showMessagePopup && messages.length > 0"
-          :messages="messages"
-          @click="handleMessageClick"
-        />
         </div>
       </div>
 
-      <div class="user-info" v-if="userName">
-        <span class="user-name">{{ userName }}</span>
+      <!-- 右侧：下载按钮 -->
+      <div class="header-right">
+        <button class="download-btn" @click="handleDownload" title="下载会话">
+          <SvgIcon name="download" width="18" height="18" />
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import MessagePopup from '../common/MessagePopup.vue'
+import { computed } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
-import { isDev } from '../../config/env.js'
 
 // Props
 const props = defineProps({
-  title: {
-    type: String,
-    default: '智能助手'
+  /**
+   * 侧边栏是否收起
+   */
+  isSidebarCollapsed: {
+    type: Boolean,
+    default: false
   },
-  status: {
-    type: String,
-    default: '在线'
-  },
-  userName: {
+  /**
+   * 当前会话的第一条用户消息（用于显示标题）
+   */
+  firstUserMessage: {
     type: String,
     default: ''
   }
 })
 
 // Emits
-const emit = defineEmits(['create-new-session', 'navigate-to-session', 'refresh-orders'])
+const emit = defineEmits([
+  'create-new-session',
+  'toggle-sidebar',
+  'download-session'
+])
 
-// 响应式数据
-const hasNotification = ref(false)
-const showMessagePopup = ref(false)
-const messages = ref([])
-const recentSessionId = ref(null)
-const isDevEnv = ref(false)
+// 计算属性
+const displayTitle = computed(() => {
+  // 如果有第一条用户消息，使用它作为标题
+  return props.firstUserMessage || '新建会话'
+})
+
+const truncatedTitle = computed(() => {
+  const title = displayTitle.value
+  // 限制标题长度为20个字符
+  if (title.length > 20) {
+    return title.substring(0, 20) + '...'
+  }
+  return title
+})
 
 // 方法
 const createNewSession = () => {
   emit('create-new-session')
 }
 
-const handleSocketBroadcast = (event) => {
-  const data = event.detail
-  console.log('ChatHeader 收到广播消息:', data)
-  if (data.type === 'broadcast' && data.message) {
-    hasNotification.value = true
-    const message = {
-      id: Date.now(),
-      sessionId: data.id || 1,
-      content: data.message,
-      time: new Date().toLocaleString('zh-CN')
-    }
-    messages.value.unshift(message)
-    if (messages.value.length > 5) {
-      messages.value = messages.value.slice(0, 5)
-    }
-    recentSessionId.value = data.sessionId || 1
-
-
-  }
+/**
+ * 切换侧边栏收起/展开
+ */
+const toggleSidebar = () => {
+  emit('toggle-sidebar')
 }
 
 /**
- * 处理消息点击 - 先刷新历史工单，再导航到会话
- * @param {number} sessionId - 会话 ID
+ * 处理下载会话
  */
-const handleMessageClick = async (sessionId) => {
-  const targetSessionId = sessionId || recentSessionId.value
-
-  emit('refresh-orders')
-
-  await new Promise(resolve => setTimeout(resolve, 300))
-
-  emit('navigate-to-session', targetSessionId)
-
-  showMessagePopup.value = false
-
-  messages.value = messages.value.filter(msg => msg.sessionId !== targetSessionId)
-
-  hasNotification.value = messages.value.length > 0
-
-  // 同步未读消息计数到悬浮球
-  const remainingCount = messages.value.length
-  console.log('[ChatHeader] 同步未读消息计数到悬浮球:', remainingCount)
-  if (window.mainWindowAPI && window.mainWindowAPI.syncUnreadCount) {
-    window.mainWindowAPI.syncUnreadCount(remainingCount)
-  }
+const handleDownload = () => {
+  emit('download-session')
 }
-
-// const navigateToSession = (sessionId) => {
-//   const targetSessionId = sessionId || recentSessionId.value
-//
-//   emit('navigate-to-session', targetSessionId)
-//
-//   showMessagePopup.value = false
-//
-//   messages.value = messages.value.filter(msg => msg.sessionId !== targetSessionId)
-//
-//   hasNotification.value = messages.value.length > 0
-// }
-
-// 注册 Socket 事件监听
-const initSocketListeners = () => {
-  window.addEventListener('socket:broadcast', handleSocketBroadcast)
-}
-
-// 移除 Socket 事件监听
-const removeSocketListeners = () => {
-  window.removeEventListener('socket:broadcast', handleSocketBroadcast)
-}
-
-// 生命周期钩子
-onMounted(() => {
-  isDevEnv.value = isDev
-
-  // 注册 Socket 事件监听
-  initSocketListeners()
-})
-
-// 组件卸载时移除监听
-onUnmounted(() => {
-  removeSocketListeners()
-})
 </script>
 
 <style scoped>
 .chat-header {
   padding: 0 16px;
   border-bottom: 1px solid #e0e0e0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  height: 72px;
+  background-color: #ffffff;
+  color: #333;
+  height: 56px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -178,157 +119,97 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.avatar {
-  margin-right: 12px;
+/* 左侧区域 */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
-.avatar-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.2);
+/* 侧边栏切换按钮 */
+.sidebar-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #f5f5f5;
+  color: #333;
 }
 
 .header-info {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   flex: 1;
+  min-width: 0;
 }
 
 .chat-name {
-  font-weight: bold;
-  color: white;
-  margin-right: 0;
-  margin-bottom: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.env-tag {
-  color: #ffd700;
-  font-weight: bold;
-  margin-left: 4px;
-}
-
-.chat-name-container {
+/* 右侧区域 */
+.header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
+/* 新建会话按钮 */
 .new-session-button {
-  padding: 4px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
   background-color: transparent;
-  color: white;
-  font-weight: bold;
-  font-size: 12px;
+  color: #666;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
 .new-session-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: #f5f5f5;
+  color: #333;
 }
 
-.user-info {
+/* 下载按钮 */
+.download-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  position: relative;
-}
-
-.user-name {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
-  padding: 4px 12px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-}
-
-.offline-session-box{
-  margin-right: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  position: relative;
-  height: 40px;
-}
-
-.offline-session-container {
-  position: relative;
-  display: flex;
-  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  color: #666;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.offline-session {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-right: 8px;
-  transition: color 0.3s ease;
-}
-
-.offline-session-container:hover .offline-session {
-  color: white;
-}
-
-.bell-icon {
-  color: rgba(255, 255, 255, 0.8);
-  margin-right: 4px;
-  transition: color 0.3s ease;
-}
-
-.offline-session-container:hover .bell-icon {
-  color: white;
-}
-
-.notification-dot {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
-  background-color: #ff4757;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(0.8);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(0.8);
-    opacity: 1;
-  }
-}
-
-.chat-status {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-}
-
-.chat-status::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  background-color: #4caf50;
-  border-radius: 50%;
-  margin-right: 4px;
+.download-btn:hover {
+  background-color: #f5f5f5;
+  color: #333;
 }
 </style>

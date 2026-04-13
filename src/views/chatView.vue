@@ -9,9 +9,10 @@
       v-model:showInput="showInput"
       v-model:messages="messages"
       :isSending="isSending"
+      :class="{ 'sidebar-collapsed': isSidebarCollapsed }"
       @back-to-current="backToCurrentChat"
       @new-order="handleNewOrder"
-      @check-update="checkForAppUpdates({ force: true, silent: false })"
+      @check-update="checkForAppUpdates({ force: true, showNoUpdate: true })"
     />
 
     <!-- 右侧聊天区域 -->
@@ -25,9 +26,12 @@
       :isNewSession="isNewSession"
       :systemName="currentSystemName"
       :moduleName="currentModuleName"
+      :isSidebarCollapsed="isSidebarCollapsed"
       @navigate-to-session="handleNavigateToSession"
       @update:isSending="isSending = $event"
       @refresh-orders="handleRefreshOrders"
+      @toggle-sidebar="handleToggleSidebar"
+      @download-session="handleDownloadSession"
     />
 
     <!-- 版本更新对话框 -->
@@ -71,6 +75,7 @@ const isSending = ref(false)
 const isNewSession = ref(true)
 const currentSystemName = ref('')
 const currentModuleName = ref('')
+const isSidebarCollapsed = ref(false)
 const showUpdateDialog = ref(false)
 const updateInfo = reactive({
   currentVersion: '',
@@ -153,6 +158,58 @@ const handleRefreshOrders = function() {
 };
 
 /**
+ * 处理切换侧边栏收起/展开
+ */
+const handleToggleSidebar = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
+
+/**
+ * 处理下载会话
+ * 将当前会话内容导出为文本文件
+ */
+const handleDownloadSession = () => {
+  if (!messages.value || messages.value.length === 0) {
+    if (toastRef.value && toastRef.value.warning) {
+      toastRef.value.warning('当前会话没有内容可下载')
+    }
+    return
+  }
+
+  // 构建会话内容
+  const sessionContent = messages.value.map(msg => {
+    const sender = msg.sender === 'user' ? '用户' : '助手'
+    const time = msg.time || ''
+    const text = msg.text || ''
+    return `[${time}] ${sender}:\n${text}\n`
+  }).join('\n---\n\n')
+
+  // 创建 Blob 对象
+  const blob = new Blob([sessionContent], { type: 'text/plain;charset=utf-8' })
+
+  // 创建下载链接
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+
+  // 生成文件名（使用第一条用户消息或默认名称）
+  const firstUserMsg = messages.value.find(msg => msg.sender === 'user')
+  const fileName = firstUserMsg
+    ? `会话_${firstUserMsg.text.substring(0, 20)}_${new Date().toLocaleDateString()}.txt`
+    : `会话_${new Date().toLocaleDateString()}.txt`
+
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+
+  if (toastRef.value && toastRef.value.success) {
+    toastRef.value.success('会话下载成功')
+  }
+}
+
+/**
  * 处理新建工单
  */
 const handleNewOrder = () => {
@@ -174,14 +231,17 @@ const handleNewOrder = () => {
 /**
  * 检查应用版本更新
  * @param {Object} options - 检查选项
- * @param {boolean} options.silent - 是否静默检查（不显示提示）
+ * @param {boolean} options.silent - 是否静默检查（不显示任何提示）
  * @param {boolean} options.force - 是否强制检查
+ * @param {boolean} options.showNoUpdate - 无更新时是否显示提示（默认false）
  */
 const checkForAppUpdates = async (options = {}) => {
   try {
+    const { showNoUpdate = false, ...restOptions } = options
+
     const result = await updateService.checkForUpdates({
       silent: true, // 静默检查，不显示错误提示
-      ...options
+      ...restOptions
     })
 
     if (result.hasUpdate && result.updateInfo) {
@@ -193,13 +253,13 @@ const checkForAppUpdates = async (options = {}) => {
       updateInfo.fileSize = result.updateInfo.fileSize
       updateInfo.forceUpdate = result.updateInfo.forceUpdate
       showUpdateDialog.value = true
-    } else if (!result.hasUpdate && !result.error && !options.silent) {
-      // 当前为最新版本，显示提示（使用返回的message）
+    } else if (!result.hasUpdate && !result.error && showNoUpdate) {
+      // 仅在showNoUpdate为true时显示"当前为最新版本"提示
       if (toastRef.value && toastRef.value.success) {
         toastRef.value.success(result.message || '当前已是最新版本')
       }
-    } else if (result.error && !options.silent) {
-      // 检查出错，显示错误提示（使用返回的error）
+    } else if (result.error && showNoUpdate) {
+      // 检查出错，仅在showNoUpdate为true时显示错误提示
       if (toastRef.value && toastRef.value.error) {
         toastRef.value.error(result.error)
       }
@@ -256,8 +316,9 @@ onMounted(() => {
   initSocketConnection()
 
   // 应用启动时检查版本更新（延迟执行，避免影响启动速度）
+  // 初始化时不显示任何提示，仅在有更新时弹出对话框
   setTimeout(() => {
-    checkForAppUpdates()
+    checkForAppUpdates({ silent: true })
   }, 1000)
 })
 

@@ -4,9 +4,13 @@
     <div class="chat-header">
       <ChatHeader
         :userName="userName"
+        :isSidebarCollapsed="isSidebarCollapsed"
+        :firstUserMessage="firstUserMessage"
         @create-new-session="createNewSession"
         @navigate-to-session="handleNavigateToSession"
         @refresh-orders="handleRefreshOrders"
+        @toggle-sidebar="handleToggleSidebar"
+        @download-session="handleDownloadSession"
       />
     </div>
 
@@ -28,7 +32,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import ChatHeader from './ChatHeader.vue'
 import ChatContent from './ChatContent.vue'
 import { getSystemUsername } from '../../utils/system'
@@ -68,6 +72,13 @@ const props = defineProps({
   moduleName: {
     type: String,
     default: ''
+  },
+  /**
+   * 侧边栏是否收起
+   */
+  isSidebarCollapsed: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -79,7 +90,10 @@ const emit = defineEmits([
   'update:currentChatSession',
   'update:isSending',
   'navigate-to-session',
-  'refresh-orders'
+  'refresh-orders',
+  'toggle-sidebar',
+  'download-session',
+  'new-session'
 ])
 
 // 响应式数据
@@ -89,6 +103,16 @@ const loadingMessageId = ref(null)
 
 // 模板引用
 const chatContent = ref(null)
+
+// 计算属性
+/**
+ * 获取第一条用户消息作为标题
+ */
+const firstUserMessage = computed(() => {
+  if (!props.messages || props.messages.length === 0) return ''
+  const firstUserMsg = props.messages.find(msg => msg.sender === 'user')
+  return firstUserMsg ? firstUserMsg.text : ''
+})
 
 /**
  * 处理新建会话
@@ -156,6 +180,20 @@ const scrollToBottom = () => {
   if (chatComponent && chatComponent.scrollToBottom) {
     chatComponent.scrollToBottom()
   }
+}
+
+/**
+ * 处理切换侧边栏
+ */
+const handleToggleSidebar = () => {
+  emit('toggle-sidebar')
+}
+
+/**
+ * 处理下载会话
+ */
+const handleDownloadSession = () => {
+  emit('download-session')
 }
 
 // 生命周期钩子

@@ -23,40 +23,26 @@
 
     <!-- 输入区域 -->
     <div class="chat-input-wrapper">
-      <!-- 系统和模块选择器 -->
-      <div class="selectors-container">
-        <select
-          v-model="selectedSystem"
-          class="system-select"
-          :disabled="!isNewSession"
-          @change="handleSystemChange"
-        >
-          <option value="">选择系统</option>
-          <option v-for="system in systemList" :key="system.code" :value="system.code">
-            {{ system.name }}
-          </option>
-        </select>
-        <select
-          v-model="selectedModule"
-          class="module-select"
-          :disabled="!isNewSession || !selectedSystem"
-        >
-          <option value="">{{ selectedSystem ? '选择模块' : '请先选择系统' }}</option>
-          <option v-for="module in moduleList" :key="module.code" :value="module.code">
-            {{ module.name }}
-          </option>
-        </select>
-      </div>
       <textarea
         v-model="inputMessage"
         class="chat-input"
-        placeholder="输入消息..."
+        :placeholder="placeholderText"
         @keydown.enter.prevent="handleEnterKey"
         @input="autoResize"
         rows="1"
         :style="{ maxHeight: '500px' }"
       />
       <div class="input-actions">
+        <!-- 修改后的上传文件按钮 -->
+        <button
+          class="attachment-btn"
+          @click="triggerFileUpload"
+          :disabled="uploaderDisabled || isSending"
+          title="上传文件"
+        >
+          <SvgIcon name="attachment" width="20" height="20" />
+        </button>
+        <!-- 隐藏的文件上传组件 -->
         <FileUploader
           ref="fileUploader"
           accept="image/*,.xlsx,.xls,.pdf"
@@ -78,13 +64,29 @@
         </button>
       </div>
     </div>
+
+    <!-- 级联选择组件（在输入框下方） -->
+    <div class="cascade-select-wrapper">
+      <CascadeSelect
+        v-model:level1Value="selectedSystem"
+        v-model:level2Value="selectedModule"
+        :level1Options="systemList"
+        :level2Options="getModuleListBySystem"
+        :disabled="!isNewSession"
+        :showLevel2="true"
+        level1Placeholder="选择系统"
+        level2Placeholder="选择模块"
+        @change="handleCascadeChange"
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import FileUploader from '../common/FileUploader.vue'
+import CascadeSelect from '../common/CascadeSelect.vue'
 import { getSystemList, getModuleListBySystem } from '../../config/systemModuleData.js'
 
 // Props
@@ -122,6 +124,19 @@ const selectedSystem = ref('')
 const selectedModule = ref('')
 const systemList = ref([])
 const moduleList = ref([])
+// 计算属性
+const placeholderText = computed(() => {
+  if (!props.isNewSession) {
+    return '输入消息...(Shift+Enter 换行)'
+  }
+  if (!selectedSystem.value) {
+    return '请先选择系统和模块...'
+  }
+  if (!selectedModule.value) {
+    return '请选择模块...'
+  }
+  return '输入消息...(Shift+Enter 换行)'
+})
 
 // 模板引用
 const fileUploader = ref(null)
@@ -205,24 +220,29 @@ const restoreSystemModuleSelection = () => {
   if (system) {
     selectedSystem.value = system.code
     moduleList.value = getModuleListBySystem(selectedSystem.value)
-    const module = moduleList.value.find(m => m.name === props.moduleName)
-    if (module) {
-      selectedModule.value = module.code
+    const moduleItem = moduleList.value.find(m => m.name === props.moduleName)
+    if (moduleItem) {
+      selectedModule.value = moduleItem.code
     }
   }
   console.log('恢复系统模块选择:', props.systemName, props.moduleName, '->', selectedSystem.value, selectedModule.value)
 }
 
 /**
- * 处理系统选择变化
+ * 触发文件上传
  */
-const handleSystemChange = () => {
-  selectedModule.value = ''
-  moduleList.value = []
-
-  if (selectedSystem.value) {
-    moduleList.value = getModuleListBySystem(selectedSystem.value)
+const triggerFileUpload = () => {
+  if (fileUploader.value && fileUploader.value.triggerUpload) {
+    fileUploader.value.triggerUpload()
   }
+}
+
+/**
+ * 处理级联选择变化
+ * @param {Object} data - 选择数据 { level1, level2 }
+ */
+const handleCascadeChange = (data) => {
+  console.log('级联选择变化:', data)
 }
 
 /**
@@ -239,9 +259,9 @@ const sendMessage = () => {
   if (!inputMessage.value && uploadedImages.value.length === 0 && uploadedFiles.value.length === 0) return
 
   const system = systemList.value.find(s => s.code === selectedSystem.value)
-  const module = moduleList.value.find(m => m.code === selectedModule.value)
+  const moduleItem = moduleList.value.find(m => m.code === selectedModule.value)
   const systemName = system ? system.name : ''
-  const moduleName = module ? module.name : ''
+  const moduleName = moduleItem ? moduleItem.name : ''
 
   emit('send', {
     text: inputMessage.value,
@@ -457,61 +477,39 @@ onMounted(() => {
   gap: 12px;
 }
 
-/* 系统和模块选择器容器 */
-.selectors-container {
+/* 级联选择器容器 */
+.cascade-select-wrapper {
+  padding: 8px 16px;
+  background-color: #ffffff;
+  border-top: 1px solid #f0f0f0;
   display: flex;
+  align-items: center;
   gap: 8px;
-  flex-shrink: 0;
 }
 
-/* 系统选择器 */
-.system-select,
-.module-select {
-  padding: 10px 14px;
-  border: 1px solid #e0e0e0;
-  border-radius: 20px;
-  font-size: 13px;
-  background-color: #f5f5f5;
-  color: #333;
-  outline: none;
+/* 附件按钮样式 */
+.attachment-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background-color: transparent;
+  color: #999;
   cursor: pointer;
-  min-width: 120px;
   transition: all 0.2s ease;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
 }
 
-.system-select:hover,
-.module-select:hover {
-  border-color: #673ab7;
-  background-color: #ffffff;
+.attachment-btn:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  color: #667eea;
 }
 
-.system-select:focus,
-.module-select:focus {
-  border-color: #673ab7;
-  background-color: #ffffff;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
-}
-
-/* 禁用状态的选择器 */
-.system-select:disabled,
-.module-select:disabled {
-  background-color: #e8e8e8;
-  color: #888;
+.attachment-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
-  border-color: #d0d0d0;
-  opacity: 0.7;
-}
-
-/* 下拉框选项样式 */
-.system-select option,
-.module-select option {
-  padding: 8px 12px;
-  font-size: 13px;
 }
 
 .chat-input {

@@ -239,8 +239,23 @@ onMounted(() => {
 .contacts-container {
   position: relative;
   height: 100%;
-  transition: width 0.2s ease;
+  transition: width 0.3s ease, transform 0.3s ease;
   display: flex;
+}
+
+/* 侧边栏收起状态 */
+.contacts-container.sidebar-collapsed {
+  width: 0 !important;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.contacts-container.sidebar-collapsed .contacts {
+  opacity: 0;
+}
+
+.contacts-container.sidebar-collapsed .resize-handle {
+  display: none;
 }
 
 .contacts {

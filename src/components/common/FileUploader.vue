@@ -122,9 +122,19 @@ const clear = () => {
   }
 }
 
+/**
+ * 触发文件选择
+ */
+const triggerUpload = () => {
+  if (fileInput.value && !props.disabled && !isUploading.value) {
+    fileInput.value.click()
+  }
+}
+
 // 暴露方法给父组件
 defineExpose({
-  clear
+  clear,
+  triggerUpload
 })
 </script>
 
