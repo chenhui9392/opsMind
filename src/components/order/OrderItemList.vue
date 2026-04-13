@@ -11,20 +11,22 @@
       <div
         v-for="order in filteredOrders"
         :key="order.id"
-        class="contact-item order-item"
+        class="order-card"
         :class="{ active: selectedContact === order.id }"
         @click="selectOrder(order)"
       >
-        <div class="contact-content">
-          <div class="contact-info">
-            <div class="order-name">{{ order.orderTitle }}</div>
-            <div class="order-type" v-if="order.orderType">{{ orderTypeText(order.orderType) }}</div>
+        <!-- 状态小圆点 -->
+        <div class="status-dot" :class="{ 'active-dot': selectedContact === order.id }"></div>
+        <div class="card-content">
+          <div class="card-header">
+            <div class="order-title">{{ order.orderTitle }}</div>
+            <div class="order-type-tag" v-if="order.orderType">{{ orderTypeText(order.orderType) }}</div>
           </div>
-          <div class="order-user-message" v-if="order.systemName && order.moduleName">
-            {{ order.systemName }} <span v-if="order.moduleName">-</span> {{order.moduleName}}
+          <div class="order-subtitle" v-if="order.systemName || order.moduleName">
+            {{ order.systemName || '' }} <span v-if="order.systemName && order.moduleName">-</span> {{ order.moduleName || '' }}
           </div>
-          <div class="order-time">
-            {{ formatDate(order.createTime) }}
+          <div class="card-footer">
+            <div class="order-datetime">{{ formatDate(order.createTime) }}</div>
           </div>
         </div>
       </div>
@@ -49,7 +51,7 @@
       <!-- 搜索结果为空提示 -->
       <div class="empty-state" v-else-if="searchQuery && filteredOrders.length === 0">
         <div class="empty-icon">
-          <SvgIcon name="search" width="64" height="64" />
+          <SvgIcon name="search" width="48" height="48" />
         </div>
         <div class="empty-text">未找到相关工单</div>
         <div class="empty-subtext">请尝试其他搜索关键词</div>
@@ -59,7 +61,7 @@
     <!-- 无数据提示 -->
     <div class="empty-state" v-else-if="fetchAttempted">
       <div class="empty-icon">
-        <SvgIcon name="inbox" width="64" height="64" />
+        <SvgIcon name="inbox" width="48" height="48" />
       </div>
       <div class="empty-text">暂无历史工单</div>
       <div class="empty-subtext">工单数据将在这里展示</div>
@@ -68,7 +70,7 @@
     <!-- 错误提示 -->
     <div class="error-state full" v-else-if="error">
       <div class="error-icon">
-        <SvgIcon name="error" width="64" height="64" />
+        <SvgIcon name="error" width="48" height="48" />
       </div>
       <div class="error-text">{{ error }}</div>
       <button class="retry-button" @click="fetchHistoryOrders()">重试</button>
@@ -308,7 +310,7 @@ defineExpose({
 
 <style scoped>
 .contacts-list {
-  padding: 8px 0;
+  padding: 0;
   height: 100%;
   overflow-y: auto;
   position: relative;
@@ -319,15 +321,15 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
-  gap: 16px;
+  padding: 40px 20px;
+  gap: 12px;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3e5f5;
-  border-top-color: #673ab7;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f0f0f0;
+  border-top-color: #6366f1;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -339,7 +341,7 @@ defineExpose({
 }
 
 .loading-text {
-  font-size: 14px;
+  font-size: 13px;
   color: #999;
 }
 
@@ -348,112 +350,137 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
-  gap: 16px;
+  padding: 40px 20px;
+  gap: 12px;
 }
 
 .empty-icon {
-  color: #d1c4e9;
-  opacity: 0.5;
+  color: #d1d5db;
+  opacity: 0.8;
 }
 
 .empty-text {
-  font-size: 16px;
-  color: #999;
+  font-size: 14px;
+  color: #666;
   font-weight: 500;
 }
 
 .empty-subtext {
-  font-size: 13px;
-  color: #bbb;
+  font-size: 12px;
+  color: #999;
 }
 
 .history-orders-section {
-  margin-bottom: 16px;
+  padding: 0 12px;
 }
 
-.order-item {
-  background-color: #fff8e1;
-  border-left: 3px solid #ff9800;
+/* 小卡片样式 */
+.order-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.order-item:hover {
-  background-color: #ffecb3;
+.order-card:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
-.order-name {
+.order-card.active {
+  background-color: #eef2ff;
+  border-color: #6366f1;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+}
+
+/* 状态小圆点 */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #d1d5db;
+  flex-shrink: 0;
+  margin-top: 6px;
+  transition: all 0.2s ease;
+}
+
+.status-dot.active-dot {
+  background-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.order-card:hover .status-dot {
+  background-color: #9ca3af;
+}
+
+.order-card.active:hover .status-dot {
+  background-color: #6366f1;
+}
+
+/* 卡片内容 */
+.card-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.order-title {
   font-weight: 600;
-  color: #333;
-  font-size: 15px;
+  color: #1f2937;
+  font-size: 14px;
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
-
-.order-type {
-  font-size: 12px;
-  color: #ff9800;
-  background-color: rgba(255, 152, 0, 0.1);
+.order-type-tag {
+  font-size: 10px;
+  color: #6366f1;
+  background-color: rgba(99, 102, 241, 0.1);
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: 12px;
   flex-shrink: 0;
+  font-weight: 500;
 }
 
-.order-user-message {
+.order-subtitle {
   font-size: 12px;
-  color: #666;
-  margin-top: 6px;
+  color: #6b7280;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.4;
 }
 
-.order-time {
-  font-size: 12px;
-  color: #999;
-  margin-top: 8px;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.contact-item {
-  padding: 14px 16px;
-  border: none;
-  border-radius: 12px;
-  margin: 0 8px 8px;
-  cursor: pointer;
-  background-color: #ffffff;
-  transition: all 0.3s ease;
+.card-footer {
   display: flex;
   align-items: center;
-  gap: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  justify-content: flex-end;
 }
 
-.contact-item:hover {
-  background-color: #f8f9fa;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.contact-item.active {
-  background-color: #ede7f6;
-  border-left: 4px solid #673ab7;
-}
-
-.contact-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.contact-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
+.order-datetime {
+  font-size: 11px;
+  color: #9ca3af;
 }
 
 /* 加载更多状态 */
@@ -462,15 +489,15 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
   gap: 8px;
 }
 
 .loading-spinner.small {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #f3e5f5;
-  border-top-color: #673ab7;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f0f0f0;
+  border-top-color: #6366f1;
 }
 
 .loading-text.small {
@@ -483,12 +510,12 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
 }
 
 .end-text {
   font-size: 12px;
-  color: #999;
+  color: #9ca3af;
 }
 
 /* 错误提示 */
@@ -497,58 +524,57 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  gap: 12px;
+  padding: 16px;
+  gap: 8px;
 }
 
 .error-state.full {
   height: 100%;
-  padding: 60px 20px;
+  padding: 40px 20px;
 }
 
 .error-icon {
-  color: #ff4757;
-  opacity: 0.5;
+  color: #ef4444;
+  opacity: 0.7;
 }
 
 .error-text {
-  font-size: 14px;
-  color: #ff4757;
+  font-size: 13px;
+  color: #ef4444;
   text-align: center;
 }
 
 .retry-button {
-  padding: 6px 16px;
-  border: 1px solid #673ab7;
-  border-radius: 16px;
+  padding: 6px 14px;
+  border: 1px solid #6366f1;
+  border-radius: 6px;
   background-color: white;
-  color: #673ab7;
+  color: #6366f1;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .retry-button:hover {
-  background-color: #673ab7;
+  background-color: #6366f1;
   color: white;
 }
 
 /* 滚动条样式 */
 .contacts-list::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .contacts-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+  background: transparent;
 }
 
 .contacts-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+  background: #d1d5db;
+  border-radius: 2px;
 }
 
 .contacts-list::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #9ca3af;
 }
 </style>

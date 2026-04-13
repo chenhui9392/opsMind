@@ -10,6 +10,8 @@
       v-model:messages="messages"
       :isSending="isSending"
       @back-to-current="backToCurrentChat"
+      @new-order="handleNewOrder"
+      @check-update="checkForAppUpdates({ force: true, silent: false })"
     />
 
     <!-- 右侧聊天区域 -->
@@ -40,6 +42,9 @@
       @confirm="handleUpdateConfirm"
       @cancel="handleUpdateCancel"
     />
+
+    <!-- Toast 提示组件 -->
+    <Toast ref="toastRef" />
   </div>
 </template>
 
@@ -48,6 +53,7 @@ import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import OrderList from '../components/order/OrderList.vue'
 import Chat from '../components/chat/Chat.vue'
 import UpdateDialog from '../components/common/UpdateDialog.vue'
+import Toast from '../components/common/Toast.vue'
 import { initialMessages } from '../mock/data'
 import messageService from '../services/messageService'
 import updateService from '../services/updateService'
@@ -78,6 +84,7 @@ const updateInfo = reactive({
 // 模板引用
 const contactsComponent = ref(null)
 const chatComponent = ref(null)
+const toastRef = ref(null)
 
 /**
  * 回到当前聊天会话
@@ -146,8 +153,29 @@ const handleRefreshOrders = function() {
 };
 
 /**
+ * 处理新建工单
+ */
+const handleNewOrder = () => {
+  // 调用 messageService 创建新会话
+  const result = messageService.backToCurrentChat(initialMessages)
+
+  // 更新状态
+  messages.value = result.messages
+  selectedContact.value = result.selectedContact
+  showInput.value = result.showInput
+  isNewSession.value = result.isNewSession
+  // 恢复系统/模块名称
+  currentSystemName.value = result.systemName || ''
+  currentModuleName.value = result.moduleName || ''
+
+  console.log('创建新工单会话')
+}
+
+/**
  * 检查应用版本更新
  * @param {Object} options - 检查选项
+ * @param {boolean} options.silent - 是否静默检查（不显示提示）
+ * @param {boolean} options.force - 是否强制检查
  */
 const checkForAppUpdates = async (options = {}) => {
   try {
@@ -165,9 +193,20 @@ const checkForAppUpdates = async (options = {}) => {
       updateInfo.fileSize = result.updateInfo.fileSize
       updateInfo.forceUpdate = result.updateInfo.forceUpdate
       showUpdateDialog.value = true
+    } else if (!result.hasUpdate && !result.error && !options.silent) {
+      // 当前为最新版本，显示提示（使用返回的message）
+      if (toastRef.value && toastRef.value.success) {
+        toastRef.value.success(result.message || '当前已是最新版本')
+      }
+    } else if (result.error && !options.silent) {
+      // 检查出错，显示错误提示（使用返回的error）
+      if (toastRef.value && toastRef.value.error) {
+        toastRef.value.error(result.error)
+      }
     }
   } catch (error) {
     // 静默处理错误，不影响用户正常使用
+    console.error('检查更新失败:', error)
   }
 }
 
