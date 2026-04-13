@@ -71,3 +71,12 @@ export const updateMessageStatus = (params) => {
 export const checkAppVersion = () => {
   return get(getVersionCheckUrl())
 }
+
+/**
+ * 用户登录接口
+ * @param {Object} params - 包含username、password等参数
+ * @returns {Promise<Object>}
+ */
+export const login = (params) => {
+  return post(`${API_BASE_URL}/hinton-agent-mario-server/api/auth/login`, params)
+}
