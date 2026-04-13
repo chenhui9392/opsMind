@@ -2,3 +2,7 @@
 /dist_electron/
 /dist/
 /release/
+
+# Auto-generated type definitions
+auto-imports.d.ts
+components.d.ts

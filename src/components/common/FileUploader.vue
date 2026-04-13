@@ -15,7 +15,7 @@
       :title="title"
     >
       <slot name="icon">
-        <SvgIcon name="upload" width="20" height="20" />
+        <SvgIcon name="attachment" width="20" height="20" />
       </slot>
       <span v-if="buttonText" class="button-text">{{ buttonText }}</span>
     </button>

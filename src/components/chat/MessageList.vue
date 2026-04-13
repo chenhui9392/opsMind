@@ -20,13 +20,13 @@
       />
     </div>
 
-    <!-- 图片预览模态框 -->
-    <ImagePreview
-      :show="imagePreview.show"
-      :images="imagePreview.images"
-      :currentIndex="imagePreview.currentIndex"
+    <!-- Element Plus Image 图片预览 -->
+    <el-image-viewer
+      v-if="imagePreview.show"
+      :url-list="imagePreview.images"
+      :initial-index="imagePreview.currentIndex"
       @close="closeImagePreview"
-      @navigate="handleNavigateImage"
+      @switch="handleNavigateImage"
     />
   </div>
 </template>
@@ -35,7 +35,6 @@
 import { reactive } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import MessageItem from './MessageItem.vue'
-import ImagePreview from '../common/ImagePreview.vue'
 
 // Props
 const props = defineProps({
@@ -75,7 +74,7 @@ const closeImagePreview = () => {
 }
 
 /**
- * 导航图片
+ * 导航图片（Element Plus Image Viewer 使用）
  * @param {number} index - 图片索引
  */
 const handleNavigateImage = (index) => {

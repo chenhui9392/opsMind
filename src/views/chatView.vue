@@ -47,8 +47,7 @@
       @cancel="handleUpdateCancel"
     />
 
-    <!-- Toast 提示组件 -->
-    <Toast ref="toastRef" />
+
   </div>
 </template>
 
@@ -57,7 +56,6 @@ import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import OrderList from '../components/order/OrderList.vue'
 import Chat from '../components/chat/Chat.vue'
 import UpdateDialog from '../components/common/UpdateDialog.vue'
-import Toast from '../components/common/Toast.vue'
 import { initialMessages } from '../mock/data'
 import messageService from '../services/messageService'
 import updateService from '../services/updateService'
@@ -89,7 +87,6 @@ const updateInfo = reactive({
 // 模板引用
 const contactsComponent = ref(null)
 const chatComponent = ref(null)
-const toastRef = ref(null)
 
 /**
  * 回到当前聊天会话
@@ -170,9 +167,7 @@ const handleToggleSidebar = () => {
  */
 const handleDownloadSession = () => {
   if (!messages.value || messages.value.length === 0) {
-    if (toastRef.value && toastRef.value.warning) {
-      toastRef.value.warning('当前会话没有内容可下载')
-    }
+    ElMessage.warning('当前会话没有内容可下载')
     return
   }
 
@@ -204,9 +199,7 @@ const handleDownloadSession = () => {
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 
-  if (toastRef.value && toastRef.value.success) {
-    toastRef.value.success('会话下载成功')
-  }
+  ElMessage.success('会话下载成功')
 }
 
 /**
@@ -255,14 +248,10 @@ const checkForAppUpdates = async (options = {}) => {
       showUpdateDialog.value = true
     } else if (!result.hasUpdate && !result.error && showNoUpdate) {
       // 仅在showNoUpdate为true时显示"当前为最新版本"提示
-      if (toastRef.value && toastRef.value.success) {
-        toastRef.value.success(result.message || '当前已是最新版本')
-      }
+      ElMessage.success(result.message || '当前已是最新版本')
     } else if (result.error && showNoUpdate) {
       // 检查出错，仅在showNoUpdate为true时显示错误提示
-      if (toastRef.value && toastRef.value.error) {
-        toastRef.value.error(result.error)
-      }
+      ElMessage.error(result.error)
     }
   } catch (error) {
     // 静默处理错误，不影响用户正常使用

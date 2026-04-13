@@ -34,26 +34,36 @@
       />
       <div class="input-actions">
         <!-- 修改后的上传文件按钮 -->
-        <button
+        <!-- <button
           class="attachment-btn"
           @click="triggerFileUpload"
           :disabled="uploaderDisabled || isSending"
           title="上传文件"
         >
           <SvgIcon name="attachment" width="20" height="20" />
-        </button>
-        <!-- 隐藏的文件上传组件 -->
-        <FileUploader
-          ref="fileUploader"
-          accept="image/*,.xlsx,.xls,.pdf"
+        </button> -->
+            <!-- Element Plus Upload 组件 -->
+        <el-upload
+          ref="uploadRef"
+          action="#"
+          :auto-upload="false"
+          :show-file-list="false"
           :disabled="uploaderDisabled || isSending"
-          title="上传"
-          button-text="上传"
-          @upload-start="handleUploadStart"
-          @upload-success="handleUploadSuccess"
-          @upload-error="handleUploadError"
-          @upload-complete="handleUploadComplete"
-        />
+          :accept="uploadAccept"
+          :on-change="handleFileChange"
+          :multiple="true"
+          class="upload-component"
+        >
+          <template #trigger>
+            <button
+              class="attachment-btn"
+              :disabled="uploaderDisabled || isSending"
+              title="上传文件"
+            >
+              <SvgIcon name="attachment" width="20" height="20" />
+            </button>
+          </template>
+        </el-upload>
         <button v-if="!isSending" class="send-button" @click="sendMessage" :disabled="isUploading || isSending" title="发送">
           <SvgIcon name="send" width="18" height="18" color="white" />
           <span class="button-text">发送</span>
@@ -67,16 +77,14 @@
 
     <!-- 级联选择组件（在输入框下方） -->
     <div class="cascade-select-wrapper">
-      <CascadeSelect
-        v-model:level1Value="selectedSystem"
-        v-model:level2Value="selectedModule"
-        :level1Options="systemList"
-        :level2Options="getModuleListBySystem"
+      <el-cascader
+        v-model="cascaderValue"
+        :options="cascaderOptions"
+        :props="cascaderProps"
         :disabled="!isNewSession"
-        :showLevel2="true"
-        level1Placeholder="选择系统"
-        level2Placeholder="选择模块"
+        placeholder="请选择系统和模块"
         @change="handleCascadeChange"
+        class="system-cascader"
       />
     </div>
   </div>
@@ -85,8 +93,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
-import FileUploader from '../common/FileUploader.vue'
-import CascadeSelect from '../common/CascadeSelect.vue'
+import { uploadImage } from '../../api'
 import { getSystemList, getModuleListBySystem } from '../../config/systemModuleData.js'
 
 // Props
@@ -112,6 +119,10 @@ const props = defineProps({
 // Emits
 const emit = defineEmits(['send', 'stop', 'show-error'])
 
+// 上传配置
+const uploadAccept = 'image/*,.xlsx,.xls,.pdf'
+const uploadRef = ref(null)
+
 // 响应式数据
 const inputMessage = ref('')
 const selectedFiles = ref([])
@@ -124,6 +135,26 @@ const selectedSystem = ref('')
 const selectedModule = ref('')
 const systemList = ref([])
 const moduleList = ref([])
+const cascaderValue = ref([])
+
+// Cascader 配置
+const cascaderProps = {
+  value: 'code',
+  label: 'name',
+  children: 'children'
+}
+
+// Cascader 选项
+const cascaderOptions = computed(() => {
+  return systemList.value.map(system => ({
+    code: system.code,
+    name: system.name,
+    children: getModuleListBySystem(system.code).map(module => ({
+      code: module.code,
+      name: module.name
+    }))
+  }))
+})
 // 计算属性
 const placeholderText = computed(() => {
   if (!props.isNewSession) {
@@ -139,7 +170,6 @@ const placeholderText = computed(() => {
 })
 
 // 模板引用
-const fileUploader = ref(null)
 const textareaRef = ref(null)
 
 /**
@@ -165,44 +195,47 @@ const handleEnterKey = (event) => {
 }
 
 /**
- * 处理文件上传开始
+ * 处理文件变化（选择文件后）
+ * @param {Object} uploadFile - Element Plus 上传文件对象
  */
-const handleUploadStart = () => {
+const handleFileChange = async (uploadFile) => {
+  const file = uploadFile.raw
+  if (!file) return
+
   isUploading.value = true
   uploaderDisabled.value = true
-}
 
-/**
- * 处理文件上传成功
- * @param {Object} result - 上传结果
- */
-const handleUploadSuccess = (result) => {
-  if (result.isImage) {
-    uploadedImages.value.push(result.url)
-  } else {
-    uploadedFiles.value.push({
-      name: result.name,
-      url: result.url,
-      type: result.type
-    })
+  const isImage = file.type.startsWith('image/')
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('bucket', 'CSS-01')
+
+    const data = await uploadImage(formData)
+
+    if (data.success) {
+      const fileUrl = data.data.accessPath.trim()
+      if (isImage) {
+        uploadedImages.value.push(fileUrl)
+      } else {
+        uploadedFiles.value.push({
+          name: file.name,
+          url: fileUrl,
+          type: file.type
+        })
+      }
+    } else {
+      console.error('文件上传失败:', data.message)
+      emit('show-error', '文件上传失败')
+    }
+  } catch (error) {
+    console.error('文件上传失败:', error)
+    emit('show-error', '文件上传失败')
+  } finally {
+    isUploading.value = false
+    uploaderDisabled.value = false
   }
-}
-
-/**
- * 处理文件上传错误
- * @param {Object} error - 错误信息
- */
-const handleUploadError = (error) => {
-  console.error('文件上传失败:', error)
-}
-
-/**
- * 处理文件上传完成
- * @param {Object} result - 上传结果
- */
-const handleUploadComplete = (result) => {
-  isUploading.value = false
-  uploaderDisabled.value = false
 }
 
 /**
@@ -223,7 +256,12 @@ const restoreSystemModuleSelection = () => {
     const moduleItem = moduleList.value.find(m => m.name === props.moduleName)
     if (moduleItem) {
       selectedModule.value = moduleItem.code
+      cascaderValue.value = [system.code, moduleItem.code]
+    } else {
+      cascaderValue.value = []
     }
+  } else {
+    cascaderValue.value = []
   }
   console.log('恢复系统模块选择:', props.systemName, props.moduleName, '->', selectedSystem.value, selectedModule.value)
 }
@@ -232,17 +270,29 @@ const restoreSystemModuleSelection = () => {
  * 触发文件上传
  */
 const triggerFileUpload = () => {
-  if (fileUploader.value && fileUploader.value.triggerUpload) {
-    fileUploader.value.triggerUpload()
+  if (uploadRef.value) {
+    const input = uploadRef.value.$el.querySelector('input[type="file"]')
+    if (input) {
+      input.click()
+    }
   }
 }
 
 /**
  * 处理级联选择变化
- * @param {Object} data - 选择数据 { level1, level2 }
+ * @param {Array} value - 选择值数组 [systemCode, moduleCode]
  */
-const handleCascadeChange = (data) => {
-  console.log('级联选择变化:', data)
+const handleCascadeChange = (value) => {
+  console.log('级联选择变化:', value)
+  if (value && value.length >= 2) {
+    selectedSystem.value = value[0]
+    selectedModule.value = value[1]
+    moduleList.value = getModuleListBySystem(value[0])
+  } else {
+    selectedSystem.value = ''
+    selectedModule.value = ''
+    moduleList.value = []
+  }
 }
 
 /**
@@ -277,9 +327,6 @@ const sendMessage = () => {
   inputMessage.value = ''
   uploadedImages.value = []
   uploadedFiles.value = []
-  if (fileUploader.value && fileUploader.value.clear) {
-    fileUploader.value.clear()
-  }
   isInCodeBlock.value = false
   resetResize()
 }
@@ -487,7 +534,63 @@ onMounted(() => {
   gap: 8px;
 }
 
+/* Element Plus Cascader 样式 - 标签风格 */
+.system-cascader {
+  width: auto;
+}
+
+.system-cascader :deep(.el-input__wrapper) {
+  border-radius: 16px;
+  background-color: #e8eaff;
+  border: none;
+  box-shadow: none !important;
+  padding: 4px 12px;
+  min-height: 32px;
+}
+
+.system-cascader :deep(.el-input__inner) {
+  font-size: 14px;
+  color: #6366f1;
+  font-weight: 500;
+}
+
+.system-cascader :deep(.el-input__suffix-inner) {
+  color: #6366f1;
+}
+
+.system-cascader :deep(.el-input .el-icon) {
+  color: #6366f1;
+}
+
+/* 级联下拉菜单样式 */
+.system-cascader :deep(.el-cascader__dropdown) {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.system-cascader :deep(.el-cascader-node) {
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+.system-cascader :deep(.el-cascader-node.is-active) {
+  color: #6366f1;
+  font-weight: 500;
+}
+
+.system-cascader :deep(.el-cascader-node.in-active-path) {
+  color: #6366f1;
+}
+
+.system-cascader :deep(.el-cascader-node:hover) {
+  background-color: #f5f5f5;
+}
+
 /* 附件按钮样式 */
+.upload-component {
+  display: inline-block;
+}
+
 .attachment-btn {
   display: flex;
   align-items: center;

@@ -18,8 +18,7 @@
       :moduleName="moduleName"
     />
 
-    <!-- Toast 提示组件 -->
-    <Toast ref="toast" />
+
   </div>
 </template>
 
@@ -27,7 +26,6 @@
 import { ref, watch, onMounted, nextTick } from 'vue'
 import ChatInput from './ChatInput.vue'
 import MessageList from './MessageList.vue'
-import Toast from '../common/Toast.vue'
 import chatMessageService from '../../services/chatMessageService'
 
 // Props
@@ -68,16 +66,13 @@ const isSendingLocal = ref(false)
 
 // 模板引用
 const messageList = ref(null)
-const toast = ref(null)
 
 /**
  * 处理显示错误提示
  * @param {string} message - 错误消息
  */
 const handleShowError = (message) => {
-  if (toast.value && toast.value.error) {
-    toast.value.error(message)
-  }
+  ElMessage.error(message)
 }
 
 /**

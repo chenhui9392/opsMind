@@ -133,8 +133,7 @@
       </div>
     </div>
 
-    <!-- Toast 提示组件 -->
-    <Toast ref="toastRef" />
+
   </div>
 </template>
 
@@ -142,7 +141,6 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import Toast from '../components/common/Toast.vue'
 import SvgIcon from '../assets/svg/SvgIcon.vue'
 
 // 路由
@@ -150,9 +148,6 @@ const router = useRouter()
 
 // useAuth composable
 const { login, getRememberedCredentials, saveRememberedCredentials, clearRememberedCredentials } = useAuth()
-
-// Toast 引用
-const toastRef = ref(null)
 
 // 表单数据
 const form = reactive({
@@ -176,9 +171,7 @@ const isLoading = ref(false)
  * @param {string} message - 错误消息
  */
 const showError = (message) => {
-  if (toastRef.value) {
-    toastRef.value.error(message)
-  }
+  ElMessage.error(message)
 }
 
 /**

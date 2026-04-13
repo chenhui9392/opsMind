@@ -8,6 +8,9 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -18,7 +21,18 @@ export default defineConfig(({ mode }) => {
   const updateApiBaseUrl = env.VITE_UPDATE_API_BASE_URL || 'https://unitive-api.tineco.cn'
 
   return {
-    plugins: [vue()],
+    plugins: [
+      vue(),
+      AutoImport({
+        resolvers: [ElementPlusResolver()],
+        imports: ['vue', 'vue-router'],
+        dts: true
+      }),
+      Components({
+        resolvers: [ElementPlusResolver()],
+        dts: true
+      })
+    ],
     base: './',
     server: {
       port: parseInt(env.VITE_DEV_SERVER_PORT) || 9090,
