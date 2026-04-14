@@ -1,3 +1,6 @@
+---
+trigger: always_on
+---
 # AIT Claw 开发规范文档
 
 本文档定义了 AIT Claw 项目的开发规范和最佳实践。
@@ -47,9 +50,28 @@ src/
 
 ---
 
-## 2. 组件引用规则
+## 2. 组件使用与引用规则
 
-### 2.1 命名规范
+### 2.1 组件使用优先级
+
+在开发过程中，组件的选择应遵循以下优先级：
+
+1. **第一优先级：Element Plus 标准组件**
+   - 优先使用 Element Plus 组件库提供的标准组件
+   - 确保功能一致性的同时提升维护性
+   - 示例：`el-button`、`el-input`、`el-dialog`、`el-upload`、`el-image-viewer` 等
+
+2. **第二优先级：项目自定义组件**
+   - 当 Element Plus 无法满足特定业务需求时，使用 `src/components/` 目录下的自定义组件
+   - 复用已有的业务组件，避免重复开发
+   - 示例：`OrderList.vue`、`ChatHeader.vue`、`BottomToolbar.vue` 等
+
+3. **第三优先级：创建新自定义组件**
+   - 当前两者均无法满足需求时，创建新的自定义组件
+   - 新组件应遵循项目的组件开发规范，放置在合适的目录下
+   - 组件创建后应在团队内共享，便于后续复用
+
+### 2.2 命名规范
 
 - **单文件组件**：PascalCase
   - `LoginPage.vue`, `ChatHeader.vue`

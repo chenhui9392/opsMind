@@ -3,8 +3,17 @@
     class="message"
     :class="{ 'message-user': message.sender === 'user', 'message-bot': message.sender === 'bot' }"
   >
+    <!-- 机器人头像 -->
     <div class="message-avatar" v-if="message.sender === 'bot'">
-      <div class="avatar-icon">🤖</div>
+      <div class="avatar-icon bot-avatar">
+        <SvgIcon name="sparkles" width="20" height="20" />
+      </div>
+    </div>
+    <!-- 用户头像 -->
+    <div class="message-avatar user-avatar-wrapper" v-if="message.sender === 'user'">
+      <div class="avatar-icon user-avatar">
+        <SvgIcon name="user" width="20" height="20" />
+      </div>
     </div>
     <div class="message-wrapper">
       <!-- 消息内容 -->
@@ -47,10 +56,9 @@
           @click="handleCopy"
           title="复制"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
+          <el-icon :size="12">
+            <CopyDocument />
+          </el-icon>
         </button>
       </div>
     </div>
@@ -61,6 +69,7 @@
 import { ref, computed } from 'vue'
 import { marked } from 'marked'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
+import { CopyDocument } from '@element-plus/icons-vue'
 
 // 配置 marked 选项
 marked.setOptions({
@@ -210,7 +219,40 @@ const handleCopy = async () => {
 
 .message-avatar {
   margin-right: 10px;
-  margin-top: 4px;
+  margin-top: 0;
+  align-self: flex-start;
+}
+
+.message-user .user-avatar-wrapper {
+  margin-right: 0;
+  margin-left: 10px;
+}
+
+.avatar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+/* 用户头像样式 - 紫色渐变 */
+.avatar-icon.user-avatar {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+/* 机器人头像样式 - 使用蓝绿色渐变区分 */
+.avatar-icon.bot-avatar {
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+.avatar-icon.bot-avatar:hover {
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+  transform: scale(1.05);
+  transition: all 0.2s ease;
 }
 
 .message-content {
@@ -221,19 +263,20 @@ const handleCopy = async () => {
 }
 
 .message-bot .message-content {
-  background-color: #ffffff;
+  background-color: #F8FAFC;
   border: 1px solid #e0e0e0;
   border-bottom-left-radius: 4px;
 }
 
 .message-user .message-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #ffffff;
+  background-color: #EEF2FF;
+  color: #1f2937;
+  border: 1px solid #c7d2fe;
   border-bottom-right-radius: 4px;
 }
 
 .message-user .message-text {
-  color: #ffffff;
+  color: #1f2937;
 }
 
 .message-text {
@@ -365,7 +408,7 @@ const handleCopy = async () => {
 .message-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   margin-top: 8px;
   gap: 12px;
 }
@@ -398,6 +441,11 @@ const handleCopy = async () => {
 
 .copy-btn:hover {
   color: #666;
+}
+
+.copy-btn :deep(.el-icon) {
+  width: 12px;
+  height: 12px;
 }
 
 /* Markdown样式 */

@@ -218,7 +218,7 @@ onMounted(() => {
   top: 0;
   z-index: 20;
   background-color: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
+  //border-bottom: 1px solid #e0e0e0;
 }
 
 /* 确保ChatContent占据剩余空间 */

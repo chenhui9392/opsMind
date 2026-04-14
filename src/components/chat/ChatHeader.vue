@@ -68,14 +68,14 @@ const emit = defineEmits([
 // 计算属性
 const displayTitle = computed(() => {
   // 如果有第一条用户消息，使用它作为标题
-  return props.firstUserMessage || '新建会话'
+  return props.firstUserMessage || '新会话'
 })
 
 const truncatedTitle = computed(() => {
   const title = displayTitle.value
-  // 限制标题长度为20个字符
-  if (title.length > 20) {
-    return title.substring(0, 20) + '...'
+  // 限制标题长度为40个字符
+  if (title.length > 40) {
+    return title.substring(0, 40) + '...'
   }
   return title
 })
@@ -154,6 +154,7 @@ const handleDownload = () => {
   align-items: center;
   flex: 1;
   min-width: 0;
+  max-width: 500px;
 }
 
 .chat-name {

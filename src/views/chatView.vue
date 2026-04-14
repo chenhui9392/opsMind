@@ -9,10 +9,11 @@
       v-model:showInput="showInput"
       v-model:messages="messages"
       :isSending="isSending"
-      :class="{ 'sidebar-collapsed': isSidebarCollapsed }"
+      :isCollapsed="isSidebarCollapsed"
       @back-to-current="backToCurrentChat"
       @new-order="handleNewOrder"
       @check-update="checkForAppUpdates({ force: true, showNoUpdate: true })"
+      @toggle-sidebar="handleToggleSidebar"
     />
 
     <!-- 右侧聊天区域 -->

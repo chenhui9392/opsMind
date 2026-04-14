@@ -89,6 +89,7 @@
     "detectUpdateChannel": false
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
     "crypto-js": "^4.2.0",
     "element-plus": "^2.13.7",
     "marked": "^17.0.4",

@@ -95,7 +95,7 @@ const handleFileClick = (file) => {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
-  background-color: #fafafa;
+  background-color: #ffffff;
   padding-bottom: 100px;
 }
 

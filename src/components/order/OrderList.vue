@@ -1,5 +1,9 @@
 <template>
-  <div class="contacts-container" :style="{ width: contactsWidth + 'px' }">
+  <div
+    class="contacts-container"
+    :class="{ 'sidebar-collapsed': isCollapsed }"
+    :style="{ width: isCollapsed ? '0px' : contactsWidth + 'px' }"
+  >
     <div class="contacts">
       <!-- 用户信息区域 -->
       <div class="user-info-section">
@@ -43,9 +47,28 @@
         <div class="loading-spinner"></div>
         <div class="loading-text">正在发送消息...</div>
       </div>
+
+      <!-- 调整宽度手柄 -->
+      <div
+        v-if="!isCollapsed"
+        class="resize-handle"
+        @mousedown="resizeMethods.startResizing"
+      ></div>
     </div>
-    <!-- 调整宽度手柄 -->
-    <div class="resize-handle" @mousedown="resizeMethods.startResizing"></div>
+
+    <!-- 侧边栏展开/收起按钮 -->
+    <button
+      class="sidebar-toggle-btn"
+      :class="{ 'collapsed': isCollapsed }"
+      @click="handleToggleSidebar"
+      :title="isCollapsed ? '展开侧边栏' : '收起侧边栏'"
+    >
+      <SvgIcon
+        :name="isCollapsed ? 'chevronRight' : 'chevronLeft'"
+        width="18"
+        height="18"
+      />
+    </button>
   </div>
 </template>
 
@@ -76,6 +99,13 @@ const props = defineProps({
   isSending: {
     type: Boolean,
     default: false
+  },
+  /**
+   * 侧边栏是否收起
+   */
+  isCollapsed: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -87,7 +117,8 @@ const emit = defineEmits([
   'back-to-current',
   'new-order',
   'check-update',
-  'logout'
+  'logout',
+  'toggle-sidebar'
 ])
 
 // 响应式数据
@@ -206,6 +237,13 @@ const handleLogout = () => {
   logout(true)
 }
 
+/**
+ * 处理切换侧边栏展开/收起
+ */
+const handleToggleSidebar = () => {
+  emit('toggle-sidebar')
+}
+
 // 初始化调整大小方法
 resizeMethods.value = createResizeMethods({
   widthKey: 'contactsWidth',
@@ -245,23 +283,55 @@ onMounted(() => {
 
 /* 侧边栏收起状态 */
 .contacts-container.sidebar-collapsed {
-  width: 0 !important;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .contacts-container.sidebar-collapsed .contacts {
   opacity: 0;
+  pointer-events: none;
 }
 
 .contacts-container.sidebar-collapsed .resize-handle {
   display: none;
 }
 
+/* 侧边栏展开/收起按钮 */
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: -24px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  z-index: 100;
+  border: 1px solid #e8e8e8;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #f5f5f5;
+  color: #333;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-toggle-btn.collapsed {
+  right: -35px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 .contacts {
   flex: 1;
   border-right: 1px solid #e8e8e8;
-  background-color: #ffffff;
+  background-color: #F8FAFC;
   display: flex;
   flex-direction: column;
   height: 100%;

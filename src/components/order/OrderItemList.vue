@@ -387,13 +387,16 @@ defineExpose({
   cursor: pointer;
   transition: all 0.25s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 1;
 }
 
 .order-card:hover {
   background-color: #f9fafb;
-  border-color: #d1d5db;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #6366f1;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
   transform: translateY(-1px);
+  z-index: 2;
 }
 
 .order-card.active {
