@@ -78,5 +78,5 @@ export const checkAppVersion = () => {
  * @returns {Promise<Object>}
  */
 export const login = (params) => {
-  return post(`${API_BASE_URL}/hinton-agent-mario-server/api/auth/login`, params)
+  return post(`https://cloud-api.tineco.com/user/v1.0/login/by-domain`, params)
 }

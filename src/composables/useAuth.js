@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description: 
  * @Date: 2026-04-13 10:25:53
- * @LastEditTime: 2026-04-13 10:26:12
+ * @LastEditTime: 2026-04-15 15:52:08
  * @LastEditors: hui.chenn
  */
 /*
@@ -38,19 +38,23 @@ export function useAuth() {
   const login = async (username, password) => {
     try {
       const response = await loginApi({
-        username: username.trim(),
+        appId:"PORTAL",
+        clientId:"Tineco",
+        code:true,
+        uid: username.trim(),
         password: password.trim()
       })
 
       // 检查登录结果
-      if (response && response.code === 200 && response.data?.token) {
+      if (response && response.code === 200 && response.data?.access_token) {
         // 保存认证信息
-        token.value = response.data.token
+        token.value = response.data.access_token
         userInfo.value = response.data
         isAuthenticated.value = true
 
         // 保存到 localStorage
-        localStorage.setItem('token', response.data.token)
+        localStorage.setItem('token', response.data.access_token)
+        localStorage.setItem('userName', username.trim())
         localStorage.setItem('userInfo', JSON.stringify(response.data))
 
         return { success: true }

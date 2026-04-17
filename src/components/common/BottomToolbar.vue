@@ -10,12 +10,14 @@
     <!-- 刷新按钮 -->
     <button
       class="toolbar-btn"
-      :class="{ 'refresh-btn': isRefreshing }"
+      :class="{ 'refresh-btn': isRefreshing, 'has-notification': hasSocketNotification }"
       @click="handleRefresh"
       title="刷新列表"
       :disabled="isRefreshing"
     >
       <SvgIcon name="refresh" width="18" height="18" :class="{ 'spinning': isRefreshing }" />
+      <!-- 红点通知 -->
+      <span v-if="hasSocketNotification" class="notification-dot"></span>
     </button>
 
     <!-- 检查更新按钮 -->
@@ -52,6 +54,13 @@ const props = defineProps({
    * 是否正在刷新中
    */
   isRefreshing: {
+    type: Boolean,
+    default: false
+  },
+  /**
+   * 是否有 Socket 通知（显示红点）
+   */
+  hasSocketNotification: {
     type: Boolean,
     default: false
   }
@@ -139,5 +148,22 @@ const handleLogout = () => {
 
 .spinning {
   animation: spin 1s linear infinite;
+}
+
+/* 红点通知样式 */
+.toolbar-btn.has-notification {
+  position: relative;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: 2px solid #fafafa;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 </style>

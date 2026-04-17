@@ -10,10 +10,12 @@
       v-model:messages="messages"
       :isSending="isSending"
       :isCollapsed="isSidebarCollapsed"
+      :hasSocketNotification="hasSocketNotification"
       @back-to-current="backToCurrentChat"
       @new-order="handleNewOrder"
       @check-update="checkForAppUpdates({ force: true, showNoUpdate: true })"
       @toggle-sidebar="handleToggleSidebar"
+      @refresh-orders-with-notification="handleRefreshOrdersWithNotification"
     />
 
     <!-- 右侧聊天区域 -->
@@ -28,10 +30,11 @@
       :systemName="currentSystemName"
       :moduleName="currentModuleName"
       :isSidebarCollapsed="isSidebarCollapsed"
+      :hasSocketNotification="hasSocketNotification"
       @navigate-to-session="handleNavigateToSession"
       @update:isSending="isSending = $event"
       @refresh-orders="handleRefreshOrders"
-      @toggle-sidebar="handleToggleSidebar"
+      @toggle-sidebar="handleToggleSidebarWithNotification"
       @download-session="handleDownloadSession"
     />
 
@@ -53,7 +56,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import OrderList from '../components/order/OrderList.vue'
 import Chat from '../components/chat/Chat.vue'
 import UpdateDialog from '../components/common/UpdateDialog.vue'
@@ -74,8 +77,10 @@ const isSending = ref(false)
 const isNewSession = ref(true)
 const currentSystemName = ref('')
 const currentModuleName = ref('')
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(true)
 const showUpdateDialog = ref(false)
+// Socket 通知状态 - 用于显示红点通知
+const hasSocketNotification = ref(false)
 const updateInfo = reactive({
   currentVersion: '',
   latestVersion: '',
@@ -149,17 +154,56 @@ const handleNavigateToSession = async (sessionId) => {
 /**
  * 刷新历史工单列表
  */
-const handleRefreshOrders = function() {
+const handleRefreshOrders = async function() {
+  // 确保组件已渲染后再调用刷新方法
   if (contactsComponent.value && contactsComponent.value.handleRefreshOrders) {
-    contactsComponent.value.handleRefreshOrders();
+    contactsComponent.value.handleRefreshOrders()
   }
-};
+}
 
 /**
  * 处理切换侧边栏收起/展开
  */
-const handleToggleSidebar = () => {
+const handleToggleSidebar = (isFresh) => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
+
+/**
+ * 处理带通知状态的切换侧边栏
+ * 如果有 socket 通知，点击后清除通知并刷新历史会话列表
+ */
+const handleToggleSidebarWithNotification = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  // 如果有 socket 通知，点击后清除通知并刷新历史会话列表
+  if (hasSocketNotification.value) {
+    hasSocketNotification.value = false
+    handleRefreshOrders()
+  }
+
+}
+
+/**
+ * 处理带通知状态的刷新历史会话列表
+ * 如果有 socket 通知，点击后清除通知
+ */
+const handleRefreshOrdersWithNotification = () => {
+  // 如果有 socket 通知，点击后清除通知
+  if (hasSocketNotification.value) {
+    hasSocketNotification.value = false
+  }
+  handleRefreshOrders()
+}
+
+/**
+ * 处理 Socket 广播消息
+ * 收到消息时显示红点通知（只在侧边栏收起时显示）
+ */
+const handleSocketBroadcast = (event) => {
+  console.log('[chatView] 收到 socket 广播消息:', event.detail)
+  // 只在侧边栏收起时显示红点通知
+  if (isSidebarCollapsed.value) {
+    hasSocketNotification.value = true
+  }
 }
 
 /**
@@ -305,6 +349,9 @@ onMounted(() => {
   // 初始化 Socket 连接
   initSocketConnection()
 
+  // 监听 Socket 广播消息
+  window.addEventListener('socket:broadcast', handleSocketBroadcast)
+
   // 应用启动时检查版本更新（延迟执行，避免影响启动速度）
   // 初始化时不显示任何提示，仅在有更新时弹出对话框
   setTimeout(() => {
@@ -315,6 +362,8 @@ onMounted(() => {
 onUnmounted(() => {
   // 断开 Socket 连接
   disconnectSocket()
+  // 移除 Socket 广播消息监听
+  window.removeEventListener('socket:broadcast', handleSocketBroadcast)
 })
 </script>
 

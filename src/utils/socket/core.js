@@ -1,6 +1,6 @@
 /*
  * @Author: hui.chenn
- * @Description: 
+ * @Description:
  * @Date: 2026-04-03 16:09:10
  * @LastEditTime: 2026-04-03 16:09:18
  * @LastEditors: hui.chenn
@@ -66,14 +66,17 @@ class SocketConnection {
     let url = this.url
     const params = new URLSearchParams()
 
-    // 添加默认 id 参数
-    if (!this.queryParams.id) {
-      params.append('id', '111111')
+    // 添加 userName 参数，优先使用传入的参数，否则从 localStorage 获取
+    const userName = this.queryParams.userName || localStorage.getItem('userName') || ''
+    if (userName) {
+      params.append('userName', userName)
     }
 
-    // 添加其他查询参数
+    // 添加其他查询参数（排除 userName 避免重复）
     Object.entries(this.queryParams).forEach(([key, value]) => {
-      params.append(key, value)
+      if (key !== 'userName') {
+        params.append(key, value)
+      }
     })
 
     const queryString = params.toString()

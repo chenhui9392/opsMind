@@ -6,10 +6,12 @@
         :userName="userName"
         :isSidebarCollapsed="isSidebarCollapsed"
         :firstUserMessage="firstUserMessage"
+        :hasSocketNotification="hasSocketNotification"
         @create-new-session="createNewSession"
         @navigate-to-session="handleNavigateToSession"
         @refresh-orders="handleRefreshOrders"
         @toggle-sidebar="handleToggleSidebar"
+        @refresh-orders-with-notification="handleRefreshOrdersWithNotification"
         @download-session="handleDownloadSession"
       />
     </div>
@@ -79,6 +81,13 @@ const props = defineProps({
   isSidebarCollapsed: {
     type: Boolean,
     default: false
+  },
+  /**
+   * 是否有 Socket 通知（显示红点）
+   */
+  hasSocketNotification: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -91,6 +100,7 @@ const emit = defineEmits([
   'update:isSending',
   'navigate-to-session',
   'refresh-orders',
+  'refresh-orders-with-notification',
   'toggle-sidebar',
   'download-session',
   'new-session'
@@ -163,6 +173,14 @@ const handleNavigateToSession = async (sessionId) => {
  */
 const handleRefreshOrders = () => {
   emit('refresh-orders')
+}
+
+/**
+ * 处理带通知状态的刷新历史工单列表
+ * 如果有 socket 通知，点击后清除通知
+ */
+const handleRefreshOrdersWithNotification = () => {
+  emit('refresh-orders-with-notification')
 }
 
 /**

@@ -1,6 +1,6 @@
 /*
  * @Author: hui.chenn
- * @Description: 
+ * @Description:
  * @Date: 2026-04-03 16:09:44
  * @LastEditTime: 2026-04-03 16:09:55
  * @LastEditors: hui.chenn
@@ -48,7 +48,7 @@ function handleSocketMessage(data) {
 
   // 根据消息类型分发处理
   switch (data.type) {
-    case 'broadcast':
+    case 'notice':
       console.log('[SocketConnectionService] 分发到广播消息处理器')
       handleBroadcastMessage(data)
       break

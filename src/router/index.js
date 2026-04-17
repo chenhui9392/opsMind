@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description: 路由配置
  * @Date: 2026-03-31 09:30:00
- * @LastEditTime: 2026-04-13
+ * @LastEditTime: 2026-04-15 15:44:58
  * @LastEditors: hui.chenn
  */
 import { createRouter, createWebHashHistory } from 'vue-router'
@@ -51,16 +51,16 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
 
   // 如果访问需要认证的页面但没有 token，重定向到登录页
-  // if (requiresAuth && !token) {
-  //   next('/login')
-  //   return
-  // }
-  //
-  // // 如果已登录但访问登录页，重定向到首页
-  // if (isPublicPage && token) {
-  //   next('/')
-  //   return
-  // }
+  if (requiresAuth && !token) {
+    next('/login')
+    return
+  }
+  
+  // 如果已登录但访问登录页，重定向到首页
+  if (isPublicPage && token) {
+    next('/')
+    return
+  }
 
   // 其他情况正常放行
   next()

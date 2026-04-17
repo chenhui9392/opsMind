@@ -35,6 +35,7 @@ export default defineConfig(({ mode }) => {
     ],
     base: './',
     server: {
+      host: '0.0.0.0',
       port: parseInt(env.VITE_DEV_SERVER_PORT) || 9090,
       strictPort: false,
       webSecurity: false,

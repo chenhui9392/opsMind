@@ -5,6 +5,7 @@
       <div class="header-left">
         <button
           class="sidebar-toggle-btn"
+          :class="{ 'has-notification': hasSocketNotification }"
           @click="toggleSidebar"
           :title="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
         >
@@ -13,6 +14,8 @@
             width="18"
             height="18"
           />
+          <!-- 红点通知 -->
+          <span v-if="hasSocketNotification" class="notification-dot"></span>
         </button>
 
         <button class="new-session-button" @click="createNewSession" title="新建会话">
@@ -55,6 +58,13 @@ const props = defineProps({
   firstUserMessage: {
     type: String,
     default: ''
+  },
+  /**
+   * 是否有 Socket 通知（显示红点）
+   */
+  hasSocketNotification: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -62,7 +72,9 @@ const props = defineProps({
 const emit = defineEmits([
   'create-new-session',
   'toggle-sidebar',
-  'download-session'
+  'download-session',
+  'refresh-orders',
+  'refresh-orders-with-notification'
 ])
 
 // 计算属性
@@ -87,6 +99,7 @@ const createNewSession = () => {
 
 /**
  * 切换侧边栏收起/展开
+ * 如果有 socket 通知，点击后清除通知并刷新历史会话列表
  */
 const toggleSidebar = () => {
   emit('toggle-sidebar')
@@ -142,6 +155,7 @@ const handleDownload = () => {
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  position: relative;
 }
 
 .sidebar-toggle-btn:hover {
@@ -212,5 +226,22 @@ const handleDownload = () => {
 .download-btn:hover {
   background-color: #f5f5f5;
   color: #333;
+}
+
+/* 红点通知样式 */
+.toolbar-btn.has-notification {
+  position: relative;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: 2px solid #fafafa;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 </style>

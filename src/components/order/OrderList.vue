@@ -37,7 +37,8 @@
       <!-- 底部工具栏 -->
       <BottomToolbar
         :is-refreshing="isRefreshing"
-        @refresh="handleRefreshOrders"
+        :has-socket-notification="hasSocketNotification"
+        @refresh="handleRefreshOrdersWithNotification"
         @check-update="handleCheckUpdate"
         @logout="handleLogout"
       />
@@ -59,8 +60,8 @@
     <!-- 侧边栏展开/收起按钮 -->
     <button
       class="sidebar-toggle-btn"
-      :class="{ 'collapsed': isCollapsed }"
-      @click="handleToggleSidebar"
+      :class="{ 'collapsed': isCollapsed, 'has-notification': hasSocketNotification && isCollapsed }"
+      @click="handleToggleSidebarWithNotification"
       :title="isCollapsed ? '展开侧边栏' : '收起侧边栏'"
     >
       <SvgIcon
@@ -68,6 +69,8 @@
         width="18"
         height="18"
       />
+      <!-- 红点通知 - 只在侧边栏收起时显示 -->
+      <span v-if="hasSocketNotification && isCollapsed" class="notification-dot"></span>
     </button>
   </div>
 </template>
@@ -106,6 +109,13 @@ const props = defineProps({
   isCollapsed: {
     type: Boolean,
     default: false
+  },
+  /**
+   * 是否有 Socket 通知（显示红点）
+   */
+  hasSocketNotification: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -142,10 +152,18 @@ const isCurrentChatSelected = computed(() => {
 
 /**
  * 获取用户名
+ * 优先从 localStorage 获取登录时的用户名
  */
-const fetchUserName = async () => {
+const fetchUserName = () => {
   try {
-    userName.value = await getSystemUsername()
+    // 优先从 localStorage 获取登录时的用户名
+    const storedUserName = localStorage.getItem('userName')
+    if (storedUserName) {
+      userName.value = storedUserName
+    } else {
+      // 如果没有登录用户名，则使用系统用户名
+      userName.value = '未知用户'
+    }
   } catch (error) {
     console.error('获取用户名失败:', error)
     userName.value = '未知用户'
@@ -206,6 +224,7 @@ const backToCurrentChat = () => {
  * 处理刷新工单列表
  */
 const handleRefreshOrders = () => {
+  debugger
   if (isRefreshing.value) return
   isRefreshing.value = true
   if (orderItemList.value && orderItemList.value.fetchHistoryOrders) {
@@ -214,6 +233,18 @@ const handleRefreshOrders = () => {
   setTimeout(() => {
     isRefreshing.value = false
   }, 1000)
+}
+
+/**
+ * 处理带通知状态的刷新工单列表
+ * 如果有 socket 通知，点击后通知父组件处理
+ */
+const handleRefreshOrdersWithNotification = () => {
+  handleRefreshOrders()
+  // 如果有 socket 通知，通知父组件处理（清除通知）
+  if (props.hasSocketNotification) {
+    emit('refresh-orders-with-notification')
+  }
 }
 
 /**
@@ -244,6 +275,18 @@ const handleToggleSidebar = () => {
   emit('toggle-sidebar')
 }
 
+/**
+ * 处理带通知状态的切换侧边栏
+ * 如果有 socket 通知，点击后通知父组件处理
+ */
+const handleToggleSidebarWithNotification = () => {
+  emit('toggle-sidebar')
+  // 如果有 socket 通知，通知父组件处理（清除通知并刷新列表）
+  if (props.hasSocketNotification) {
+    emit('refresh-orders-with-notification')
+  }
+}
+
 // 初始化调整大小方法
 resizeMethods.value = createResizeMethods({
   widthKey: 'contactsWidth',
@@ -270,6 +313,9 @@ if (resizeMethods.value) {
 // 生命周期钩子
 onMounted(() => {
   fetchUserName()
+})
+defineExpose({
+  handleRefreshOrders
 })
 </script>
 
@@ -326,6 +372,23 @@ onMounted(() => {
 .sidebar-toggle-btn.collapsed {
   right: -35px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 红点通知样式 */
+.sidebar-toggle-btn.has-notification {
+  position: relative;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .contacts {
