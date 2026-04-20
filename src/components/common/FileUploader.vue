@@ -47,7 +47,7 @@ const props = defineProps({
   },
   bucket: {
     type: String,
-    default: 'CSS-01'
+    default: 'agent-octopus'
   }
 })
 
@@ -83,7 +83,7 @@ const handleFileChange = async (event) => {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('bucket', props.bucket)
+      formData.append('repository', props.bucket)
 
       const data = await uploadImage(formData)
 

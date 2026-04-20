@@ -33,16 +33,7 @@
         :style="{ maxHeight: '500px' }"
       />
       <div class="input-actions">
-        <!-- 修改后的上传文件按钮 -->
-        <!-- <button
-          class="attachment-btn"
-          @click="triggerFileUpload"
-          :disabled="uploaderDisabled || isSending"
-          title="上传文件"
-        >
-          <SvgIcon name="attachment" width="20" height="20" />
-        </button> -->
-            <!-- Element Plus Upload 组件 -->
+       <!-- Element Plus Upload 组件 -->
         <el-upload
           ref="uploadRef"
           action="#"
@@ -210,12 +201,11 @@ const handleFileChange = async (uploadFile) => {
   try {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('bucket', 'CSS-01')
+    formData.append('repository', 'agent-octopus')
 
     const data = await uploadImage(formData)
-
-    if (data.success) {
-      const fileUrl = data.data.accessPath.trim()
+    if (data.code === 200) {
+      const fileUrl = data.data[0].url.trim()
       if (isImage) {
         uploadedImages.value.push(fileUrl)
       } else {

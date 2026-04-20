@@ -14,7 +14,7 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 // API 附件上传域名
-export const API_UPLOAD_URL = import.meta.env.VITE_API_UPLOAD_URL
+export const API_LOGIN_URL = import.meta.env.VITE_API_LOGIN_URL
 
 // 下载接口域名
 export const DOWNLOAD_API_BASE_URL = import.meta.env.VITE_DOWNLOAD_API_BASE_URL

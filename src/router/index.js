@@ -9,6 +9,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import chatView from '../views/chatView.vue'
 import floatingBall from '../views/floatingBall.vue'
 import LoginPage from '../views/LoginPage.vue'
+import A2uiTest from '../views/A2uiTest.vue'
 
 const routes = [
   {
@@ -28,6 +29,12 @@ const routes = [
     name: 'floatingBall',
     component: floatingBall,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/a2ui-test',
+    name: 'a2uiTest',
+    component: A2uiTest,
+    meta: { public: true }
   }
 ]
 

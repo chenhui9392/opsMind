@@ -6,7 +6,7 @@
  * @LastEditors: hui.chenn
  */
 import { upload, post, get } from '../utils/request'
-import { API_BASE_URL, API_UPLOAD_URL, DOWNLOAD_API_BASE_URL } from '../config/env'
+import {API_BASE_URL, API_LOGIN_URL, DOWNLOAD_API_BASE_URL} from '../config/env'
 import { getVersionCheckUrl } from '../config/updateConfig'
 
 /**
@@ -15,7 +15,7 @@ import { getVersionCheckUrl } from '../config/updateConfig'
  * @returns {Promise<Object>}
  */
 export const uploadImage = (formData) => {
-  return upload(`${API_UPLOAD_URL}/gateway/fileServer/v4/upload/single`, formData)
+  return upload(`${API_LOGIN_URL}/basic/file/upload/multi`, formData)
 }
 
 /**
@@ -78,5 +78,5 @@ export const checkAppVersion = () => {
  * @returns {Promise<Object>}
  */
 export const login = (params) => {
-  return post(`https://cloud-api.tineco.com/user/v1.0/login/by-domain`, params)
+  return post(`${API_LOGIN_URL}/user/v1.0/login/by-domain`, params)
 }
