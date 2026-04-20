@@ -5,6 +5,7 @@ const fs = require('fs')
 const path = require('path')
 const floatingBallManager = require('./floatingBallManager')
 const windowManager = require('./windowManager')
+const powerShellExecutor = require('./powerShellExecutor')
 
 class IpcHandler {
   constructor() {
@@ -59,6 +60,21 @@ class IpcHandler {
     // 处理打开外部链接（下载更新）
     ipcMain.handle('openExternalLink', async (event, url) => {
       return await this.openExternalLink(url)
+    })
+
+    // 处理 PowerShell 命令执行
+    ipcMain.handle('executePowerShell', async (event, actionKey, options) => {
+      return await this.handleExecutePowerShell(actionKey, options)
+    })
+
+    // 处理聊天 JSON 解析并执行
+    ipcMain.handle('parseAndExecutePowerShell', async (event, jsonData) => {
+      return await this.handleParseAndExecute(jsonData)
+    })
+
+    // 处理 PowerShell 流式输出（用于长时间执行的命令）
+    ipcMain.on('executePowerShellStream', (event, actionKey, options) => {
+      this.handleExecutePowerShellStream(event, actionKey, options)
     })
   }
 
@@ -236,20 +252,20 @@ class IpcHandler {
   downloadFile(url, destPath) {
     return new Promise((resolve, reject) => {
       const file = fs.createWriteStream(destPath)
-      
+
       https.get(url, (response) => {
         if (response.statusCode !== 200) {
           reject(new Error(`下载失败，状态码：${response.statusCode}`))
           return
         }
-        
+
         response.pipe(file)
-        
+
         file.on('finish', () => {
           file.close()
           resolve()
         })
-        
+
         file.on('error', (err) => {
           fs.unlink(destPath, () => {})
           reject(err)
@@ -257,6 +273,83 @@ class IpcHandler {
       }).on('error', (err) => {
         fs.unlink(destPath, () => {})
         reject(err)
+      })
+    })
+  }
+
+  /**
+   * 执行 PowerShell 白名单命令
+   * @param {string} actionKey - 命令标识（如 'run-client'）
+   * @param {Object} options - 执行选项（如超时）
+   * @returns {Promise<Object>} - { success, data, error }
+   */
+  async handleExecutePowerShell(actionKey, options = {}) {
+    console.log(`[IPC] 执行 PowerShell 命令: ${actionKey}`)
+    try {
+      const result = await powerShellExecutor.executePowerShell(actionKey, options)
+      console.log(`[IPC] PowerShell 执行结果:`, result.success ? '成功' : '失败')
+      return result
+    } catch (error) {
+      console.error(`[IPC] PowerShell 执行异常:`, error)
+      return {
+        success: false,
+        data: '',
+        error: error.message
+      }
+    }
+  }
+
+  /**
+   * 解析聊天 JSON 并执行 PowerShell 命令
+   * @param {Object} jsonData - 聊天返回的 JSON
+   * @returns {Promise<Object>} - { success, data, error }
+   */
+  async handleParseAndExecute(jsonData) {
+    console.log(`[IPC] 解析 JSON 并执行:`, jsonData)
+    try {
+      const result = await powerShellExecutor.parseAndExecute(jsonData)
+      console.log(`[IPC] 解析执行结果:`, result.success ? '成功' : '失败')
+      return result
+    } catch (error) {
+      console.error(`[IPC] 解析执行异常:`, error)
+      return {
+        success: false,
+        data: '',
+        error: error.message
+      }
+    }
+  }
+
+  /**
+   * 处理 PowerShell 流式输出执行
+   * @param {Event} event - IPC 事件
+   * @param {string} actionKey - 命令标识
+   * @param {Object} options - 执行选项
+   */
+  handleExecutePowerShellStream(event, actionKey, options = {}) {
+    console.log(`[IPC] 流式执行 PowerShell: ${actionKey}`)
+
+    powerShellExecutor.executePowerShell(actionKey, options, (progress) => {
+      // 发送进度到渲染进程
+      event.reply('powershell-progress', {
+        type: progress.type,
+        data: progress.data,
+        actionKey
+      })
+    }).then(result => {
+      // 发送完成结果
+      event.reply('powershell-complete', {
+        success: result.success,
+        data: result.data,
+        error: result.error,
+        actionKey
+      })
+    }).catch(error => {
+      event.reply('powershell-complete', {
+        success: false,
+        data: '',
+        error: error.message,
+        actionKey
       })
     })
   }

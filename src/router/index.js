@@ -10,6 +10,7 @@ import chatView from '../views/chatView.vue'
 import floatingBall from '../views/floatingBall.vue'
 import LoginPage from '../views/LoginPage.vue'
 import A2uiTest from '../views/A2uiTest.vue'
+import PowerShellTest from '../views/PowerShellTest.vue'
 
 const routes = [
   {
@@ -35,7 +36,13 @@ const routes = [
     name: 'a2uiTest',
     component: A2uiTest,
     meta: { public: true }
-  }
+  },
+  {
+    path: '/powershellTest',
+    name: 'powershellTest',
+    component: PowerShellTest,
+    meta: { public: true }
+  },
 ]
 
 const router = createRouter({
@@ -62,7 +69,7 @@ router.beforeEach((to, from, next) => {
     next('/login')
     return
   }
-  
+
   // 如果已登录但访问登录页，重定向到首页
   if (isPublicPage && token) {
     next('/')

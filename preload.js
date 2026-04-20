@@ -138,6 +138,84 @@ contextBridge.exposeInMainWorld('mainWindowAPI', {
 
 console.log('preload.js loaded and APIs exposed')
 
+// 暴露 PowerShell 执行接口给渲染进程（安全执行）
+contextBridge.exposeInMainWorld('powerShellAPI', {
+  /**
+   * 执行白名单中的 PowerShell 命令
+   * @param {string} actionKey - 命令标识（如 'run-client'）
+   * @param {Object} options - 执行选项（如超时 timeout）
+   * @returns {Promise<Object>} - { success: boolean, data: string, error: string }
+   */
+  execute: async (actionKey, options = {}) => {
+    try {
+      const result = await ipcRenderer.invoke('executePowerShell', actionKey, options)
+      console.log(`[PowerShell API] 执行结果:`, result)
+      return result
+    } catch (error) {
+      console.error(`[PowerShell API] 执行异常:`, error)
+      return {
+        success: false,
+        data: '',
+        error: error.message
+      }
+    }
+  },
+
+  /**
+   * 解析聊天返回的 JSON 并执行对应命令
+   * @param {Object} jsonData - 聊天接口返回的 JSON { action/command: string }
+   * @returns {Promise<Object>} - { success: boolean, data: string, error: string }
+   */
+  parseAndExecute: async (jsonData) => {
+    try {
+      const result = await ipcRenderer.invoke('parseAndExecutePowerShell', jsonData)
+      console.log(`[PowerShell API] 解析执行结果:`, result)
+      return result
+    } catch (error) {
+      console.error(`[PowerShell API] 解析执行异常:`, error)
+      return {
+        success: false,
+        data: '',
+        error: error.message
+      }
+    }
+  },
+
+  /**
+   * 流式执行 PowerShell 命令（支持进度回调）
+   * @param {string} actionKey - 命令标识
+   * @param {Object} options - 执行选项
+   * @param {Function} onProgress - 进度回调 (progress) => void
+   * @param {Function} onComplete - 完成回调 (result) => void
+   */
+  executeStream: (actionKey, options = {}, onProgress, onComplete) => {
+    // 监听进度事件
+    const progressListener = (event, data) => {
+      if (data.actionKey === actionKey && onProgress) {
+        onProgress(data)
+      }
+    }
+    ipcRenderer.on('powershell-progress', progressListener)
+
+    // 监听完成事件
+    const completeListener = (event, result) => {
+      if (result.actionKey === actionKey) {
+        // 清理监听器
+        ipcRenderer.removeListener('powershell-progress', progressListener)
+        ipcRenderer.removeListener('powershell-complete', completeListener)
+
+        if (onComplete) {
+          onComplete(result)
+        }
+      }
+    }
+    ipcRenderer.on('powershell-complete', completeListener)
+
+    // 发送执行请求
+    ipcRenderer.send('executePowerShellStream', actionKey, options)
+  }
+})
+
 window.addEventListener('DOMContentLoaded', () => {
   const replaceText = (selector, text) => {
     const element = document.getElementById(selector)
