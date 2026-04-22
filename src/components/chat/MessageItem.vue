@@ -6,7 +6,7 @@
     <!-- 机器人头像 -->
     <div class="message-avatar" v-if="message.sender === 'bot'">
       <div class="avatar-icon bot-avatar">
-        <SvgIcon name="sparkles" width="20" height="20" />
+        <img src="/app.png" alt="AI助手" class="bot-avatar-img" />
       </div>
     </div>
     <!-- 用户头像 -->
@@ -16,6 +16,15 @@
       </div>
     </div>
     <div class="message-wrapper">
+      <!-- 表单信息渲染（当 hasFull=true 时） -->
+      <div v-if="message.hasFull && message.formInfo" class="message-form-container">
+        <A2UIRoot
+          ref="a2uiRootRef"
+          @message="handleA2UIMessage"
+          @complete="handleA2UIComplete"
+        />
+      </div>
+
       <!-- 消息内容 -->
       <div class="message-content" v-if="message.text">
         <!-- 文本 -->
@@ -66,10 +75,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { marked } from 'marked'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { CopyDocument } from '@element-plus/icons-vue'
+import { A2UIRoot } from 'a2ui-vue-engine'
 
 // 配置 marked 选项
 marked.setOptions({
@@ -87,11 +97,12 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['image-click', 'file-click'])
+const emit = defineEmits(['image-click', 'file-click', 'form-submit'])
 
 // 响应式数据
 const copySuccess = ref(false)
 const copyTimer = ref(null)
+const a2uiRootRef = ref(null)
 
 // 计算属性
 const renderedText = computed(() => {
@@ -100,6 +111,52 @@ const renderedText = computed(() => {
   const escapedText = textStr.replace(/</g, '&lt;')
   return marked(escapedText)
 })
+
+/**
+ * 处理 A2UI 消息
+ */
+const handleA2UIMessage = (message) => {
+  console.log('A2UI Message:', message)
+  // 如果是提交事件，触发 form-submit
+  if (message.event && message.event.name === 'submitWorkOrder') {
+    emit('form-submit', message)
+  }
+}
+
+/**
+ * 处理 A2UI 完成事件
+ */
+const handleA2UIComplete = () => {
+  console.log('A2UI Complete')
+}
+
+/**
+ * 处理 formInfo 渲染
+ */
+const processFormInfo = () => {
+  if (props.message.hasFull && props.message.formInfo && a2uiRootRef.value) {
+    const formInfoData = props.message.formInfo
+
+    // 如果 formInfo 是字符串，先解析成数组
+    let nodeList = formInfoData
+    if (typeof formInfoData === 'string') {
+      try {
+        nodeList = JSON.parse(formInfoData)
+      } catch (e) {
+        console.error('Failed to parse formInfo:', e)
+        return
+      }
+    }
+
+    // 检查是否是数组，直接传递整个数组（参考 A2uiTest.vue）
+    if (Array.isArray(nodeList) && nodeList.length > 0) {
+      a2uiRootRef.value.processMessage({
+        type: 'node',
+        node: nodeList
+      })
+    }
+  }
+}
 
 /**
  * 格式化时间，只显示时分
@@ -122,6 +179,23 @@ const formattedTime = computed(() => {
     // 解析失败，返回原始时间
   }
   return props.message.time
+})
+
+// 监听消息变化，处理 formInfo（不使用 immediate，等组件挂载后才处理）
+watch(() => props.message, (newVal, oldVal) => {
+  // 只在消息变化时处理，初次加载由 onMounted 处理
+  if (newVal !== oldVal) {
+    nextTick(() => {
+      processFormInfo()
+    })
+  }
+})
+
+// 生命周期钩子
+onMounted(() => {
+  nextTick(() => {
+    processFormInfo()
+  })
 })
 
 // 方法
@@ -217,6 +291,18 @@ const handleCopy = async () => {
   align-items: flex-start;
 }
 
+/* 表单容器样式 */
+.message-form-container {
+  padding: 16px;
+  border-radius: 18px;
+  margin-bottom: 8px;
+  background-color: #F8FAFC;
+  border: 1px solid #e0e0e0;
+  border-bottom-left-radius: 4px;
+  max-width: 100%;
+  min-width: 300px;
+}
+
 .message-avatar {
   margin-right: 10px;
   margin-top: 0;
@@ -243,16 +329,23 @@ const handleCopy = async () => {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
 }
 
-/* 机器人头像样式 - 使用蓝绿色渐变区分 */
+/* 机器人头像样式 - 使用 app.png 图片 */
 .avatar-icon.bot-avatar {
-  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+  background: transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .avatar-icon.bot-avatar:hover {
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transform: scale(1.05);
   transition: all 0.2s ease;
+}
+
+.bot-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .message-content {
@@ -402,7 +495,6 @@ const handleCopy = async () => {
 
 .message-wrapper {
   flex: 1;
-  max-width: 80%;
 }
 
 .message-footer {

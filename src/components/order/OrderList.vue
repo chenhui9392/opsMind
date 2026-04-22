@@ -208,9 +208,11 @@ const selectOrder = async (order) => {
   console.log('OrderList: 选择工单', order)
   const messages = await messageService.selectOrder(order)
   emit('update:selectedContact', order.id)
-  emit('update:showInput', false)
+  // 只有草稿状态(DRAFT)显示聊天框，其他状态不显示
+  const shouldShowInput = order.orderStatus === 'DRAFT'
+  emit('update:showInput', shouldShowInput)
   emit('update:messages', messages)
-  console.log('OrderList: 已从缓存获取工单消息', order.id)
+  console.log('OrderList: 已从缓存获取工单消息', order.id, '显示聊天框:', shouldShowInput)
 }
 
 /**

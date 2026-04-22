@@ -12,7 +12,11 @@ import { WS_BASE_URL } from '../../config/env'
 const CONSTANTS = {
   MAX_RECONNECT_ATTEMPTS: 5,
   RECONNECT_DELAY: 1000,
-  DEFAULT_CONNECTION_ID: 'default'
+  DEFAULT_CONNECTION_ID: 'default',
+  // 心跳相关常量
+  HEARTBEAT_INTERVAL: 30000,      // 心跳发送间隔（30秒）
+  HEARTBEAT_TIMEOUT: 10000,       // 心跳响应超时时间（10秒）
+  MAX_HEARTBEAT_TIMEOUTS: 3       // 最大心跳超时次数
 }
 
 /**
@@ -35,12 +39,26 @@ class SocketConnection {
     this.reconnectDelay = options.reconnectDelay || CONSTANTS.RECONNECT_DELAY
     this.protocols = options.protocols || undefined
 
+    // 心跳配置
+    this.heartbeatInterval = options.heartbeatInterval || CONSTANTS.HEARTBEAT_INTERVAL
+    this.heartbeatTimeout = options.heartbeatTimeout || CONSTANTS.HEARTBEAT_TIMEOUT
+    this.maxHeartbeatTimeouts = options.maxHeartbeatTimeouts || CONSTANTS.MAX_HEARTBEAT_TIMEOUTS
+
     // 连接状态
     this.socket = null
     this.isConnected = false
     this.isConnecting = false
     this.reconnectAttempts = 0
     this.reconnectTimer = null
+
+    // 心跳状态
+    this.heartbeatTimer = null           // 心跳发送定时器
+    this.heartbeatTimeoutTimer = null    // 心跳响应超时定时器
+    this.heartbeatTimeouts = 0           // 当前心跳超时次数
+    this.waitingForPong = false          // 是否在等待 pong 响应
+
+    // 重连控制
+    this.shouldReconnect = true          // 是否应该重连（用户主动断开时设为 false）
 
     // 监听器管理
     this.listeners = {
@@ -92,6 +110,9 @@ class SocketConnection {
    * @returns {Promise<void>}
    */
   connect() {
+    // 默认允许重连
+    this.shouldReconnect = true
+
     if (this.isConnected) {
       return Promise.resolve()
     }
@@ -114,6 +135,9 @@ class SocketConnection {
           this.isConnecting = false
           this.reconnectAttempts = 0
 
+          // 启动心跳机制
+          this._startHeartbeat()
+
           // 发送队列中的消息
           this._flushMessageQueue()
 
@@ -126,6 +150,10 @@ class SocketConnection {
         this.socket.onclose = (event) => {
           console.log(`[SocketConnection:${this.connectionId}] 连接关闭:`, event.code, event.reason)
           const wasConnected = this.isConnected
+
+          // 停止心跳机制
+          this._stopHeartbeat()
+
           this.isConnected = false
           this.isConnecting = false
 
@@ -138,10 +166,13 @@ class SocketConnection {
             connectionId: this.connectionId
           })
 
-          // 如果不是正常关闭且之前已连接，尝试重连
-          if (wasConnected && !event.wasClean) {
+          // 只在 shouldReconnect 为 true 时尝试重连（意外断开时重连，用户主动断开时不重连）
+          if (wasConnected && this.shouldReconnect) {
             this._handleReconnect()
           }
+
+          // 重置 shouldReconnect 状态（为下次连接做准备）
+          this.shouldReconnect = true
         }
 
         this.socket.onerror = (error) => {
@@ -169,6 +200,12 @@ class SocketConnection {
    * @param {string} reason - 关闭原因
    */
   disconnect(code = 1000, reason = '正常关闭') {
+    // 标记为用户主动断开，不需要重连
+    this.shouldReconnect = false
+
+    // 停止心跳机制
+    this._stopHeartbeat()
+
     // 清除重连定时器
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
@@ -226,17 +263,52 @@ class SocketConnection {
    * @private
    */
   _handleMessage(event) {
+    // 检查是否是 pong 响应（心跳响应）
+    if (event.data === 'pong' || event.data === '{"type":"pong"}') {
+      this._handlePong()
+      return
+    }
+
     try {
       const data = JSON.parse(event.data)
+      // 检查 JSON 格式的 pong 响应
+      if (data.type === 'pong') {
+        this._handlePong()
+        return
+      }
       this._notifyListeners('message', { ...data, connectionId: this.connectionId })
     } catch (error) {
-      console.error(`[SocketConnection:${this.connectionId}] 消息解析错误:`, error)
-      this._notifyListeners('error', {
-        type: 'parse_error',
-        error,
-        rawData: event.data,
+      // JSON 解析失败
+      // 1. 先检查是否是 pong 响应
+      if (event.data === 'pong') {
+        this._handlePong()
+        return
+      }
+
+      // 2. 不是 pong，将原始数据作为 message 通知（不抛出错误，让监听器自己处理）
+      console.warn(`[SocketConnection:${this.connectionId}] 消息非 JSON 格式，传递原始数据:`, event.data)
+      this._notifyListeners('message', {
+        type: 'raw',
+        rawContent: event.data,
         connectionId: this.connectionId
       })
+    }
+  }
+
+  /**
+   * 处理 pong 响应
+   * @private
+   */
+  _handlePong() {
+    if (this.waitingForPong) {
+      this.waitingForPong = false
+      this.heartbeatTimeouts = 0
+      // 清除心跳超时定时器
+      if (this.heartbeatTimeoutTimer) {
+        clearTimeout(this.heartbeatTimeoutTimer)
+        this.heartbeatTimeoutTimer = null
+      }
+      console.log(`[SocketConnection:${this.connectionId}] 收到心跳响应`)
     }
   }
 
@@ -255,6 +327,122 @@ class SocketConnection {
           console.error(`[SocketConnection:${this.connectionId}] 队列消息发送失败:`, error)
         })
       })
+    }
+  }
+
+  // ==================== 心跳机制 ====================
+
+  /**
+   * 启动心跳机制
+   * @private
+   */
+  _startHeartbeat() {
+    // 先停止之前的心跳（避免重复）
+    this._stopHeartbeat()
+
+    console.log(`[SocketConnection:${this.connectionId}] 启动心跳机制，间隔: ${this.heartbeatInterval}ms`)
+
+    // 重置心跳状态
+    this.heartbeatTimeouts = 0
+    this.waitingForPong = false
+
+    // 启动定时发送心跳
+    this.heartbeatTimer = setInterval(() => {
+      this._sendHeartbeat()
+    }, this.heartbeatInterval)
+  }
+
+  /**
+   * 停止心跳机制
+   * @private
+   */
+  _stopHeartbeat() {
+    // 清除心跳发送定时器
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer)
+      this.heartbeatTimer = null
+    }
+
+    // 清除心跳超时定时器
+    if (this.heartbeatTimeoutTimer) {
+      clearTimeout(this.heartbeatTimeoutTimer)
+      this.heartbeatTimeoutTimer = null
+    }
+
+    // 重置状态
+    this.heartbeatTimeouts = 0
+    this.waitingForPong = false
+
+    console.log(`[SocketConnection:${this.connectionId}] 心跳机制已停止`)
+  }
+
+  /**
+   * 发送心跳 ping
+   * @private
+   */
+  _sendHeartbeat() {
+    if (!this.isConnected || !this.socket) {
+      return
+    }
+
+    // 如果已经在等待 pong 响应，不发送新的 ping
+    if (this.waitingForPong) {
+      console.warn(`[SocketConnection:${this.connectionId}] 等待前一次心跳响应中，跳过本次发送`)
+      return
+    }
+
+    console.log(`[SocketConnection:${this.connectionId}] 发送心跳 ping`)
+
+    // 发送 ping 消息
+    try {
+      const pingMessage = JSON.stringify({ type: 'ping' })
+      this.socket.send(pingMessage)
+      this.waitingForPong = true
+
+      // 启动超时检测
+      this._startHeartbeatTimeoutCheck()
+    } catch (error) {
+      console.error(`[SocketConnection:${this.connectionId}] 心跳发送失败:`, error)
+      // 发送失败，可能连接已断开，触发重连
+      this._handleHeartbeatTimeout()
+    }
+  }
+
+  /**
+   * 启动心跳超时检测
+   * @private
+   */
+  _startHeartbeatTimeoutCheck() {
+    this.heartbeatTimeoutTimer = setTimeout(() => {
+      console.warn(`[SocketConnection:${this.connectionId}] 心跳超时，未收到 pong 响应`)
+      this._handleHeartbeatTimeout()
+    }, this.heartbeatTimeout)
+  }
+
+  /**
+   * 处理心跳超时
+   * @private
+   */
+  _handleHeartbeatTimeout() {
+    this.waitingForPong = false
+    this.heartbeatTimeouts++
+
+    console.warn(`[SocketConnection:${this.connectionId}] 心跳超时次数: ${this.heartbeatTimeouts}/${this.maxHeartbeatTimeouts}`)
+
+    // 达到最大超时次数，认为连接已断开，触发重连
+    if (this.heartbeatTimeouts >= this.maxHeartbeatTimeouts) {
+      console.error(`[SocketConnection:${this.connectionId}] 心跳连续超时 ${this.heartbeatTimeouts} 次，判定连接已断开`)
+
+      // 清除心跳超时定时器
+      if (this.heartbeatTimeoutTimer) {
+        clearTimeout(this.heartbeatTimeoutTimer)
+        this.heartbeatTimeoutTimer = null
+      }
+
+      // 主动关闭连接并触发重连
+      if (this.socket) {
+        this.socket.close(4000, '心跳超时')
+      }
     }
   }
 

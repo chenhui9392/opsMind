@@ -46,8 +46,12 @@ function handleSocketMessage(data) {
   console.log('[SocketConnectionService] 收到消息:', data)
   console.log('[SocketConnectionService] 消息类型:', data.type)
 
-  // 根据消息类型分发处理
+  // 根据[object Object]消息类型分发处理
   switch (data.type) {
+    case 'raw':
+      // 处理原始非 JSON 格式消息
+      handleRawMessage(data)
+      break
     case 'notice':
       console.log('[SocketConnectionService] 分发到广播消息处理器')
       handleBroadcastMessage(data)
@@ -62,6 +66,19 @@ function handleSocketMessage(data) {
       console.log('[SocketConnectionService] 未知消息类型:', data.type)
       break
   }
+}
+
+/**
+ * 处理原始非 JSON 格式消息
+ * @param {Object} data - 消息数据
+ */
+function handleRawMessage(data) {
+  console.log('[SocketConnectionService] 收到原始格式消息:', data.rawContent)
+
+  // 触发自定义事件，让需要的地方处理原始消息
+  window.dispatchEvent(new CustomEvent('socket:raw', {
+    detail: data
+  }))
 }
 
 /**

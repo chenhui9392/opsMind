@@ -67,25 +67,19 @@
     </div>
 
     <!-- 级联选择组件（在输入框下方） -->
-    <div class="cascade-select-wrapper">
-      <el-cascader
-        v-model="cascaderValue"
-        :options="cascaderOptions"
-        :props="cascaderProps"
-        :disabled="!isNewSession"
-        placeholder="请选择系统和模块"
-        @change="handleCascadeChange"
-        class="system-cascader"
-      />
-    </div>
+    <SystemModuleCascader
+      ref="cascaderRef"
+      v-model="cascaderValue"
+      placeholder="请选择系统和模块"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
+import SystemModuleCascader from '../common/SystemModuleCascader.vue'
 import { uploadImage } from '../../api'
-import { getSystemList, getModuleListBySystem } from '../../config/systemModuleData.js'
 
 // Props
 const props = defineProps({
@@ -122,46 +116,23 @@ const uploadedFiles = ref([])
 const isUploading = ref(false)
 const uploaderDisabled = ref(false)
 const isInCodeBlock = ref(false)
-const selectedSystem = ref('')
-const selectedModule = ref('')
-const systemList = ref([])
-const moduleList = ref([])
 const cascaderValue = ref([])
 
-// Cascader 配置
-const cascaderProps = {
-  value: 'code',
-  label: 'name',
-  children: 'children'
-}
-
-// Cascader 选项
-const cascaderOptions = computed(() => {
-  return systemList.value.map(system => ({
-    code: system.code,
-    name: system.name,
-    children: getModuleListBySystem(system.code).map(module => ({
-      code: module.code,
-      name: module.name
-    }))
-  }))
-})
+// 级联选择组件引用
+const cascaderRef = ref(null)
 // 计算属性
 const placeholderText = computed(() => {
   if (!props.isNewSession) {
     return '输入消息...(Shift+Enter 换行)'
   }
-  if (!selectedSystem.value) {
+  if (!cascaderRef.value || !cascaderRef.value.getSelectedSystemCode()) {
     return '请先选择系统和模块...'
   }
-  if (!selectedModule.value) {
+  if (!cascaderRef.value.getSelectedModuleCode()) {
     return '请选择模块...'
   }
   return '输入消息...(Shift+Enter 换行)'
 })
-
-// 模板引用
-const textareaRef = ref(null)
 
 /**
  * 检查是否在代码块内
@@ -229,89 +200,17 @@ const handleFileChange = async (uploadFile) => {
 }
 
 /**
- * 加载系统列表
- */
-const loadSystemList = () => {
-  systemList.value = getSystemList()
-}
-
-/**
- * 恢复系统模块选择状态
- */
-const restoreSystemModuleSelection = () => {
-  const system = systemList.value.find(s => s.name === props.systemName)
-  if (system) {
-    selectedSystem.value = system.code
-    moduleList.value = getModuleListBySystem(selectedSystem.value)
-    const moduleItem = moduleList.value.find(m => m.name === props.moduleName)
-    if (moduleItem) {
-      selectedModule.value = moduleItem.code
-      cascaderValue.value = [system.code, moduleItem.code]
-    } else {
-      cascaderValue.value = []
-    }
-  } else {
-    cascaderValue.value = []
-  }
-  console.log('恢复系统模块选择:', props.systemName, props.moduleName, '->', selectedSystem.value, selectedModule.value)
-}
-
-/**
- * 触发文件上传
- */
-const triggerFileUpload = () => {
-  if (uploadRef.value) {
-    const input = uploadRef.value.$el.querySelector('input[type="file"]')
-    if (input) {
-      input.click()
-    }
-  }
-}
-
-/**
- * 处理级联选择变化
- * @param {Array} value - 选择值数组 [systemCode, moduleCode]
- */
-const handleCascadeChange = (value) => {
-  console.log('级联选择变化:', value)
-  if (value && value.length >= 2) {
-    selectedSystem.value = value[0]
-    selectedModule.value = value[1]
-    moduleList.value = getModuleListBySystem(value[0])
-  } else {
-    selectedSystem.value = ''
-    selectedModule.value = ''
-    moduleList.value = []
-  }
-}
-
-/**
  * 发送消息
  */
 const sendMessage = () => {
-  if (props.isNewSession) {
-    if (!selectedSystem.value || !selectedModule.value) {
-      emit('show-error', '请先选择系统和模块')
-      return
-    }
-  }
-
   if (!inputMessage.value && uploadedImages.value.length === 0 && uploadedFiles.value.length === 0) return
-
-  const system = systemList.value.find(s => s.code === selectedSystem.value)
-  const moduleItem = moduleList.value.find(m => m.code === selectedModule.value)
-  const systemName = system ? system.name : ''
-  const moduleName = moduleItem ? moduleItem.name : ''
 
   emit('send', {
     text: inputMessage.value,
     originalText: inputMessage.value,
     images: uploadedImages.value,
     files: uploadedFiles.value,
-    systemCode: selectedSystem.value,
-    moduleCode: selectedModule.value,
-    systemName: systemName,
-    moduleName: moduleName
+    systemName: cascaderValue.value
   })
 
   inputMessage.value = ''
@@ -366,26 +265,9 @@ const handleStop = () => {
   emit('stop')
 }
 
-// 监听systemName和moduleName变化
-watch(() => props.systemName, (newVal) => {
-  if (newVal && props.moduleName) {
-    restoreSystemModuleSelection()
-  }
-})
-
-watch(() => props.moduleName, (newVal) => {
-  if (newVal && props.systemName) {
-    restoreSystemModuleSelection()
-  }
-})
-
 // 生命周期钩子
 onMounted(() => {
   autoResize()
-  loadSystemList()
-  if (props.systemName && props.moduleName) {
-    restoreSystemModuleSelection()
-  }
 })
 </script>
 
@@ -507,73 +389,11 @@ onMounted(() => {
   position: relative;
   padding: 16px;
   background-color: #ffffff;
-  //border-top: 1px solid #e0e0e0;
+  /* border-top: 1px solid #e0e0e0; */
   min-height: 88px;
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-/* 级联选择器容器 */
-.cascade-select-wrapper {
-  padding: 8px 16px;
-  background-color: #ffffff;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Element Plus Cascader 样式 - 标签风格 */
-.system-cascader {
-  width: auto;
-}
-
-.system-cascader :deep(.el-input__wrapper) {
-  border-radius: 16px;
-  background-color: #e8eaff;
-  border: none;
-  box-shadow: none !important;
-  padding: 4px 12px;
-  min-height: 32px;
-}
-
-.system-cascader :deep(.el-input__inner) {
-  font-size: 14px;
-  color: #6366f1;
-  font-weight: 500;
-}
-
-.system-cascader :deep(.el-input__suffix-inner) {
-  color: #6366f1;
-}
-
-.system-cascader :deep(.el-input .el-icon) {
-  color: #6366f1;
-}
-
-/* 级联下拉菜单样式 */
-.system-cascader :deep(.el-cascader__dropdown) {
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.system-cascader :deep(.el-cascader-node) {
-  font-size: 14px;
-  padding: 8px 16px;
-}
-
-.system-cascader :deep(.el-cascader-node.is-active) {
-  color: #6366f1;
-  font-weight: 500;
-}
-
-.system-cascader :deep(.el-cascader-node.in-active-path) {
-  color: #6366f1;
-}
-
-.system-cascader :deep(.el-cascader-node:hover) {
-  background-color: #f5f5f5;
 }
 
 /* 附件按钮样式 */

@@ -20,10 +20,10 @@
         <div class="card-content">
           <div class="card-header">
             <div class="order-title">{{ order.orderTitle }}</div>
-            <div class="order-type-tag" v-if="order.orderType">{{ orderTypeText(order.orderType) }}</div>
+            <div class="order-status-tag" :class="getStatusClass(order.orderStatus)">{{ getStatusText(order.orderStatus) }}</div>
           </div>
-          <div class="order-subtitle" v-if="order.systemName || order.moduleName">
-            {{ order.systemName || '' }} <span v-if="order.systemName && order.moduleName">-</span> {{ order.moduleName || '' }}
+          <div class="order-unread" v-if="order.unread && order.unread > 0">
+            【{{ order.unread }}】条未读消息
           </div>
           <div class="card-footer">
             <div class="order-datetime">{{ formatDate(order.createTime) }}</div>
@@ -84,12 +84,7 @@ import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { getHistoryOrders } from '../../api/index'
 import { getSystemUsername } from '../../utils/system'
 
-const ORDER_TYPE_MAP = {
-  CONSULTATION: '咨询',
-  REQUIREMENT: '需求',
-  BUG: 'BUG',
-  DATA_CHANGE: '数据变更',
-}
+
 
 // Props
 const props = defineProps({
@@ -266,8 +261,28 @@ const formatDate = (dateStr) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
-const orderTypeText = (orderType) => {
-  return ORDER_TYPE_MAP[orderType] || ''
+/**
+ * 获取状态文本
+ * @param {string} status - 状态值
+ * @returns {string} - 状态文本
+ */
+const getStatusText = (status) => {
+  if (status === 'DRAFT') {
+    return '草稿'
+  }
+  return '已创建'
+}
+
+/**
+ * 获取状态样式类名
+ * @param {string} status - 状态值
+ * @returns {string} - 样式类名
+ */
+const getStatusClass = (status) => {
+  if (status === 'DRAFT') {
+    return 'status-draft'
+  }
+  return 'status-created'
 }
 
 /**
@@ -371,7 +386,7 @@ defineExpose({
 }
 
 .history-orders-section {
-  padding: 0 12px;
+  padding: 12px;
 }
 
 /* 小卡片样式 */
@@ -456,22 +471,28 @@ defineExpose({
   line-height: 1.4;
 }
 
-.order-type-tag {
+.order-status-tag {
   font-size: 10px;
-  color: #6366f1;
-  background-color: rgba(99, 102, 241, 0.1);
   padding: 2px 8px;
   border-radius: 12px;
   flex-shrink: 0;
   font-weight: 500;
 }
 
-.order-subtitle {
+.order-status-tag.status-draft {
+  color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.order-status-tag.status-created {
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.order-unread {
   font-size: 12px;
-  color: #6b7280;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: #ef4444;
+  font-weight: 500;
   line-height: 1.4;
 }
 

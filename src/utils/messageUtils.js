@@ -3,6 +3,77 @@
  */
 
 /**
+ * 解析 content 内容（与 chatMessageService.parseContent 逻辑一致）
+ * @param {string} content - 原始 content 字符串
+ * @returns {Object} - 包含 text、hasFull、formInfo 的对象
+ */
+export function parseMessageContent(content) {
+  const result = {
+    text: content || '稍后再试，系统正在全力维修中....',
+    hasFull: false,
+    formInfo: null
+  }
+
+  // content 为空时返回默认提示
+  if (!content || content.trim() === '') {
+    return result
+  }
+
+  // 尝试解析 JSON
+  let parsed = null
+  try {
+    parsed = JSON.parse(content)
+  } catch (parseError) {
+    // 解析失败，content 不是 JSON，直接显示原始内容
+    console.log('Content is not JSON, treating as plain text:', content)
+    return result
+  }
+
+  // JSON 解析成功，按优先级处理
+
+  // 1. 判断是否有 hasfull 字段
+  if (parsed.hasfull !== undefined) {
+    // a. hasfull=false 时，显示 tip 内容
+    if (parsed.hasfull === false && parsed.tip) {
+      result.text = parsed.tip
+      return result
+    }
+    // b. hasfull=true 时，用 formInfo 渲染 a2ui 组件
+    if (parsed.hasfull === true && parsed.formInfo) {
+      result.hasFull = true
+      result.formInfo = parsed.formInfo
+      result.text = parsed.input || parsed.message || ''
+      return result
+    }
+  }
+
+  // 2. 判断是否有 question 字段（详情接口历史消息格式）
+  if (parsed.question) {
+    result.text = parsed.question
+    return result
+  }
+
+  // 3. 判断是否有 input 字段
+  if (parsed.input) {
+    result.text = parsed.input
+    return result
+  }
+
+  // 4. 判断是否有 message 字段
+  if (parsed.message) {
+    result.text = parsed.message
+    return result
+  }
+
+  // 5. 其他情况，尝试使用 tip 字段（兜底）
+  if (parsed.tip) {
+    result.text = parsed.tip
+  }
+
+  return result
+}
+
+/**
  * 创建用户消息对象
  * @param {string} text - 消息内容
  * @param {Array} images - 图片URL数组
@@ -46,25 +117,17 @@ export function convertHistoryToMessages(historyData) {
   }
 
   return historyData.map(item => {
-    // 解析 content 字段（如果是 JSON 字符串）
-    let content = item.content
-    try {
-      const parsedContent = JSON.parse(content)
-      if (parsedContent.questionContent) {
-        content = parsedContent.questionContent
-      } else if (parsedContent.input) {
-        content = parsedContent.input
-      }
-    } catch (parseError) {
-      // 如果解析失败，使用原始 content
-      console.log('Content is not JSON:', content)
-    }
+    // 使用统一的解析逻辑处理 content
+    const parsedResult = parseMessageContent(item.content)
 
     return {
       sender: item.messageType === 'user' ? 'user' : 'bot',
-      text: content,
+      text: parsedResult.text,
       time: item.createTime || new Date().toLocaleString('zh-CN'),
-      images: []
+      images: [],
+      // 新增：表单信息字段
+      hasFull: parsedResult.hasFull,
+      formInfo: parsedResult.formInfo
     }
   })
 }

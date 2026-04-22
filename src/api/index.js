@@ -80,3 +80,11 @@ export const checkAppVersion = () => {
 export const login = (params) => {
   return post(`${API_LOGIN_URL}/user/v1.0/login/by-domain`, params)
 }
+
+/**
+ * 获取系统配置树列表接口
+ * @returns {Promise<Object>}
+ */
+export const getSystemConfigTree = () => {
+  return get(`${API_BASE_URL}/hinton-agent-mario-server/ops/systemConfig/getTreeList`)
+}
