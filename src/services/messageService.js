@@ -34,8 +34,8 @@ class MessageService {
     try {
       const response = await getHistoryOrderDetail(order.conversationId)
       if (response) {
-        // 将详情数据转换为消息格式
-        const messages = convertHistoryToMessages(response)
+        // 将详情数据转换为消息格式，传递工单状态
+        const messages = convertHistoryToMessages(response, { orderStatus: order.orderStatus })
         // 保存到消息存储
         this.chatService.messageStore[order.id] = [...messages]
         return messages

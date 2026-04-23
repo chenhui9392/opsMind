@@ -43,12 +43,6 @@
         @logout="handleLogout"
       />
 
-      <!-- 发送消息时的遮罩层 -->
-      <div v-if="isSending" class="loading-overlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">正在发送消息...</div>
-      </div>
-
       <!-- 调整宽度手柄 -->
       <div
         v-if="!isCollapsed"
@@ -499,37 +493,5 @@ defineExpose({
 
 .resize-handle:active {
   background-color: rgba(99, 102, 241, 0.5);
-}
-
-/* 加载遮罩层 */
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  cursor: not-allowed;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e0e0e0;
-  border-top-color: #6366f1;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-.loading-text {
-  font-size: 14px;
-  color: #6366f1;
-  font-weight: 500;
 }
 </style>

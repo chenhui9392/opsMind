@@ -29,12 +29,14 @@
         </div>
       </div>
 
-      <!-- 右侧：下载按钮 -->
-<!--      <div class="header-right">-->
+      <!-- 右侧：环境标识 + 下载按钮 -->
+      <div class="header-right">
+        <!-- 测试环境标识 -->
+        <span v-if="isDev" class="env-badge">测试</span>
 <!--        <button class="download-btn" @click="handleDownload" title="下载会话">-->
 <!--          <SvgIcon name="download" width="18" height="18" />-->
 <!--        </button>-->
-<!--      </div>-->
+      </div>
     </div>
   </div>
 </template>
@@ -42,6 +44,7 @@
 <script setup>
 import { computed } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
+import { isDev } from '../../config/env.js'
 
 // Props
 const props = defineProps({
@@ -186,6 +189,18 @@ const handleDownload = () => {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/* 环境标识 */
+.env-badge {
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
 }
 
 /* 新建会话按钮 */

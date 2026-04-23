@@ -170,11 +170,12 @@ class ChatMessageService {
 
     // 解析 content 并确定消息类型
     const messageData = response.data.message
-    const parsedResult = this.parseContent(messageData.content)
+    const rawContent = messageData.content
+    const parsedResult = this.parseContent(rawContent)
     // 根据消息类型分发处理
     switch (parsedResult.type) {
       case MESSAGE_TYPES.FORM:
-        return this.handleFormMessage(parsedResult)
+        return this.handleFormMessage(parsedResult, rawContent)
       case MESSAGE_TYPES.INSTALL:
         return this.handleInstallMessage(parsedResult)
       default:
@@ -269,12 +270,14 @@ class ChatMessageService {
   /**
    * 处理表单类型消息
    * @param {Object} parsedResult - 解析后的结果对象
+   * @param {string} rawContent - 原始 content JSON 字符串
    * @returns {Object} - 消息对象
    */
-  handleFormMessage(parsedResult) {
+  handleFormMessage(parsedResult, rawContent) {
     const message = this.createResponseMessage(parsedResult.content, {
       hasFull: true,
-      formInfo: parsedResult.formInfo
+      formInfo: parsedResult.formInfo,
+      rawContent: rawContent
     })
     this.saveMessageToStore(message)
     return message
@@ -318,7 +321,8 @@ class ChatMessageService {
       time: new Date().toLocaleString('zh-CN'),
       images: [],
       hasFull: options.hasFull || false,
-      formInfo: options.formInfo || null
+      formInfo: options.formInfo || null,
+      rawContent: options.rawContent || null
     }
   }
 
@@ -418,6 +422,30 @@ class ChatMessageService {
 
   getCurrentChatSession() {
     return this.currentChatSession
+  }
+
+  /**
+   * 获取当前会话ID
+   * @returns {string|null} - 当前 conversationId
+   */
+  getCurrentConversationId() {
+    return this.currentConversationId
+  }
+
+  /**
+   * 获取当前系统名称
+   * @returns {string} - 当前 systemName
+   */
+  getCurrentSystemName() {
+    return this.currentSystemName
+  }
+
+  /**
+   * 获取登录用户名
+   * @returns {string} - 登录用户名
+   */
+  getCurrentUserName() {
+    return this.getLoginUsername()
   }
 }
 

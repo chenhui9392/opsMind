@@ -17,6 +17,7 @@
         :message="message"
         @image-click="handleImageClick"
         @file-click="handleFileClick"
+        @submit-success="handleSubmitSuccess"
       />
     </div>
 
@@ -45,7 +46,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['file-click'])
+const emit = defineEmits(['file-click', 'submit-success'])
 
 // 响应式数据
 const imagePreview = reactive({
@@ -87,6 +88,13 @@ const handleNavigateImage = (index) => {
  */
 const handleFileClick = (file) => {
   emit('file-click', file)
+}
+
+/**
+ * 处理提交成功事件
+ */
+const handleSubmitSuccess = () => {
+  emit('submit-success')
 }
 </script>
 

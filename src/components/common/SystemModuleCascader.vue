@@ -1,11 +1,25 @@
 <template>
   <div class="cascade-select-wrapper">
-    <template v-for="(item, index) in treeData" :key="item.code">
+    <!-- 加载中状态 -->
+    <div v-if="loading" class="loading-placeholder">
+      <span class="loading-text">加载中...</span>
+    </div>
+    <!-- 数据为空状态 -->
+    <div
+      v-else-if="treeData.length === 0"
+      class="empty-placeholder"
+      :class="{ 'error': loadError }"
+      @click="loadTreeData"
+    >
+      <span class="empty-text">{{ loadError ? '加载失败，点击重试' : '点击加载系统选项' }}</span>
+    </div>
+    <!-- 正常渲染级联选择器 -->
+    <template v-else v-for="(item, index) in treeData" :key="item.code">
       <CustomCascader
         v-model="cascaderValues[index]"
         :options="item.children"
         :props="cascaderProps"
-        :placeholder="loading ? '加载中...' : item.name"
+        :placeholder="item.name"
         @change="(value) => handleCascadeChange(value, index, item)"
       />
     </template>
@@ -13,7 +27,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { getSystemConfigTree } from '../../api'
 import CustomCascader from './CustomCascader.vue'
 
@@ -40,6 +54,9 @@ const emit = defineEmits(['update:modelValue', 'change'])
 const treeData = ref([])
 const cascaderValues = ref([])  // 每个级联选择器独立的值数组
 const loading = ref(false)
+const loadError = ref(false)
+const retryCount = ref(0)
+const MAX_RETRY = 3
 
 // Cascader 配置
 const cascaderProps = {
@@ -49,23 +66,37 @@ const cascaderProps = {
 }
 /**
  * 从接口加载树形数据
+ * @param {boolean} isRetry - 是否为重试调用
  */
-const loadTreeData = async () => {
+const loadTreeData = async (isRetry = false) => {
+  if (loading.value) return
+
   loading.value = true
+  loadError.value = false
+
   try {
     const res = await getSystemConfigTree()
-    if (res.code === 200 && res.data) {
+    if (res.code === 200 && res.data && res.data.length > 0) {
       treeData.value = res.data
       // 初始化每个级联选择器的值数组
       cascaderValues.value = res.data.map(() => [])
+      loadError.value = false
+      retryCount.value = 0
     } else {
-      treeData.value = []
-      cascaderValues.value = []
+      throw new Error('返回数据为空或格式不正确')
     }
   } catch (error) {
     console.error('加载系统配置树失败:', error)
-    treeData.value = []
-    cascaderValues.value = []
+    loadError.value = true
+
+    // 自动重试机制
+    if (!isRetry && retryCount.value < MAX_RETRY) {
+      retryCount.value++
+      console.log(`级联选择器数据加载失败，${retryCount.value}秒后重试(${retryCount.value}/${MAX_RETRY})...`)
+      setTimeout(() => {
+        loadTreeData(true)
+      }, retryCount.value * 1000)
+    }
   } finally {
     loading.value = false
   }
@@ -115,7 +146,7 @@ const handleCascadeChange = (value, index, systemItem) => {
     }
   })
 
-  emit('update:modelValue', systemName.join("-"))
+  emit('update:modelValue', systemName.join(","))
   emit('change', { value, systemItem, index })
 }
 
@@ -128,7 +159,10 @@ const resetSelection = () => {
 
 // 初始化
 onMounted(() => {
-  loadTreeData()
+  // 使用 nextTick 确保组件完全挂载后再加载数据
+  nextTick(() => {
+    loadTreeData()
+  })
 })
 
 // 暴露方法给父组件
@@ -146,7 +180,53 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 40px;
 }
 
+/* 加载中占位 */
+.loading-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
 
+.loading-text {
+  font-size: 14px;
+  color: #666;
+}
+
+/* 空数据占位 */
+.empty-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  cursor: pointer;
+}
+
+.empty-text {
+  font-size: 14px;
+  color: #666;
+}
+
+.empty-placeholder:hover {
+  background-color: #e8e8e8;
+}
+
+/* 错误状态样式 */
+.empty-placeholder.error {
+  border-color: #ff4d4f;
+  background-color: #fff2f0;
+}
+
+.empty-placeholder.error .empty-text {
+  color: #ff4d4f;
+}
 </style>

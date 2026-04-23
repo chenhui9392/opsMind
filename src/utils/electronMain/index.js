@@ -1,11 +1,38 @@
 const { app, BrowserWindow, session } = require('electron')
 const path = require('path')
+const fs = require('fs')
 
 // 导入模块
 const windowManager = require('./modules/windowManager')
 const trayManager = require('./modules/trayManager')
 const floatingBallManager = require('./modules/floatingBallManager')
 const ipcHandler = require('./modules/ipcHandler')
+
+/**
+ * 检查是否为 development 环境
+ * 1. 未打包的应用是开发环境
+ * 2. 已打包但存在 .env-mode 文件且内容为 development
+ * @returns {boolean}
+ */
+const checkIsDevelopmentEnv = () => {
+  // 未打包的应用
+  if (!app.isPackaged) {
+    return true
+  }
+
+  // 已打包的应用，检查标记文件
+  try {
+    const envModePath = path.join(process.resourcesPath, 'app.asar', 'dist', '.env-mode')
+    if (fs.existsSync(envModePath)) {
+      const mode = fs.readFileSync(envModePath, 'utf-8').trim()
+      return mode === 'development'
+    }
+  } catch (error) {
+    console.log('Error checking env mode file:', error)
+  }
+
+  return false
+}
 
 // 确保只运行一个应用实例
 const gotTheLock = app.requestSingleInstanceLock()
@@ -65,14 +92,15 @@ app.whenReady().then(() => {
   })
   
   // 判断是否为开发环境
-  const isDev = !require('electron').app.isPackaged
-  
+  const isDev = checkIsDevelopmentEnv()
+  console.log('Is development environment:', isDev)
+
   // 创建窗口
   windowManager.createWindow()
-  
-  // 创建菜单（开发环境显示开发者工具）
+
+  // 创建菜单（开发环境显示开发者工具和开发者模式标识）
   createMenu(isDev)
-  
+
   // 创建托盘
   trayManager.createTray(
     () => windowManager.showMainWindow(),
@@ -81,7 +109,7 @@ app.whenReady().then(() => {
       app.quit()
     }
   )
-  
+
   // 创建悬浮球
   floatingBallManager.createFloatingBall(isDev)
 

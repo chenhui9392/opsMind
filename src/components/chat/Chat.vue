@@ -29,6 +29,7 @@
         @update:messages="$emit('update:messages', $event)"
         @update:isSending="$emit('update:isSending', $event)"
         @stop="handleStop"
+        @submit-success="handleSubmitSuccess"
       />
     </div>
   </div>
@@ -104,7 +105,8 @@ const emit = defineEmits([
   'refresh-orders-with-notification',
   'toggle-sidebar',
   'download-session',
-  'new-session'
+  'new-session',
+  'submit-success'
 ])
 
 // 响应式数据
@@ -228,6 +230,17 @@ const handleDownloadSession = () => {
   emit('download-session')
 }
 
+/**
+ * 处理提交成功事件
+ * 隐藏聊天框，禁止再次聊天
+ */
+const handleSubmitSuccess = () => {
+  // 通知父组件更新 showInput 为 false，隐藏聊天框
+  emit('update:showInput', false)
+  // 同时触发 submit-success 事件，供父组件做其他处理
+  emit('submit-success')
+}
+
 // 生命周期钩子
 onMounted(() => {
   getUserName()
@@ -256,7 +269,7 @@ defineExpose({
   top: 0;
   z-index: 20;
   background-color: #ffffff;
-  //border-bottom: 1px solid #e0e0e0;
+  /* border-bottom: 1px solid #e0e0e0; */
 }
 
 /* 确保ChatContent占据剩余空间 */

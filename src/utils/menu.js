@@ -114,7 +114,13 @@ function createMenu(isDev = false) {
             // 可以添加关于对话框
           }
         }
-      ]
+      ].concat(isDev ? [
+        { type: 'separator' },
+        {
+          label: '【开发者模式】',
+          enabled: false
+        }
+      ] : [])
     }
   ];
 

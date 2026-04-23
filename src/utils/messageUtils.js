@@ -109,12 +109,16 @@ export function createMessageObject(text, sender = 'bot', images = []) {
 /**
  * 将历史记录转换为消息格式
  * @param {Array} historyData - 历史记录数据
+ * @param {Object} options - 可选参数
+ * @param {string} options.orderStatus - 工单状态
  * @returns {Array} - 消息数组
  */
-export function convertHistoryToMessages(historyData) {
+export function convertHistoryToMessages(historyData, options = {}) {
   if (!Array.isArray(historyData)) {
     return []
   }
+
+  const { orderStatus } = options
 
   return historyData.map(item => {
     // 使用统一的解析逻辑处理 content
@@ -127,7 +131,9 @@ export function convertHistoryToMessages(historyData) {
       images: [],
       // 新增：表单信息字段
       hasFull: parsedResult.hasFull,
-      formInfo: parsedResult.formInfo
+      formInfo: parsedResult.formInfo,
+      // 新增：工单状态字段
+      orderStatus: orderStatus
     }
   })
 }

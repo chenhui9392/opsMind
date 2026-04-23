@@ -80,6 +80,8 @@ import { marked } from 'marked'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { CopyDocument } from '@element-plus/icons-vue'
 import { A2UIRoot } from 'a2ui-vue-engine'
+import { submitWorkOrder } from '../../api'
+import chatMessageService from '../../services/chatMessageService'
 
 // 配置 marked 选项
 marked.setOptions({
@@ -97,12 +99,14 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['image-click', 'file-click', 'form-submit'])
+const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-success'])
 
 // 响应式数据
 const copySuccess = ref(false)
 const copyTimer = ref(null)
 const a2uiRootRef = ref(null)
+const isSubmitting = ref(false)
+const isSubmitted = ref(false)
 
 // 计算属性
 const renderedText = computed(() => {
@@ -115,11 +119,94 @@ const renderedText = computed(() => {
 /**
  * 处理 A2UI 消息
  */
-const handleA2UIMessage = (message) => {
-  console.log('A2UI Message:', message)
-  // 如果是提交事件，触发 form-submit
-  if (message.event && message.event.name === 'submitWorkOrder') {
-    emit('form-submit', message)
+const handleA2UIMessage = async (payload) => {
+  if(payload.type === 'action') {
+    const eventName = payload.payload.eventName
+    emit('form-submit', eventName)
+
+    // 处理提交工单事件
+    if (eventName === 'submitWorkOrder') {
+      // 如果已经提交成功，不再处理
+      if (isSubmitted.value) {
+        return
+      }
+
+      try {
+        isSubmitting.value = true
+
+        // 获取聊天接口返回的原始 content JSON 字符串作为 submitJson
+        const submitJson = props.message.rawContent
+        if (!submitJson) {
+          console.error('原始 content 数据不存在')
+          isSubmitting.value = false
+          return
+        }
+
+        // 获取当前会话信息
+        const conversationId = chatMessageService.getCurrentConversationId()
+        const systemName = chatMessageService.getCurrentSystemName()
+        const userName = chatMessageService.getCurrentUserName()
+
+        const result = await submitWorkOrder({
+          submitJson,
+          conversationId,
+          systemName,
+          userName
+        })
+
+        console.log('工单提交成功:', result)
+
+        // 检查接口返回是否成功
+        if (result && result.code === 200) {
+          isSubmitted.value = true
+
+          // 禁用表单提交按钮
+          disableSubmitButton()
+
+          // 通知父组件提交成功，隐藏聊天框
+          emit('submit-success')
+        }
+      } catch (error) {
+        console.error('工单提交失败:', error)
+      } finally {
+        isSubmitting.value = false
+      }
+    }
+  }
+}
+
+/**
+ * 禁用表单提交按钮
+ * 通过更新 formInfo 中的按钮配置来禁用提交按钮
+ */
+const disableSubmitButton = () => {
+  if (a2uiRootRef.value && props.message.formInfo) {
+    try {
+      // 解析当前的 formInfo
+      let nodeList = props.message.formInfo
+      if (typeof nodeList === 'string') {
+        nodeList = JSON.parse(nodeList)
+      }
+
+      // 查找提交按钮节点并更新 disabled 属性
+      const updatedNodeList = nodeList.map(node => {
+        if (node.id === 'submit-btn') {
+          return {
+            ...node,
+            disabled: true
+          }
+        }
+        return node
+      })
+
+      // 重新渲染整个表单
+      a2uiRootRef.value.processMessage({
+        type: 'node',
+        node: updatedNodeList
+      })
+    } catch (error) {
+      console.error('禁用提交按钮失败:', error)
+    }
   }
 }
 
@@ -148,8 +235,22 @@ const processFormInfo = () => {
       }
     }
 
-    // 检查是否是数组，直接传递整个数组（参考 A2uiTest.vue）
+    // 检查是否是数组
     if (Array.isArray(nodeList) && nodeList.length > 0) {
+      // 如果是从历史会话进入且工单状态为【已创建】（非 DRAFT），禁用提交按钮
+      const orderStatus = props.message.orderStatus
+      if (orderStatus && orderStatus !== 'DRAFT') {
+        nodeList = nodeList.map(node => {
+          if (node.id === 'submit-btn') {
+            return {
+              ...node,
+              disabled: true
+            }
+          }
+          return node
+        })
+      }
+
       a2uiRootRef.value.processMessage({
         type: 'node',
         node: nodeList

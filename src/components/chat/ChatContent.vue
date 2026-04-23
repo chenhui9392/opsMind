@@ -4,6 +4,7 @@
       ref="messageList"
       :messages="messages"
       @file-click="downloadFile"
+      @submit-success="handleSubmitSuccess"
     />
 
     <!-- 消息发送区 -->
@@ -58,7 +59,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['update:messages', 'update:isSending', 'stop'])
+const emit = defineEmits(['update:messages', 'update:isSending', 'stop', 'submit-success'])
 
 // 响应式数据
 const isLoading = ref(false)
@@ -195,6 +196,13 @@ const resetCascader = () => {
   if (chatInputRef.value && chatInputRef.value.resetCascader) {
     chatInputRef.value.resetCascader()
   }
+}
+
+/**
+ * 处理提交成功事件
+ */
+const handleSubmitSuccess = () => {
+  emit('submit-success')
 }
 
 // 暴露方法给父组件

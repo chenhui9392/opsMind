@@ -3,6 +3,32 @@ const path = require('path')
 const fs = require('fs')
 const floatingBallManager = require('./floatingBallManager')
 
+/**
+ * 检查是否为 development 环境
+ * 1. 未打包的应用是开发环境
+ * 2. 已打包但存在 .env-mode 文件且内容为 development
+ * @returns {boolean}
+ */
+const checkIsDevelopmentEnv = () => {
+  // 未打包的应用
+  if (!app.isPackaged) {
+    return true
+  }
+
+  // 已打包的应用，检查标记文件
+  try {
+    const envModePath = path.join(process.resourcesPath, 'app.asar', 'dist', '.env-mode')
+    if (fs.existsSync(envModePath)) {
+      const mode = fs.readFileSync(envModePath, 'utf-8').trim()
+      return mode === 'development'
+    }
+  } catch (error) {
+    console.log('Error checking env mode file:', error)
+  }
+
+  return false
+}
+
 class WindowManager {
   constructor() {
     this.mainWindow = null
@@ -66,22 +92,22 @@ class WindowManager {
     // 创建窗口
     this.mainWindow = new BrowserWindow(windowOptions)
 
-    // 检查是否为开发模式
-    const isDev = !require('electron').app.isPackaged
-    console.log('Is dev mode:', isDev)
+    // 检查是否为 development 环境
+    const isDev = checkIsDevelopmentEnv()
+    console.log('Is development environment:', isDev)
 
-    if (isDev) {
-      // 开发模式：加载Vite开发服务器
+    if (!app.isPackaged) {
+      // 未打包：加载Vite开发服务器
       const devPort = process.env.VITE_DEV_SERVER_PORT || 9090
       console.log(`Loading Vite dev server at http://localhost:${devPort}`)
       this.mainWindow.loadURL(`http://localhost:${devPort}`)
     } else {
-      // 生产模式：加载静态文件
+      // 已打包：加载静态文件
       console.log('Loading static file at dist/index.html')
       this.mainWindow.loadFile('dist/index.html')
     }
 
-    // 只在开发模式下打开开发者工具
+    // 在 development 环境下打开开发者工具
     if (isDev) {
       // 打开开发者工具，方便调试，并调整位置
       this.mainWindow.webContents.openDevTools({ mode: 'detach' })

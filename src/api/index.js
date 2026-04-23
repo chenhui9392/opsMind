@@ -88,3 +88,12 @@ export const login = (params) => {
 export const getSystemConfigTree = () => {
   return get(`${API_BASE_URL}/hinton-agent-mario-server/ops/systemConfig/getTreeList`)
 }
+
+/**
+ * 提交工单接口
+ * @param {Object} params - 包含submitJson参数
+ * @returns {Promise<Object>}
+ */
+export const submitWorkOrder = (params) => {
+  return post(`${API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/submit`, params)
+}
