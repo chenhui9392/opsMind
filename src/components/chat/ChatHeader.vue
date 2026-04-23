@@ -30,11 +30,11 @@
       </div>
 
       <!-- 右侧：下载按钮 -->
-      <div class="header-right">
-        <button class="download-btn" @click="handleDownload" title="下载会话">
-          <SvgIcon name="download" width="18" height="18" />
-        </button>
-      </div>
+<!--      <div class="header-right">-->
+<!--        <button class="download-btn" @click="handleDownload" title="下载会话">-->
+<!--          <SvgIcon name="download" width="18" height="18" />-->
+<!--        </button>-->
+<!--      </div>-->
     </div>
   </div>
 </template>

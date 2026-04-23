@@ -1,21 +1,21 @@
 <template>
   <div class="cascade-select-wrapper">
-    <template v-for="item in treeData">
-      <el-cascader
-        v-model="cascaderValue"
+    <template v-for="(item, index) in treeData" :key="item.code">
+      <CustomCascader
+        v-model="cascaderValues[index]"
         :options="item.children"
         :props="cascaderProps"
         :placeholder="loading ? '加载中...' : item.name"
-        @change="handleCascadeChange"
-        class="system-cascader"
+        @change="(value) => handleCascadeChange(value, index, item)"
       />
     </template>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { getSystemConfigTree } from '../../api'
+import CustomCascader from './CustomCascader.vue'
 
 // Props
 const props = defineProps({
@@ -34,11 +34,11 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['update:modelValue', 'change', 'update:systemModule'])
+const emit = defineEmits(['update:modelValue', 'change'])
 
 // 响应式数据
 const treeData = ref([])
-const cascaderValue = ref([])
+const cascaderValues = ref([])  // 每个级联选择器独立的值数组
 const loading = ref(false)
 
 // Cascader 配置
@@ -56,12 +56,16 @@ const loadTreeData = async () => {
     const res = await getSystemConfigTree()
     if (res.code === 200 && res.data) {
       treeData.value = res.data
+      // 初始化每个级联选择器的值数组
+      cascaderValues.value = res.data.map(() => [])
     } else {
       treeData.value = []
+      cascaderValues.value = []
     }
   } catch (error) {
     console.error('加载系统配置树失败:', error)
     treeData.value = []
+    cascaderValues.value = []
   } finally {
     loading.value = false
   }
@@ -91,20 +95,35 @@ const findSystemByCode = (code, data = treeData.value) => {
 /**
  * 处理级联选择变化
  * @param {Array} value - 选择值数组
+ * @param {number} index - 当前级联选择器的索引
+ * @param {Object} systemItem - 当前系统项数据
  */
-const handleCascadeChange = (value) => {
-  let systemName = []
-  value.map(code => {
-    systemName.push(findSystemByCode(code)?.name)
+const handleCascadeChange = (value, index, systemItem) => {
+  // 重置其他级联选择器的值
+  for (let i = 0; i < cascaderValues.value.length; i++) {
+    if (i !== index) {
+      cascaderValues.value[i] = []
+    }
+  }
+
+  // 构建选中路径的名称
+  let systemName = [systemItem.name]
+  value.forEach(code => {
+    const node = findSystemByCode(code)
+    if (node && node.name) {
+      systemName.push(node.name)
+    }
   })
+
   emit('update:modelValue', systemName.join("-"))
+  emit('change', { value, systemItem, index })
 }
 
 /**
  * 重置选择
  */
 const resetSelection = () => {
-  cascaderValue.value = []
+  cascaderValues.value = cascaderValues.value.map(() => [])
 }
 
 // 初始化
@@ -129,81 +148,5 @@ defineExpose({
   gap: 8px;
 }
 
-/* Element Plus Cascader 样式 - 标签风格 */
-.system-cascader {
-  width: auto;
-}
 
-/* 调整输入框宽度为自适应内容 */
-.system-cascader :deep(.el-input) {
-  width: auto !important;
-}
-
-/* 调整箭头与文字的间距 */
-.system-cascader :deep(.el-input__suffix) {
-  margin-left: 4px !important;
-}
-
-/* 覆盖 Element Plus 默认样式 - 使用更高优先级 */
-:deep(.el-input__wrapper),
-:deep(.el-input.is-focus .el-input__wrapper),
-:deep(.el-input:hover .el-input__wrapper) {
-  border-radius: 8px !important;
-  background-color: #f0f2ff !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 6px 12px !important;
-  min-height: 32px !important;
-  color: #6A70D7 !important;
-}
-
-:deep(.el-input__inner) {
-  font-size: 14px !important;
-  color: #6A70D7 !important;
-  font-weight: 500 !important;
-  font-weight: bold !important;
-}
-
-/* placeholder 文字颜色 */
-:deep(.el-input__inner::placeholder) {
-  color: #6A70D7 !important;
-  font-weight: bold !important;
-}
-
-:deep(.el-input__suffix-inner) {
-  color: #5c6bc0 !important;
-}
-
-.system-cascader :deep(.el-input .el-icon) {
-  color: #5c6bc0 !important;
-}
-
-/* 选中后的标签样式 */
-:deep(.el-input.is-focus .el-input__wrapper) {
-  background-color: #e8eaf6 !important;
-}
-
-/* 级联下拉菜单样式 */
-.system-cascader :deep(.el-cascader__dropdown) {
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.system-cascader :deep(.el-cascader-node) {
-  font-size: 14px;
-  padding: 8px 16px;
-}
-
-.system-cascader :deep(.el-cascader-node.is-active) {
-  color: #6366f1;
-  font-weight: 500;
-}
-
-.system-cascader :deep(.el-cascader-node.in-active-path) {
-  color: #6366f1;
-}
-
-.system-cascader :deep(.el-cascader-node:hover) {
-  background-color: #f5f5f5;
-}
 </style>

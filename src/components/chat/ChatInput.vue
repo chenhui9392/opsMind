@@ -125,11 +125,8 @@ const placeholderText = computed(() => {
   if (!props.isNewSession) {
     return '输入消息...(Shift+Enter 换行)'
   }
-  if (!cascaderRef.value || !cascaderRef.value.getSelectedSystemCode()) {
+  if (!cascaderValue.value) {
     return '请先选择系统和模块...'
-  }
-  if (!cascaderRef.value.getSelectedModuleCode()) {
-    return '请选择模块...'
   }
   return '输入消息...(Shift+Enter 换行)'
 })
@@ -268,6 +265,21 @@ const handleStop = () => {
 // 生命周期钩子
 onMounted(() => {
   autoResize()
+})
+
+/**
+ * 重置级联选择器
+ */
+const resetCascader = () => {
+  cascaderValue.value = []
+  if (cascaderRef.value && cascaderRef.value.resetSelection) {
+    cascaderRef.value.resetSelection()
+  }
+}
+
+// 暴露方法给父组件
+defineExpose({
+  resetCascader
 })
 </script>
 

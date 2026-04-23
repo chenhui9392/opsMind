@@ -22,8 +22,8 @@
             <div class="order-title">{{ order.orderTitle }}</div>
             <div class="order-status-tag" :class="getStatusClass(order.orderStatus)">{{ getStatusText(order.orderStatus) }}</div>
           </div>
-          <div class="order-unread" v-if="order.unread && order.unread > 0">
-            【{{ order.unread }}】条未读消息
+          <div class="order-unread" v-if="order.unreadCount && order.unreadCount > 0">
+            【{{ order.unreadCount }}】条未读消息
           </div>
           <div class="card-footer">
             <div class="order-datetime">{{ formatDate(order.createTime) }}</div>
@@ -82,7 +82,6 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { getHistoryOrders } from '../../api/index'
-import { getSystemUsername } from '../../utils/system'
 
 
 
@@ -180,7 +179,8 @@ const fetchHistoryOrders = async (isLoadMore = false) => {
   }
 
   try {
-    const userName = await getSystemUsername()
+    // 从 localStorage 获取登录时的用户名
+    const userName = localStorage.getItem('userName') || ''
     const response = await getHistoryOrders({
       pageNo: isLoadMore ? currentPage.value + 1 : 1,
       pageSize: pageSize.value,

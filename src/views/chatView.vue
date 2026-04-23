@@ -62,6 +62,7 @@ import Chat from '../components/chat/Chat.vue'
 import UpdateDialog from '../components/common/UpdateDialog.vue'
 import { initialMessages } from '../mock/data'
 import messageService from '../services/messageService'
+import chatMessageService from '../services/chatMessageService'
 import updateService from '../services/updateService'
 import { initSocketConnection, disconnectSocket } from '../utils/socket'
 
@@ -251,17 +252,23 @@ const handleDownloadSession = () => {
  * 处理新建工单
  */
 const handleNewOrder = () => {
-  // 调用 messageService 创建新会话
-  const result = messageService.backToCurrentChat(initialMessages)
+  // 调用 chatMessageService 创建真正的新会话
+  const result = chatMessageService.createNewSession()
 
   // 更新状态
   messages.value = result.messages
   selectedContact.value = result.selectedContact
   showInput.value = result.showInput
   isNewSession.value = result.isNewSession
-  // 恢复系统/模块名称
-  currentSystemName.value = result.systemName || ''
-  currentModuleName.value = result.moduleName || ''
+  currentChatSession.value = result.selectedContact
+  // 重置系统/模块名称
+  currentSystemName.value = ''
+  currentModuleName.value = ''
+
+  // 重置级联选择器
+  if (chatComponent.value && chatComponent.value.resetCascader) {
+    chatComponent.value.resetCascader()
+  }
 
   console.log('创建新工单会话')
 }

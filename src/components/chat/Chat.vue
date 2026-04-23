@@ -19,7 +19,7 @@
     <!-- 聊天内容组件（包含会话展示区和消息发送区） -->
     <div class="chat-content">
       <ChatContent
-         ref="chatContent"
+        ref="chatContent"
         :messages="messages"
         :showInput="showInput"
         :isSending="isSending"
@@ -27,6 +27,7 @@
         :systemName="systemName"
         :moduleName="moduleName"
         @update:messages="$emit('update:messages', $event)"
+        @update:isSending="$emit('update:isSending', $event)"
         @stop="handleStop"
       />
     </div>
@@ -138,6 +139,9 @@ const createNewSession = () => {
   emit('update:selectedContact', result.selectedContact)
   emit('update:showInput', result.showInput)
   emit('update:currentChatSession', result.selectedContact)
+  
+  // 重置级联选择器
+  resetCascader()
 }
 
 /**
@@ -201,6 +205,16 @@ const scrollToBottom = () => {
 }
 
 /**
+ * 重置级联选择器
+ */
+const resetCascader = () => {
+  const chatComponent = chatContent.value
+  if (chatComponent && chatComponent.resetCascader) {
+    chatComponent.resetCascader()
+  }
+}
+
+/**
  * 处理切换侧边栏
  */
 const handleToggleSidebar = () => {
@@ -217,6 +231,12 @@ const handleDownloadSession = () => {
 // 生命周期钩子
 onMounted(() => {
   getUserName()
+})
+
+// 暴露方法给父组件
+defineExpose({
+  resetCascader,
+  scrollToBottom
 })
 </script>
 

@@ -8,6 +8,7 @@
 
     <!-- 消息发送区 -->
     <ChatInput
+      ref="chatInputRef"
       v-if="showInput"
       @send="handleSend"
       @stop="handleStop"
@@ -66,6 +67,7 @@ const isSendingLocal = ref(false)
 
 // 模板引用
 const messageList = ref(null)
+const chatInputRef = ref(null)
 
 /**
  * 处理显示错误提示
@@ -184,6 +186,21 @@ watch(() => props.messages, () => {
 // 生命周期钩子
 onMounted(() => {
   scrollToBottom()
+})
+
+/**
+ * 重置级联选择器
+ */
+const resetCascader = () => {
+  if (chatInputRef.value && chatInputRef.value.resetCascader) {
+    chatInputRef.value.resetCascader()
+  }
+}
+
+// 暴露方法给父组件
+defineExpose({
+  resetCascader,
+  scrollToBottom
 })
 </script>
 
