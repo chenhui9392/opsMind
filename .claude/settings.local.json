@@ -4,7 +4,10 @@
       "Bash(npm run *)",
       "Bash(npm install *)",
       "Bash(npm view *)",
-      "Bash(npm cache *)"
+      "Bash(npm cache *)",
+      "Bash(rm -rf .git/refs/original/)",
+      "Bash(git reflog *)",
+      "Bash(git gc *)"
     ]
   }
 }
