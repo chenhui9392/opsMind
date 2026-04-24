@@ -148,6 +148,8 @@ const createNewSession = () => {
   emit('update:selectedContact', result.selectedContact)
   emit('update:showInput', result.showInput)
   emit('update:currentChatSession', result.selectedContact)
+  // 重置输入框禁用状态
+  emit('update:isInputDisabled', false)
   
   // 重置级联选择器
   resetCascader()

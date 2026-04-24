@@ -88,7 +88,7 @@ const handleShowError = (message) => {
  * @param {Object} data - 消息数据
  */
 const handleSend = async (data) => {
-  const { text, images, files, systemName, moduleName } = data
+  const { text, images, files, businessType, systemName, moduleName } = data
 
   if (!text && images.length === 0 && files.length === 0) return
 

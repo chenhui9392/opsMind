@@ -24,6 +24,7 @@ class ChatMessageService {
     this.activeChatSession = 0
     this.isNewSession = false
     this.currentConversationId = null
+    this.currentBusinessType = ''
     this.currentSystemName = ''
     this.currentModuleName = ''
     this.chatAbortController = null
@@ -43,20 +44,25 @@ class ChatMessageService {
    * 处理发送消息
    */
   async handleSendMessage(data) {
-    const { text, images, files, systemName, moduleName } = data
+    const { text, images, files, businessType, systemName, moduleName } = data
 
     if (!text && images.length === 0 && files.length === 0) return null
 
-    this.saveSessionConfig(systemName, moduleName)
+    this.saveSessionConfig(businessType, systemName, moduleName)
     return await this.sendToServer(text, images, files)
   }
 
   /**
    * 保存会话配置
    */
-  saveSessionConfig(systemName, moduleName) {
+  saveSessionConfig(businessType, systemName, moduleName) {
     if (!this.sessionConfigStore[this.currentChatSession]) {
       this.sessionConfigStore[this.currentChatSession] = {}
+    }
+
+    if (businessType) {
+      this.currentBusinessType = businessType
+      this.sessionConfigStore[this.currentChatSession].businessType = businessType
     }
 
     if (systemName) {
@@ -117,16 +123,20 @@ class ChatMessageService {
    * 构建请求参数
    */
   buildRequestParams(text, fileUrls, userName) {
-    // 构建 systemName：将 moduleName 拼接到 systemName 后，格式为 "systemName-moduleName"
-    let combinedSystemName = this.currentSystemName
-    if (this.currentSystemName && this.currentModuleName) {
-      combinedSystemName = `${this.currentSystemName}-${this.currentModuleName}`
-    }
-
-    // 构建 message：将 systemName 拼到 message 前面，用空格分隔
+    // 构建 message：将选中的级联字段拼到 message 前面，用空格分隔（有值才拼）
     let combinedMessage = text
-    if (combinedSystemName) {
-      combinedMessage = `${combinedSystemName} ${text}`
+    const prefixParts = []
+    if (this.currentBusinessType) {
+      prefixParts.push(this.currentBusinessType)
+    }
+    if (this.currentSystemName) {
+      prefixParts.push(this.currentSystemName)
+    }
+    if (this.currentModuleName) {
+      prefixParts.push(this.currentModuleName)
+    }
+    if (prefixParts.length > 0) {
+      combinedMessage = `${prefixParts.join(',')} ${text}`
     }
 
     const params = {
@@ -135,9 +145,15 @@ class ChatMessageService {
       userName: userName
     }
 
-    // 只发送合并后的 systemName，不再单独发送 moduleName
-    if (combinedSystemName) {
-      params.systemName = combinedSystemName
+    // 拆分三个字段传递，有值则传，没有则不传该字段
+    if (this.currentBusinessType) {
+      params.businessType = this.currentBusinessType
+    }
+    if (this.currentSystemName) {
+      params.systemName = this.currentSystemName
+    }
+    if (this.currentModuleName) {
+      params.moduleName = this.currentModuleName
     }
 
     if (this.isNewSession) {

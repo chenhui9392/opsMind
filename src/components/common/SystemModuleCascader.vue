@@ -34,8 +34,8 @@ import CustomCascader from './CustomCascader.vue'
 // Props
 const props = defineProps({
   modelValue: {
-    type: Array,
-    default: () => []
+    type: Object,
+    default: () => ({ businessType: '', systemName: '', moduleName: '' })
   },
   disabled: {
     type: Boolean,
@@ -137,17 +137,34 @@ const handleCascadeChange = (value, index, systemItem) => {
     }
   }
 
-  // 构建选中路径的名称
-  let systemName = [systemItem.name]
+  // 拆分三个字段：businessType, systemName, moduleName
+  let systemNamePath = [systemItem.name]
+  let businessType = systemItem.name
+  let systemName = ''
+  let moduleName = ''
+  
   value.forEach(code => {
     const node = findSystemByCode(code)
     if (node && node.name) {
-      systemName.push(node.name)
+      systemNamePath.push(node.name)
+      // 根据级联层级分配值
+      if (value.indexOf(code) === 0) {
+        systemName = node.name
+      } else if (value.indexOf(code) === 1) {
+        moduleName = node.name
+      }
     }
   })
 
-  emit('update:modelValue', systemName.join(","))
-  emit('change', { value, systemItem, index })
+  // 发射拆分后的对象
+  const cascaderData = {
+    systemName: systemName,
+    moduleName: moduleName,
+    businessType: businessType
+  }
+  
+  emit('update:modelValue', cascaderData)
+  emit('change', { value, systemItem, index, cascaderData })
 }
 
 /**

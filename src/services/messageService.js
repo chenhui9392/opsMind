@@ -80,8 +80,9 @@ class MessageService {
       this.chatService.isNewSession = this.chatService.messageStore[targetSessionId].length === 1
       // 恢复当前会话ID
       this.chatService.currentChatSession = targetSessionId
-      // 恢复会话配置（系统、模块等）
+      // 恢复会话配置（业务类型、系统、模块等）
       const config = this.chatService.sessionConfigStore[targetSessionId] || {}
+      this.chatService.currentBusinessType = config.businessType || ''
       this.chatService.currentSystemName = config.systemName || ''
       this.chatService.currentModuleName = config.moduleName || ''
       return {
@@ -89,6 +90,7 @@ class MessageService {
         selectedContact: targetSessionId,
         showInput: true,
         isNewSession: this.chatService.messageStore[targetSessionId].length === 1,
+        businessType: this.chatService.currentBusinessType,
         systemName: this.chatService.currentSystemName,
         moduleName: this.chatService.currentModuleName
       }

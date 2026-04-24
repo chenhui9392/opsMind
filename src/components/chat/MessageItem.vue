@@ -6,7 +6,7 @@
     <!-- 机器人头像 -->
     <div class="message-avatar" v-if="message.sender === 'bot'">
       <div class="avatar-icon bot-avatar">
-        <img src="/app.png" alt="AI助手" class="bot-avatar-img" />
+        <img :src="dolphinImg" alt="AI助手" class="bot-avatar-img" />
       </div>
     </div>
     <!-- 用户头像 -->
@@ -86,6 +86,7 @@ import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { CopyDocument } from '@element-plus/icons-vue'
 import { A2UIRoot } from 'a2ui-vue-engine'
 import { submitWorkOrder } from '../../api'
+import dolphinImg from '../../assets/dolphin.png'
 import chatMessageService from '../../services/chatMessageService'
 
 // 配置 marked 选项

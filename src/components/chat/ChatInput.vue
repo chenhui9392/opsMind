@@ -121,7 +121,7 @@ const uploadedFiles = ref([])
 const isUploading = ref(false)
 const uploaderDisabled = ref(false)
 const isInCodeBlock = ref(false)
-const cascaderValue = ref([])
+const cascaderValue = ref({ businessType: '', systemName: '', moduleName: '' })
 
 // 级联选择组件引用
 const cascaderRef = ref(null)
@@ -213,7 +213,9 @@ const sendMessage = () => {
     originalText: inputMessage.value,
     images: uploadedImages.value,
     files: uploadedFiles.value,
-    systemName: cascaderValue.value
+    businessType: cascaderValue.value?.businessType || '',
+    systemName: cascaderValue.value?.systemName || '',
+    moduleName: cascaderValue.value?.moduleName || ''
   })
 
   inputMessage.value = ''
@@ -277,7 +279,7 @@ onMounted(() => {
  * 重置级联选择器
  */
 const resetCascader = () => {
-  cascaderValue.value = []
+  cascaderValue.value = { businessType: '', systemName: '', moduleName: '' }
   if (cascaderRef.value && cascaderRef.value.resetSelection) {
     cascaderRef.value.resetSelection()
   }
