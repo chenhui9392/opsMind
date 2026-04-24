@@ -7,7 +7,14 @@
       "Bash(npm cache *)",
       "Bash(rm -rf .git/refs/original/)",
       "Bash(git reflog *)",
-      "Bash(git gc *)"
+      "Bash(git gc *)",
+      "Bash(git fetch *)",
+      "Bash(git push *)",
+      "Bash(git checkout *)",
+      "Bash(git restore *)",
+      "Bash(git reset *)",
+      "Bash(git commit *)",
+      "Bash(git add *)"
     ]
   }
 }
