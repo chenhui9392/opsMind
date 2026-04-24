@@ -43,7 +43,7 @@ export const downloadSoftware = (id) => {
  * @returns {Promise<Object>}
  */
 export const getHistoryOrders = (params) => {
-  return post(`${API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/pageList`, params)
+  return post(`${API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/getHistoryList`, params)
 }
 
 /**

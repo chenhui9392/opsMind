@@ -502,14 +502,14 @@ const handleCopy = async () => {
 .message-bot .message-content {
   background-color: #F8FAFC;
   border: 1px solid #e0e0e0;
-  border-bottom-left-radius: 4px;
+  border-top-left-radius: 4px;
 }
 
 .message-user .message-content {
   background-color: #EEF2FF;
   color: #1f2937;
   border: 1px solid #c7d2fe;
-  border-bottom-right-radius: 4px;
+  border-top-right-radius: 4px;
 }
 
 .message-user .message-text {

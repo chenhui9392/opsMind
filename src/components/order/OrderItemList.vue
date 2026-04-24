@@ -23,7 +23,7 @@
             <div class="order-status-tag" :class="getStatusClass(order.orderStatus)">{{ getStatusText(order.orderStatus) }}</div>
           </div>
           <div class="order-unread" v-if="order.unreadCount && order.unreadCount > 0">
-            【{{ order.unreadCount }}】条未读消息
+            {{ order.unreadCount }}条未读消息
           </div>
           <div class="card-footer">
             <div class="order-datetime">{{ formatDate(order.createTime) }}</div>
@@ -81,7 +81,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
-import { getHistoryOrders } from '../../api/index'
+import { getHistoryOrders, updateMessageStatus } from '../../api/index'
 
 
 
@@ -134,6 +134,24 @@ const filteredOrders = computed(() => {
  * @param {Object} order - 工单对象
  */
 const selectOrder = (order) => {
+  // 如果有未读消息，后台调用更新接口（不阻塞点击响应）
+  if (order.unreadCount && order.unreadCount > 0) {
+    updateMessageStatus({
+      id: order.id,
+      conversationId: order.conversationId
+    })
+      .then(result => {
+        if (result && result.code === 200) {
+          const targetOrder = historyOrders.value.find(o => o.id === order.id)
+          if (targetOrder) {
+            targetOrder.unreadCount = 0
+          }
+        }
+      })
+      .catch(error => {
+        console.error('更新消息状态失败:', error)
+      })
+  }
   emit('select-order', order)
 }
 

@@ -404,8 +404,10 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  height: 56px;
+  box-sizing: border-box;
 }
 
 .user-avatar {
