@@ -23,6 +23,7 @@
       ref="chatComponent"
       v-model:messages="messages"
       v-model:showInput="showInput"
+      v-model:isInputDisabled="isInputDisabled"
       v-model:selectedContact="selectedContact"
       v-model:currentChatSession="currentChatSession"
       :isSending="isSending"
@@ -76,6 +77,7 @@ const isLoading = ref(false)
 const loadingMessageId = ref(null)
 const isSending = ref(false)
 const isNewSession = ref(true)
+const isInputDisabled = ref(false)
 const currentSystemName = ref('')
 const currentModuleName = ref('')
 const isSidebarCollapsed = ref(true)
@@ -112,6 +114,7 @@ const backToCurrentChat = () => {
   selectedContact.value = result.selectedContact
   showInput.value = result.showInput
   isNewSession.value = result.isNewSession
+  isInputDisabled.value = false
   // 恢复系统/模块名称
   currentSystemName.value = result.systemName || ''
   currentModuleName.value = result.moduleName || ''
@@ -154,11 +157,12 @@ const handleNavigateToSession = async (sessionId) => {
 
 /**
  * 刷新历史工单列表
+ * @param {boolean} silent - 是否静默刷新
  */
-const handleRefreshOrders = async function() {
+const handleRefreshOrders = async function(silent = false) {
   // 确保组件已渲染后再调用刷新方法
   if (contactsComponent.value && contactsComponent.value.handleRefreshOrders) {
-    contactsComponent.value.handleRefreshOrders()
+    contactsComponent.value.handleRefreshOrders(silent)
   }
 }
 
@@ -261,6 +265,7 @@ const handleNewOrder = () => {
   showInput.value = result.showInput
   isNewSession.value = result.isNewSession
   currentChatSession.value = result.selectedContact
+  isInputDisabled.value = false
   // 重置系统/模块名称
   currentSystemName.value = ''
   currentModuleName.value = ''

@@ -17,12 +17,17 @@
     </div>
     <div class="message-wrapper">
       <!-- 表单信息渲染（当 hasFull=true 时） -->
-      <div v-if="message.hasFull && message.formInfo" class="message-form-container">
+      <div v-if="message.hasFull && message.formInfo" class="message-form-container" style="position: relative;">
         <A2UIRoot
           ref="a2uiRootRef"
           @message="handleA2UIMessage"
           @complete="handleA2UIComplete"
         />
+        <!-- 提交 loading 遮罩 -->
+        <div v-if="isSubmitting" class="form-loading-overlay">
+          <div class="form-loading-spinner"></div>
+          <div class="form-loading-text">提交中...</div>
+        </div>
       </div>
 
       <!-- 消息内容 -->
@@ -402,6 +407,44 @@ const handleCopy = async () => {
   border-bottom-left-radius: 4px;
   max-width: 100%;
   min-width: 300px;
+}
+
+/* 表单提交 loading 遮罩 */
+.form-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 18px;
+  gap: 12px;
+}
+
+.form-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f0f0f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.form-loading-text {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .message-avatar {

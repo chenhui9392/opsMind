@@ -163,13 +163,17 @@ const scrollToTop = () => {
 
 /**
  * 获取历史工单列表
+ * @param {boolean} isLoadMore - 是否加载更多
+ * @param {boolean} silent - 是否静默刷新（不显示 loading）
  */
-const fetchHistoryOrders = async (isLoadMore = false) => {
+const fetchHistoryOrders = async (isLoadMore = false, silent = false) => {
   if (isLoadMore) {
     isLoadingMore.value = true
   } else {
     removeScrollListener()
-    isLoading.value = true
+    if (!silent) {
+      isLoading.value = true
+    }
     fetchAttempted.value = true
     currentPage.value = 1
     historyOrders.value = []
@@ -211,7 +215,9 @@ const fetchHistoryOrders = async (isLoadMore = false) => {
       historyOrders.value = []
     }
   } finally {
-    isLoading.value = false
+    if (!silent) {
+      isLoading.value = false
+    }
     isLoadingMore.value = false
 
     if (!isLoadMore) {

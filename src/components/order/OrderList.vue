@@ -218,17 +218,18 @@ const backToCurrentChat = () => {
 
 /**
  * 处理刷新工单列表
+ * @param {boolean} silent - 是否静默刷新
  */
-const handleRefreshOrders = () => {
+const handleRefreshOrders = (silent = false) => {
   debugger
   if (isRefreshing.value) return
   isRefreshing.value = true
   if (orderItemList.value && orderItemList.value.fetchHistoryOrders) {
-    orderItemList.value.fetchHistoryOrders()
+    orderItemList.value.fetchHistoryOrders(false, silent)
   }
   setTimeout(() => {
     isRefreshing.value = false
-  }, 1000)
+  }, silent ? 0 : 1000)
 }
 
 /**

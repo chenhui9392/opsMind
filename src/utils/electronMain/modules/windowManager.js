@@ -73,7 +73,8 @@ class WindowManager {
       show: true,
       alwaysOnTop: true, // 确保窗口在最前面
       transparent: false, // 确保窗口不透明
-      frame: true // 确保窗口有边框
+      frame: true, // 确保窗口有边框
+      autoHideMenuBar: true // 自动隐藏菜单栏
     }
 
     // 如果图标存在，设置窗口图标

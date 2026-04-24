@@ -18,6 +18,7 @@
       :isNewSession="isNewSession"
       :systemName="systemName"
       :moduleName="moduleName"
+      :isInputDisabled="isInputDisabled"
     />
 
 
@@ -48,6 +49,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  isInputDisabled: {
+    type: Boolean,
+    default: false
+  },
   systemName: {
     type: String,
     default: ''
@@ -59,7 +64,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['update:messages', 'update:isSending', 'stop', 'submit-success'])
+const emit = defineEmits(['update:messages', 'update:isSending', 'stop', 'submit-success', 'refresh-orders'])
 
 // 响应式数据
 const isLoading = ref(false)
@@ -86,6 +91,9 @@ const handleSend = async (data) => {
   const { text, images, files, systemName, moduleName } = data
 
   if (!text && images.length === 0 && files.length === 0) return
+
+  // 记录当前是否为新会话，用于发送成功后判断是否需要刷新历史列表
+  const wasNewSession = props.isNewSession
 
   isSendingLocal.value = true
   emit('update:isSending', true)
@@ -122,6 +130,11 @@ const handleSend = async (data) => {
     updatedMessages.splice(loadingMessageId, 1, responseMessage)
 
     emit('update:messages', updatedMessages)
+
+    // 如果是新会话的首次发送成功，无感知刷新历史会话列表
+    if (wasNewSession) {
+      emit('refresh-orders', true)
+    }
   } catch (error) {
     console.error('发送消息失败:', error)
     updatedMessages = [...props.messages]

@@ -30,6 +30,7 @@
         @keydown.enter.prevent="handleEnterKey"
         @input="autoResize"
         rows="1"
+        :disabled="props.isInputDisabled"
         :style="{ maxHeight: '500px' }"
       />
       <div class="input-actions">
@@ -55,7 +56,7 @@
             </button>
           </template>
         </el-upload>
-        <button v-if="!isSending" class="send-button" @click="sendMessage" :disabled="isUploading || isSending" title="发送">
+        <button v-if="!isSending" class="send-button" @click="sendMessage" :disabled="isUploading || isSending || props.isInputDisabled" title="发送">
           <SvgIcon name="send" width="18" height="18" color="white" />
           <span class="button-text">发送</span>
         </button>
@@ -98,6 +99,10 @@ const props = defineProps({
   moduleName: {
     type: String,
     default: ''
+  },
+  isInputDisabled: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -200,6 +205,7 @@ const handleFileChange = async (uploadFile) => {
  * 发送消息
  */
 const sendMessage = () => {
+  if (props.isInputDisabled) return
   if (!inputMessage.value && uploadedImages.value.length === 0 && uploadedFiles.value.length === 0) return
 
   emit('send', {

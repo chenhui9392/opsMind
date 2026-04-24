@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description: 聊天消息服务 - 专门处理聊天相关的消息操作
  * @Date: 2026-03-30 14:26:36
- * @LastEditTime: 2026-04-22 10:00:00
+ * @LastEditTime: 2026-04-24 14:05:28
  * @LastEditors: hui.chenn
  */
 import { sendChatMessage, downloadSoftware } from '../api'
@@ -235,7 +235,6 @@ class ChatMessageService {
     // 尝试解析 JSON
     try {
       const parsed = JSON.parse(content)
-
       // 1. 判断是否有 hasfull 字段
       if (parsed.hasfull !== undefined) {
         // a. hasfull=false 时，显示 tip 内容

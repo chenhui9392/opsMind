@@ -24,12 +24,14 @@
         :showInput="showInput"
         :isSending="isSending"
         :isNewSession="isNewSession"
+        :isInputDisabled="isInputDisabled"
         :systemName="systemName"
         :moduleName="moduleName"
         @update:messages="$emit('update:messages', $event)"
         @update:isSending="$emit('update:isSending', $event)"
         @stop="handleStop"
         @submit-success="handleSubmitSuccess"
+        @refresh-orders="$emit('refresh-orders', $event)"
       />
     </div>
   </div>
@@ -90,6 +92,10 @@ const props = defineProps({
   hasSocketNotification: {
     type: Boolean,
     default: false
+  },
+  isInputDisabled: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -106,7 +112,8 @@ const emit = defineEmits([
   'toggle-sidebar',
   'download-session',
   'new-session',
-  'submit-success'
+  'submit-success',
+  'update:isInputDisabled'
 ])
 
 // 响应式数据
@@ -232,11 +239,11 @@ const handleDownloadSession = () => {
 
 /**
  * 处理提交成功事件
- * 隐藏聊天框，禁止再次聊天
+ * 禁用发送按钮，不隐藏输入框
  */
 const handleSubmitSuccess = () => {
-  // 通知父组件更新 showInput 为 false，隐藏聊天框
-  emit('update:showInput', false)
+  // 禁用发送按钮，不隐藏输入框
+  emit('update:isInputDisabled', true)
   // 同时触发 submit-success 事件，供父组件做其他处理
   emit('submit-success')
 }
