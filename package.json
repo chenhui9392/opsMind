@@ -23,7 +23,7 @@
     "appId": "com.opsmin.app",
     "productName": "AIT Claw",
     "directories": {
-      "output": "release1"
+      "output": "release"
     },
     "defaultArch": "x64",
     "icon": "public/app.png",
@@ -90,7 +90,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "a2ui-vue-engine": "^1.0.10",
+    "a2ui-vue-engine": "^1.0.11",
     "crypto-js": "^4.2.0",
     "element-plus": "^2.13.7",
     "marked": "^17.0.4",
