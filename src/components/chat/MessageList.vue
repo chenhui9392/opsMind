@@ -18,6 +18,8 @@
         @image-click="handleImageClick"
         @file-click="handleFileClick"
         @submit-success="handleSubmitSuccess"
+        @resolved="emit('resolved')"
+        @unresolved="emit('unresolved')"
       />
     </div>
 
@@ -46,7 +48,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['file-click', 'submit-success'])
+const emit = defineEmits(['file-click', 'submit-success', 'resolved', 'unresolved'])
 
 // 响应式数据
 const imagePreview = reactive({
@@ -92,9 +94,10 @@ const handleFileClick = (file) => {
 
 /**
  * 处理提交成功事件
+ * @param {Object} payload - 提交结果数据，可能包含 tip
  */
-const handleSubmitSuccess = () => {
-  emit('submit-success')
+const handleSubmitSuccess = (payload) => {
+  emit('submit-success', payload)
 }
 </script>
 

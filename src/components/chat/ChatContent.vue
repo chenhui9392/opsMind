@@ -5,6 +5,15 @@
       :messages="messages"
       @file-click="downloadFile"
       @submit-success="handleSubmitSuccess"
+      @resolved="handleShowSatisfaction"
+      @unresolved="handleShowSatisfaction"
+    />
+
+    <!-- 满意度评价 -->
+    <SatisfactionCard
+      v-if="showInput && showSatisfaction"
+      class="satisfaction-wrapper"
+      @change="handleSatisfactionChange"
     />
 
     <!-- 消息发送区 -->
@@ -29,6 +38,7 @@
 import { ref, watch, onMounted, nextTick } from 'vue'
 import ChatInput from './ChatInput.vue'
 import MessageList from './MessageList.vue'
+import SatisfactionCard from '../common/SatisfactionCard.vue'
 import chatMessageService from '../../services/chatMessageService'
 
 // Props
@@ -70,10 +80,26 @@ const emit = defineEmits(['update:messages', 'update:isSending', 'stop', 'submit
 const isLoading = ref(false)
 const loadingMessageId = ref(null)
 const isSendingLocal = ref(false)
+const showSatisfaction = ref(false)
 
 // 模板引用
 const messageList = ref(null)
 const chatInputRef = ref(null)
+
+/**
+ * 显示满意度评价卡片，并标记是否已解决卡片为已处理
+ */
+const handleShowSatisfaction = () => {
+  showSatisfaction.value = true
+  // 给 resolve-status 消息添加 resolved 标记
+  const updatedMessages = props.messages.map(msg => {
+    if (msg.sender === 'resolve-status') {
+      return { ...msg, resolved: true }
+    }
+    return msg
+  })
+  emit('update:messages', updatedMessages)
+}
 
 /**
  * 处理显示错误提示
@@ -195,6 +221,10 @@ const downloadFile = (file) => {
 // 监听消息变化
 watch(() => props.messages, () => {
   scrollToBottom()
+  // 如果没有 resolve-status 消息，重置满意度显示
+  if (!props.messages.some(msg => msg.sender === 'resolve-status')) {
+    showSatisfaction.value = false
+  }
 })
 
 // 生命周期钩子
@@ -212,10 +242,20 @@ const resetCascader = () => {
 }
 
 /**
- * 处理提交成功事件
+ * 处理满意度评价
+ * @param {number} value - 评分值 1-5
  */
-const handleSubmitSuccess = () => {
-  emit('submit-success')
+const handleSatisfactionChange = (value) => {
+  console.log('用户满意度评分：', value)
+  // TODO: 调用 API 提交满意度评价
+}
+
+/**
+ * 处理提交成功事件
+ * @param {Object} payload - 提交结果数据，可能包含 tip
+ */
+const handleSubmitSuccess = (payload) => {
+  emit('submit-success', payload)
 }
 
 // 暴露方法给父组件
@@ -232,5 +272,10 @@ defineExpose({
   background-color: #ffffff;
   height: 100%;
   position: relative;
+}
+
+.satisfaction-wrapper {
+  margin: 0 16px;
+  flex-shrink: 0;
 }
 </style>

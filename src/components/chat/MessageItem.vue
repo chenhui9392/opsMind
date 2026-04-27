@@ -1,10 +1,10 @@
 <template>
   <div
     class="message"
-    :class="{ 'message-user': message.sender === 'user', 'message-bot': message.sender === 'bot' }"
+    :class="{ 'message-user': message.sender === 'user', 'message-bot': message.sender === 'bot' || message.sender === 'resolve-status' }"
   >
     <!-- 机器人头像 -->
-    <div class="message-avatar" v-if="message.sender === 'bot'">
+    <div class="message-avatar" v-if="message.sender === 'bot' || message.sender === 'resolve-status'">
       <div class="avatar-icon bot-avatar">
         <img :src="dolphinImg" alt="AI助手" class="bot-avatar-img" />
       </div>
@@ -61,8 +61,17 @@
         </div>
       </div>
 
+      <!-- 是否已解决卡片 -->
+      <div v-if="message.sender === 'resolve-status'" class="resolve-status-wrapper">
+        <ResolveStatusCard
+          :disabled="message.resolved"
+          @resolved="handleResolved"
+          @unresolved="handleUnresolved"
+        />
+      </div>
+
       <!-- 消息底部：时间和复制按钮 -->
-      <div class="message-footer">
+      <div class="message-footer" v-if="message.sender !== 'resolve-status'">
         <span class="message-time">{{ formattedTime }}</span>
         <!-- 复制按钮 -->
         <button
@@ -90,6 +99,7 @@ import { submitWorkOrder } from '../../api'
 import dolphinImg from '../../assets/dolphin.png'
 import userAvatarImg from '../../assets/user_avatar.png'
 import chatMessageService from '../../services/chatMessageService'
+import ResolveStatusCard from '../common/ResolveStatusCard.vue'
 
 // 配置 marked 选项
 marked.setOptions({
@@ -107,7 +117,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-success'])
+const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-success', 'resolved', 'unresolved'])
 
 // 响应式数据
 const copySuccess = ref(false)
@@ -117,11 +127,29 @@ const isSubmitting = ref(false)
 const isSubmitted = ref(false)
 
 // 计算属性
+/**
+ * 渲染 Markdown 文本
+ * 同时将图片链接转换为 <img> 标签显示
+ */
 const renderedText = computed(() => {
   if (!props.message.text) return ''
   const textStr = String(props.message.text)
   const escapedText = textStr.replace(/</g, '&lt;')
-  return marked(escapedText)
+  let html = marked(escapedText)
+
+  // 将指向图片文件的 <a> 标签转换为 <img> 标签
+  const imageExtensions = /\.(png|jpg|jpeg|gif|webp)(\?[^"]*)?$/i
+  html = html.replace(
+    /<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/gi,
+    (match, href, text) => {
+      if (imageExtensions.test(href)) {
+        return `<img src="${href}" alt="${text}" style="max-width:100%;max-height:300px;border-radius:4px;margin:4px 0;display:block;" />`
+      }
+      return match
+    }
+  )
+
+  return html
 })
 
 /**
@@ -162,17 +190,40 @@ const handleA2UIMessage = async (payload) => {
           userName
         })
 
-        console.log('工单提交成功:', result)
+        console.log('工单提交返回:', result)
 
         // 检查接口返回是否成功
         if (result && result.code === 200) {
           isSubmitted.value = true
 
-          // 禁用表单提交按钮
-          disableSubmitButton()
+          // 解析返回的 content
+          const responseContent = result.data?.message?.content
+          let parsedContent = null
+          if (responseContent) {
+            try {
+              parsedContent = JSON.parse(responseContent)
+            } catch (e) {
+              console.log('submit 返回的 content 不是 JSON:', responseContent)
+            }
+          }
 
-          // 通知父组件提交成功，隐藏聊天框
-          emit('submit-success')
+          // 判断 hasfull 字段
+          if (parsedContent && parsedContent.hasfull === false) {
+            // hasfull=false：展示 tip 内容，禁用所有操作按钮
+            const tipText = parsedContent.tip || '工单已提交'
+
+            // 禁用表单提交按钮
+            disableSubmitButton()
+
+            // 在消息列表中追加 tip 消息
+            emit('submit-success', { tip: tipText })
+          } else {
+            // hasfull=true 或其他情况：保持原有表单逻辑
+            // 禁用表单提交按钮
+            disableSubmitButton()
+            // 通知父组件提交成功
+            emit('submit-success')
+          }
         }
       } catch (error) {
         console.error('工单提交失败:', error)
@@ -314,6 +365,20 @@ const handleImageClick = (image, index) => {
 
 const handleFileClick = (file) => {
   emit('file-click', file)
+}
+
+/**
+ * 处理已解决点击
+ */
+const handleResolved = () => {
+  emit('resolved')
+}
+
+/**
+ * 处理未解决点击
+ */
+const handleUnresolved = () => {
+  emit('unresolved')
 }
 
 const getFileIcon = (fileName) => {

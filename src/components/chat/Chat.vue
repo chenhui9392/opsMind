@@ -242,10 +242,24 @@ const handleDownloadSession = () => {
 /**
  * 处理提交成功事件
  * 禁用发送按钮，不隐藏输入框
+ * @param {Object} payload - 提交结果数据，可能包含 tip
  */
-const handleSubmitSuccess = () => {
+const handleSubmitSuccess = (payload) => {
   // 禁用发送按钮，不隐藏输入框
   emit('update:isInputDisabled', true)
+
+  // 如果有 tip 内容，追加到消息列表
+  if (payload && payload.tip) {
+    const tipMessage = {
+      sender: 'bot',
+      text: payload.tip,
+      time: new Date().toLocaleString('zh-CN'),
+      images: []
+    }
+    const updatedMessages = [...props.messages, tipMessage]
+    emit('update:messages', updatedMessages)
+  }
+
   // 同时触发 submit-success 事件，供父组件做其他处理
   emit('submit-success')
 }

@@ -51,7 +51,7 @@
             action="#"
             :auto-upload="false"
             :show-file-list="false"
-            :disabled="uploaderDisabled || isSending"
+            :disabled="uploaderDisabled || isSending || props.isInputDisabled"
             :accept="uploadAccept"
             :on-change="handleFileChange"
             :multiple="true"
@@ -60,7 +60,7 @@
             <template #trigger>
               <button
                 class="attachment-btn"
-                :disabled="uploaderDisabled || isSending"
+                :disabled="uploaderDisabled || isSending || props.isInputDisabled"
                 title="上传文件"
               >
                 <img src="../../assets/link.png" alt="附件" class="attachment-icon" />
@@ -84,6 +84,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { ElUpload } from 'element-plus'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import SystemModuleCascader from '../common/SystemModuleCascader.vue'
 import { uploadImage } from '../../api'

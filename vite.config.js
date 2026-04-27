@@ -29,10 +29,12 @@ export default defineConfig(async ({ mode }) => {
         imports: ['vue', 'vue-router'],
         dts: true
       }),
-      Components({
-        resolvers: [ElementPlusResolver()],
-        dts: true
-      })
+      // Components({
+      //   resolvers: [ElementPlusResolver()],
+      //   dts: 'components.d.ts',
+      //   dirs: ['src/components'],
+      //   deep: true
+      // })
     ],
     base: './',
     server: {

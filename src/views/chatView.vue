@@ -8,6 +8,7 @@
       :currentChatSession="currentChatSession"
       v-model:showInput="showInput"
       v-model:messages="messages"
+      v-model:isInputDisabled="isInputDisabled"
       :isSending="isSending"
       :isCollapsed="isSidebarCollapsed"
       :hasSocketNotification="hasSocketNotification"
@@ -35,6 +36,7 @@
       @navigate-to-session="handleNavigateToSession"
       @update:isSending="isSending = $event"
       @refresh-orders="handleRefreshOrders"
+      @submit-success="handleRefreshOrders"
       @toggle-sidebar="handleToggleSidebarWithNotification"
       @download-session="handleDownloadSession"
     />
@@ -137,10 +139,18 @@ const handleNavigateToSession = async (sessionId) => {
   }
 
   // 更新状态
+  const order = historyOrders.find(contact => contact.id === sessionId);
+  if (order) {
+    showInput.value = true;
+    isInputDisabled.value = order.orderStatus !== 'DRAFT';
+  } else {
+    showInput.value = false;
+    isInputDisabled.value = false;
+  }
+
   messages.value = await messageService.handleNavigateToSession(sessionId, historyOrders);
   // 调用消息服务处理导航
   selectedContact.value = sessionId;
-  showInput.value = false;
 
   // 调用 OrderList 组件的 updateOrder 方法
   if (contactsComponent.value && contactsComponent.value.updateOrder) {

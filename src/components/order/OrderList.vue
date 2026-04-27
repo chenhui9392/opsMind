@@ -121,6 +121,7 @@ const emit = defineEmits([
   'update:selectedContact',
   'update:showInput',
   'update:messages',
+  'update:isInputDisabled',
   'back-to-current',
   'new-order',
   'check-update',
@@ -205,11 +206,12 @@ const selectOrder = async (order) => {
   console.log('OrderList: 选择工单', order)
   const messages = await messageService.selectOrder(order)
   emit('update:selectedContact', order.id)
-  // 只有草稿状态(DRAFT)显示聊天框，其他状态不显示
-  const shouldShowInput = order.orderStatus === 'DRAFT'
-  emit('update:showInput', shouldShowInput)
+  // 所有状态都显示聊天框，非草稿状态禁用输入
+  emit('update:showInput', true)
+  const isDisabled = order.orderStatus !== 'DRAFT'
+  emit('update:isInputDisabled', isDisabled)
   emit('update:messages', messages)
-  console.log('OrderList: 已从缓存获取工单消息', order.id, '显示聊天框:', shouldShowInput)
+  console.log('OrderList: 已从缓存获取工单消息', order.id, '显示聊天框:', true, '输入禁用:', isDisabled)
 }
 
 /**
@@ -224,7 +226,6 @@ const backToCurrentChat = () => {
  * @param {boolean} silent - 是否静默刷新
  */
 const handleRefreshOrders = (silent = false) => {
-  debugger
   if (isRefreshing.value) return
   isRefreshing.value = true
   if (orderItemList.value && orderItemList.value.fetchHistoryOrders) {

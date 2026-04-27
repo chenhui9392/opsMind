@@ -118,9 +118,9 @@ export function convertHistoryToMessages(historyData, options = {}) {
     return []
   }
 
-  const { orderStatus } = options
+  const { orderStatus, orderType } = options
 
-  return historyData.map(item => {
+  const messages = historyData.map(item => {
     // 使用统一的解析逻辑处理 content
     const parsedResult = parseMessageContent(item.content)
 
@@ -136,6 +136,19 @@ export function convertHistoryToMessages(historyData, options = {}) {
       orderStatus: orderStatus
     }
   })
+
+  // 当 orderType=CONSULTATION 且 orderStatus=PENDING 时，添加是否已解决卡片
+  if (orderType === 'CONSULTATION' && orderStatus === 'PENDING') {
+    messages.push({
+      sender: 'resolve-status',
+      text: '',
+      time: '',
+      images: [],
+      orderStatus: orderStatus
+    })
+  }
+
+  return messages
 }
 
 /**
