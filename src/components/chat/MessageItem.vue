@@ -489,7 +489,7 @@ const handleCopy = async () => {
 }
 
 .message-content {
-  padding: 12px 16px;
+  padding: 12px 10px;
   border-radius: 18px;
   margin-bottom: 4px;
   word-wrap: break-word;
@@ -516,7 +516,7 @@ const handleCopy = async () => {
   font-size: 14px;
   line-height: 1.4;
   color: #333;
-  margin-bottom: 8px;
+  //margin-bottom: 8px;
 }
 
 /* 图片消息 */

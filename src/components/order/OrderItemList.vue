@@ -23,7 +23,7 @@
           </div>
           <div class="card-header" >
             <div class="order-title" :class="{ activeTitle: selectedContact === order.id }">{{ order.orderTitle }}</div>
-            <div class="order-count">{{ order.unreadCount }}</div>
+            <div v-if="order.unreadCount > 0" class="order-count">{{ order.unreadCount > 99 ? '99+' : order.unreadCount }}</div>
           </div>
           <div class="card-footer">
           </div>
@@ -495,14 +495,19 @@ defineExpose({
   color: #2260FA;
 }
 
-.order-count{
+.order-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background-color: #E53935;
   color: #ffffff;
-  background: #E53935;
-  border-radius: 16px;
-  width: 32rpx;
-  height: 32rpx;
   font-size: 10px;
-  padding: 1px 5px;
+  font-weight: 500;
+  border-radius: 9px;
+  flex-shrink: 0;
 }
 
 .order-status-tag {
