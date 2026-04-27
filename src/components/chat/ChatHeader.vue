@@ -9,17 +9,18 @@
           @click="toggleSidebar"
           :title="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
         >
-          <SvgIcon
-            :name="isSidebarCollapsed ? 'chevronRight' : 'chevronLeft'"
-            width="18"
-            height="18"
-          />
+<!--          <SvgIcon-->
+<!--            :name="isSidebarCollapsed ? 'chevronRight' : 'chevronLeft'"-->
+<!--            width="18"-->
+<!--            height="18"-->
+<!--          />-->
+          <img :src="menuImg" class="bot-avatar-img"/>
           <!-- 红点通知 -->
           <span v-if="hasSocketNotification" class="notification-dot"></span>
         </button>
 
         <button class="new-session-button" @click="createNewSession" title="新建会话">
-          <SvgIcon name="plus" width="16" height="16" />
+          <img :src="chatAddImg" class="bot-avatar-img"/>
         </button>
 
         <div class="header-info">
@@ -45,6 +46,8 @@
 import { computed } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { isDev } from '../../config/env.js'
+import menuImg from '../../assets/menu.png'
+import chatAddImg from '../../assets/chat_add2.png'
 
 // Props
 const props = defineProps({
@@ -258,5 +261,11 @@ const handleDownload = () => {
   border-radius: 50%;
   border: 2px solid #fafafa;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.bot-avatar-img {
+  width: 16px;
+  height: 16px;
+  object-fit: cover;
 }
 </style>

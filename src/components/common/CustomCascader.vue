@@ -1,6 +1,6 @@
 <!--
  * @Author: hui.chenn
- * @Description: 
+ * @Description:
  * @Date: 2026-04-23 14:05:20
  * @LastEditTime: 2026-04-23 14:19:37
  * @LastEditors: hui.chenn
@@ -14,13 +14,14 @@
       :class="{ 'has-value': hasValue, 'is-open': isOpen, 'is-disabled': disabled }"
       @click="toggleDropdown"
     >
-      <span v-if="hasValue" class="selected-text">{{ displayText }}</span>
-      <span v-else class="placeholder-text">{{ placeholder }}</span>
-      <span class="arrow-icon" :class="{ 'is-open': isOpen }">
-        <svg viewBox="0 0 24 24" width="16" height="16">
-          <path fill="currentColor" d="M7 10l5 5 5-5z"/>
+      <span class="trigger-icon">
+        <svg viewBox="0 0 24 24" width="14" height="14">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+          <rect x="7" y="7" width="6" height="6" rx="1" ry="1" fill="currentColor"/>
         </svg>
       </span>
+      <span v-if="hasValue" class="selected-text">{{ displayText }}</span>
+      <span v-else class="placeholder-text">{{ placeholder }}</span>
     </div>
 
     <!-- 下拉面板 -->
@@ -249,6 +250,11 @@ const handleNodeClick = (item, level) => {
     emit('update:modelValue', valuePath)
     emit('change', valuePath)
     closeDropdown()
+  } else {
+    // 有子节点，面板保持打开，更新下拉面板位置防止断开
+    nextTick(() => {
+      updateDropdownPosition()
+    })
   }
 }
 
@@ -382,75 +388,79 @@ defineExpose({
 .custom-cascader-trigger {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-  min-height: 32px;
-  border-radius: 8px;
-  background-color: #ffffff;
-  border: 1px solid #dcdfe6;
+  gap: 4px;
+  padding: 4px 8px;
+  min-height: 28px;
+  border-radius: 4px;
+  //background-color: #ffffff;
+  border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .custom-cascader-trigger:hover:not(.is-disabled) {
-  border-color: #c0c4cc;
+  background-color: #f5f5f5;
 }
 
 .custom-cascader-trigger.is-open {
-  border-color: #6A70D7;
+  background-color: #f5f5f5;
 }
 
 .custom-cascader-trigger.is-disabled {
   background-color: #f5f7fa;
-  border-color: #e4e7ed;
   cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 触发器图标 */
+.trigger-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  color: #8c8c8c;
+  flex-shrink: 0;
+  height: 14px;
+  line-height: 1;
 }
 
 /* 占位文本 */
 .placeholder-text {
-  color: #a8abb2;
+  color: #8c8c8c;
   font-weight: 400;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 14px;
 }
 
 /* 选中文本 - 默认状态 */
 .selected-text {
-  color: #606266;
+  color: #333;
   font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 14px;
 }
 
-/* 箭头图标 */
-.arrow-icon {
-  display: flex;
-  align-items: center;
-  color: #a8abb2;
-  transition: transform 0.2s ease;
-  margin-left: 8px;
-}
+/* 选中状态样式 */
 
-.arrow-icon.is-open {
-  transform: rotate(180deg);
-  color: #6A70D7;
-}
-
-/* 选中状态样式 - 紫色主题 */
-.custom-cascader-trigger.has-value {
-  background-color: #f0f2ff;
-  border: none;
-  box-shadow: none;
-}
 
 .custom-cascader-trigger.has-value .selected-text {
-  color: #6A70D7;
+  color: #2260FA;
   font-weight: bold;
 }
 
-.custom-cascader-trigger.has-value .arrow-icon {
-  color: #5c6bc0;
+.custom-cascader-trigger.has-value .trigger-icon {
+  color: #2260FA;
 }
 
 .custom-cascader-trigger.has-value:hover:not(.is-disabled) {
-  background-color: #e8eaf6;
+  background-color: #e0eaff;
 }
 
 /* 下拉面板样式 */
@@ -490,7 +500,7 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  font-size: 14px;
+  font-size: 13px;
   color: #606266;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -531,6 +541,7 @@ defineExpose({
   align-items: center;
   margin-left: 8px;
   color: #c0c4cc;
+  flex-shrink: 0;
 }
 
 .cascader-node.is-active .node-arrow {

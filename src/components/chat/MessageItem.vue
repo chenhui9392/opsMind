@@ -12,7 +12,8 @@
     <!-- 用户头像 -->
     <div class="message-avatar user-avatar-wrapper" v-if="message.sender === 'user'">
       <div class="avatar-icon user-avatar">
-        <SvgIcon name="user" width="20" height="20" />
+<!--        <SvgIcon name="user" width="20" height="20" />-->
+        <img :src="userAvatarImg" class="bot-avatar-img"/>
       </div>
     </div>
     <div class="message-wrapper">
@@ -87,6 +88,7 @@ import { CopyDocument } from '@element-plus/icons-vue'
 import { A2UIRoot } from 'a2ui-vue-engine'
 import { submitWorkOrder } from '../../api'
 import dolphinImg from '../../assets/dolphin.png'
+import userAvatarImg from '../../assets/user_avatar.png'
 import chatMessageService from '../../services/chatMessageService'
 
 // 配置 marked 选项
@@ -469,15 +471,8 @@ const handleCopy = async () => {
   color: white;
 }
 
-/* 用户头像样式 - 紫色渐变 */
-.avatar-icon.user-avatar {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-}
-
 /* 机器人头像样式 - 使用 app.png 图片 */
 .avatar-icon.bot-avatar {
-  background: transparent;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -501,16 +496,16 @@ const handleCopy = async () => {
 }
 
 .message-bot .message-content {
-  background-color: #F8FAFC;
+  background-color: #F3F5FA;
   border: 1px solid #e0e0e0;
-  border-top-left-radius: 4px;
+  border-radius: 2px 12px 12px 12px;
 }
 
 .message-user .message-content {
   background-color: #EEF2FF;
   color: #1f2937;
-  border: 1px solid #c7d2fe;
-  border-top-right-radius: 4px;
+  border: 1px solid #CED7FE;
+  border-radius: 12px 4px 12px 12px;
 }
 
 .message-user .message-text {

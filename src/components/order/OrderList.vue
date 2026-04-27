@@ -8,14 +8,15 @@
       <!-- 用户信息区域 -->
       <div class="user-info-section">
         <div class="user-avatar">
-          <SvgIcon name="user" width="20" height="20" />
+<!--          <SvgIcon name="user" width="20" height="20" />-->
+          <img :src="userAvatarImg" class="bot-avatar-img"/>
         </div>
         <span class="user-name">{{ userName }}</span>
       </div>
 
       <!-- 新建工单按钮 -->
       <button class="new-order-button" @click="handleNewOrder">
-        <SvgIcon name="plus" width="16" height="16" />
+        <img :src="chatAdd" class="bot-chat-img"/>
         <span>新建会话</span>
       </button>
 
@@ -52,20 +53,20 @@
     </div>
 
     <!-- 侧边栏展开/收起按钮 -->
-    <button
-      class="sidebar-toggle-btn"
-      :class="{ 'collapsed': isCollapsed, 'has-notification': hasSocketNotification && isCollapsed }"
-      @click="handleToggleSidebarWithNotification"
-      :title="isCollapsed ? '展开侧边栏' : '收起侧边栏'"
-    >
-      <SvgIcon
-        :name="isCollapsed ? 'chevronRight' : 'chevronLeft'"
-        width="18"
-        height="18"
-      />
-      <!-- 红点通知 - 只在侧边栏收起时显示 -->
-      <span v-if="hasSocketNotification && isCollapsed" class="notification-dot"></span>
-    </button>
+<!--    <button-->
+<!--      class="sidebar-toggle-btn"-->
+<!--      :class="{ 'collapsed': isCollapsed, 'has-notification': hasSocketNotification && isCollapsed }"-->
+<!--      @click="handleToggleSidebarWithNotification"-->
+<!--      :title="isCollapsed ? '展开侧边栏' : '收起侧边栏'"-->
+<!--    >-->
+<!--      <SvgIcon-->
+<!--        :name="isCollapsed ? 'chevronRight' : 'chevronLeft'"-->
+<!--        width="18"-->
+<!--        height="18"-->
+<!--      />-->
+<!--      &lt;!&ndash; 红点通知 - 只在侧边栏收起时显示 &ndash;&gt;-->
+<!--      <span v-if="hasSocketNotification && isCollapsed" class="notification-dot"></span>-->
+<!--    </button>-->
   </div>
 </template>
 
@@ -78,6 +79,8 @@ import messageService from '../../services/messageService'
 import { useAuth } from '../../composables/useAuth'
 import { getSystemUsername } from '../../utils/system'
 import { createResizeMethods } from '../../utils/resizeHandler'
+import userAvatarImg from '../../assets/user_avatar.png'
+import chatAdd from "../../assets/chat_add.png";
 
 // Props
 const props = defineProps({
@@ -390,7 +393,7 @@ defineExpose({
 
 .contacts {
   flex: 1;
-  border-right: 1px solid #e8e8e8;
+  border-right: 1px solid #F8F8FB;
   background-color: #F8FAFC;
   display: flex;
   flex-direction: column;
@@ -414,7 +417,6 @@ defineExpose({
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -435,7 +437,7 @@ defineExpose({
   gap: 8px;
   margin: 12px 16px;
   padding: 10px 16px;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: #2260FA;
   color: white;
   border: none;
   border-radius: 8px;
@@ -496,5 +498,16 @@ defineExpose({
 
 .resize-handle:active {
   background-color: rgba(99, 102, 241, 0.5);
+}
+
+.bot-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bot-chat-img{
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
 }
 </style>

@@ -16,17 +16,16 @@
         @click="selectOrder(order)"
       >
         <!-- 状态小圆点 -->
-        <div class="status-dot" :class="{ 'active-dot': selectedContact === order.id }"></div>
         <div class="card-content">
           <div class="card-header">
-            <div class="order-title">{{ order.orderTitle }}</div>
             <div class="order-status-tag" :class="getStatusClass(order.orderStatus)">{{ getStatusText(order.orderStatus) }}</div>
+            <div class="order-datetime">{{ formatDate(order.createTime) }}</div>
           </div>
-          <div class="order-unread" v-if="order.unreadCount && order.unreadCount > 0">
-            {{ order.unreadCount }}条未读消息
+          <div class="card-header" >
+            <div class="order-title" :class="{ activeTitle: selectedContact === order.id }">{{ order.orderTitle }}</div>
+            <div class="order-count">{{ order.unreadCount }}</div>
           </div>
           <div class="card-footer">
-            <div class="order-datetime">{{ formatDate(order.createTime) }}</div>
           </div>
         </div>
       </div>
@@ -418,14 +417,13 @@ defineExpose({
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 14px;
-  margin-bottom: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
   background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  border: 1px solid #EEEDF6;
   cursor: pointer;
   transition: all 0.25s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   position: relative;
   z-index: 1;
 }
@@ -439,9 +437,7 @@ defineExpose({
 }
 
 .order-card.active {
-  background-color: #eef2ff;
-  border-color: #6366f1;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+  border-color: #2260FA;
 }
 
 /* 状态小圆点 */
@@ -486,8 +482,8 @@ defineExpose({
 
 .order-title {
   font-weight: 600;
-  color: #1f2937;
-  font-size: 14px;
+  color: #303133;
+  font-size: 12px;
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -495,22 +491,38 @@ defineExpose({
   line-height: 1.4;
 }
 
+.activeTitle{
+  color: #2260FA;
+}
+
+.order-count{
+  color: #ffffff;
+  background: #E53935;
+  border-radius: 16px;
+  width: 32rpx;
+  height: 32rpx;
+  font-size: 10px;
+  padding: 1px 5px;
+}
+
 .order-status-tag {
   font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 2px 6px;
+  border-radius: 6px;
   flex-shrink: 0;
   font-weight: 500;
 }
 
 .order-status-tag.status-draft {
   color: #f59e0b;
-  background-color: rgba(245, 158, 11, 0.1);
+  background-color: #FAF1EB;
+  border: 1px solid #F7D8C1;
 }
 
 .order-status-tag.status-created {
   color: #10b981;
-  background-color: rgba(16, 185, 129, 0.1);
+  background-color: #ECFBF9;
+  border: 1px solid #C2F0E7;
 }
 
 .order-unread {
@@ -528,7 +540,7 @@ defineExpose({
 
 .order-datetime {
   font-size: 11px;
-  color: #9ca3af;
+  color: #909399;
 }
 
 /* 加载更多状态 */
