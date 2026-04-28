@@ -24,7 +24,7 @@
       @mousedown="dragController.handleMouseDown"
       @mouseup="dragController.handleMouseUp"
     >
-      <img src="/app.png" alt="AIT Claw" />
+      <img src="/app.png" alt="海豚" />
       <!-- 未读消息红点 -->
 <!--      <div v-if="unreadCount > 0" class="notification-badge">-->
 <!--        <span class="notification-count">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>-->

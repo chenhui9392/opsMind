@@ -29,7 +29,7 @@
             <span class="logo-icon">🐬</span>
           </div>
           <!-- 品牌名称 -->
-          <h1 class="brand-title">AIT Claw</h1>
+          <h1 class="brand-title">海豚</h1>
           <!-- 副标题 -->
           <p class="brand-subtitle">欢迎回来，请登录您的账号</p>
         </div>

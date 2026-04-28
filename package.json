@@ -21,7 +21,7 @@
   },
   "build": {
     "appId": "com.opsmin.app",
-    "productName": "AIT Claw",
+    "productName": "海豚",
     "directories": {
       "output": "release"
     },
@@ -90,7 +90,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "a2ui-vue-engine": "^1.0.11",
+    "a2ui-vue-engine": "^1.0.12",
     "crypto-js": "^4.2.0",
     "element-plus": "^2.13.7",
     "marked": "^17.0.4",

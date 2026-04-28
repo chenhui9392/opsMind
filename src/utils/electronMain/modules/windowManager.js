@@ -50,7 +50,7 @@ class WindowManager {
       }
     } else {
       // 开发环境
-      iconPath = path.join(__dirname, '../../../public', 'app.png')
+      iconPath = path.join(__dirname, '../../../../public', 'app.png')
     }
 
     return fs.existsSync(iconPath) ? iconPath : null
@@ -66,6 +66,7 @@ class WindowManager {
     const windowOptions = {
       width: 1000,
       height: 700,
+      title: '海豚',
       webPreferences: {
         preload: path.join(app.getAppPath(), 'preload.js'),
         devTools: true
