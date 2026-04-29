@@ -3,16 +3,20 @@
     <MessageList
       ref="messageList"
       :messages="messages"
+      :conversation-id="conversationId"
       @file-click="downloadFile"
       @submit-success="handleSubmitSuccess"
-      @resolved="handleShowSatisfaction"
-      @unresolved="handleShowSatisfaction"
+      @resolved="handleResolved"
+      @unresolved="handleUnresolved"
     />
 
     <!-- 满意度评价 -->
     <SatisfactionCard
-      v-if="showInput && showSatisfaction"
+      v-if="showInput && (showSatisfaction || !!historyCustomerSatisfaction || !!historyFeedbackRecord)"
       class="satisfaction-wrapper"
+      :conversation-id="conversationId"
+      :disabled="!!historyCustomerSatisfaction"
+      :customer-satisfaction="historyCustomerSatisfaction || undefined"
       @change="handleSatisfactionChange"
     />
 
@@ -35,11 +39,27 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { ref, watch, onMounted, nextTick, computed } from 'vue'
 import ChatInput from './ChatInput.vue'
 import MessageList from './MessageList.vue'
 import SatisfactionCard from '../common/SatisfactionCard.vue'
 import chatMessageService from '../../services/chatMessageService'
+
+// 从消息列表中提取历史满意度评价
+const useHistorySatisfaction = (messages) => {
+  return computed(() => {
+    const msg = messages.value?.find(msg => msg.sender === 'satisfaction-status')
+    return msg?.customerSatisfaction || null
+  })
+}
+
+// 从消息列表中提取历史解决状态
+const useHistoryFeedbackRecord = (messages) => {
+  return computed(() => {
+    const msg = messages.value?.find(msg => msg.sender === 'resolve-status')
+    return msg?.feedbackRecord || null
+  })
+}
 
 // Props
 const props = defineProps({
@@ -82,14 +102,42 @@ const loadingMessageId = ref(null)
 const isSendingLocal = ref(false)
 const showSatisfaction = ref(false)
 
+// 历史会话满意度评价（从消息列表中提取）
+const historyCustomerSatisfaction = useHistorySatisfaction(computed(() => props.messages))
+
+// 历史会话解决状态（从消息列表中提取）
+const historyFeedbackRecord = useHistoryFeedbackRecord(computed(() => props.messages))
+
+// 当前会话ID
+const conversationId = computed(() => {
+  // 建立对 messages 的依赖，确保消息列表更新时重新获取
+  props.messages
+  return chatMessageService.getCurrentOrderId() || ''
+})
+
 // 模板引用
 const messageList = ref(null)
 const chatInputRef = ref(null)
 
 /**
- * 显示满意度评价卡片，并标记是否已解决卡片为已处理
+ * 处理已解决点击
  */
-const handleShowSatisfaction = () => {
+const handleResolved = () => {
+  showSatisfaction.value = true
+  // 给 resolve-status 消息添加 resolved 标记
+  const updatedMessages = props.messages.map(msg => {
+    if (msg.sender === 'resolve-status') {
+      return { ...msg, resolved: true }
+    }
+    return msg
+  })
+  emit('update:messages', updatedMessages)
+}
+
+/**
+ * 处理未解决点击
+ */
+const handleUnresolved = () => {
   showSatisfaction.value = true
   // 给 resolve-status 消息添加 resolved 标记
   const updatedMessages = props.messages.map(msg => {
@@ -247,7 +295,6 @@ const resetCascader = () => {
  */
 const handleSatisfactionChange = (value) => {
   console.log('用户满意度评分：', value)
-  // TODO: 调用 API 提交满意度评价
 }
 
 /**

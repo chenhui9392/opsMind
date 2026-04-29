@@ -73,6 +73,10 @@ class SocketConnection {
 
     // 连接配置
     this.queryParams = options.queryParams || {}
+
+    // 连接 Promise 的 resolve/reject 引用（防止 Promise 泄漏）
+    this._connectResolve = null
+    this._connectReject = null
   }
 
   /**
@@ -124,6 +128,9 @@ class SocketConnection {
     this.isConnecting = true
 
     return new Promise((resolve, reject) => {
+      this._connectResolve = resolve
+      this._connectReject = reject
+
       try {
         const url = this._buildUrl()
 
@@ -144,6 +151,9 @@ class SocketConnection {
           // 通知 open 监听器
           this._notifyListeners('open', { type: 'open', event, connectionId: this.connectionId })
 
+          // 清理 Promise 引用
+          this._connectResolve = null
+          this._connectReject = null
           resolve()
         }
 
@@ -156,6 +166,13 @@ class SocketConnection {
 
           this.isConnected = false
           this.isConnecting = false
+
+          // 如果连接 Promise 还未 settle，先 reject
+          if (this._connectReject) {
+            this._connectReject(new Error(`连接被关闭: ${event.code} ${event.reason}`))
+            this._connectReject = null
+            this._connectResolve = null
+          }
 
           // 通知 close 监听器
           this._notifyListeners('close', {
@@ -179,6 +196,13 @@ class SocketConnection {
           console.error(`[SocketConnection:${this.connectionId}] 连接错误:`, error)
           this.isConnecting = false
 
+          // 拒绝连接 Promise，防止泄漏
+          if (this._connectReject) {
+            this._connectReject(error)
+            this._connectReject = null
+            this._connectResolve = null
+          }
+
           // 通知 error 监听器
           this._notifyListeners('error', { type: 'error', error, connectionId: this.connectionId })
         }
@@ -189,7 +213,11 @@ class SocketConnection {
       } catch (error) {
         console.error(`[SocketConnection:${this.connectionId}] 连接失败:`, error)
         this.isConnecting = false
-        reject(error)
+        if (this._connectReject) {
+          this._connectReject(error)
+          this._connectReject = null
+          this._connectResolve = null
+        }
       }
     })
   }
@@ -240,9 +268,9 @@ class SocketConnection {
   send(message) {
     return new Promise((resolve, reject) => {
       if (!this.socket || !this.isConnected) {
-        // 离线时将消息加入队列
+        // 离线时将消息加入队列，连接成功后自动发送
         this.messageQueue.push(message)
-        reject(new Error(`[SocketConnection:${this.connectionId}] Socket 未连接，消息已加入队列`))
+        resolve()
         return
       }
 

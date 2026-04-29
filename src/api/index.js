@@ -97,3 +97,12 @@ export const getSystemConfigTree = () => {
 export const submitWorkOrder = (params) => {
   return post(`${API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/submit`, params)
 }
+
+/**
+ * 更新工单接口
+ * @param {Object} params - 包含id、feedbackRecord、customerSatisfaction等参数
+ * @returns {Promise<Object>}
+ */
+export const updateOrder = (params) => {
+  return post(`${API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/updateUserFeedback`, params)
+}

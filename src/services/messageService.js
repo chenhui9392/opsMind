@@ -29,13 +29,20 @@ class MessageService {
     console.log('选择工单:', order)
     this.chatService.currentChatSession = 0
     this.chatService.isNewSession = false
+    this.chatService.currentConversationId = order.conversationId
+    this.chatService.currentOrderId = order.id
 
     // 获取工单详情
     try {
       const response = await getHistoryOrderDetail(order.conversationId)
       if (response) {
         // 将详情数据转换为消息格式，传递工单状态
-        const messages = convertHistoryToMessages(response, { orderStatus: order.orderStatus, orderType: order.orderType })
+        const messages = convertHistoryToMessages(response, {
+          orderStatus: order.orderStatus,
+          orderType: order.orderType,
+          feedbackRecord: order.feedbackRecord,
+          customerSatisfaction: order.customerSatisfaction
+        })
         // 保存到消息存储
         this.chatService.messageStore[order.id] = [...messages]
         return messages

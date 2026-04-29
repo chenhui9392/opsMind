@@ -392,7 +392,7 @@ defineExpose({
   padding: 4px 8px;
   min-height: 28px;
   border-radius: 4px;
-  //background-color: #ffffff;
+  /* background-color: #ffffff; */
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;

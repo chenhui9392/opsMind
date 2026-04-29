@@ -1,6 +1,11 @@
-const { app, BrowserWindow, session } = require('electron')
+const { app, BrowserWindow, session, protocol, net } = require('electron')
 const path = require('path')
 const fs = require('fs')
+
+// 注册 app:// 自定义协议（必须在 app.ready 之前）
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }
+])
 
 // 导入模块
 const windowManager = require('./modules/windowManager')
@@ -69,8 +74,16 @@ const getSystemUsername = () => {
 
 // 应用准备就绪
 app.whenReady().then(() => {
+  // 注册 app:// 协议处理器
+  protocol.handle('app', (request) => {
+    const { pathname } = new URL(request.url)
+    const filePath = path.join(app.getAppPath(), pathname)
+    return net.fetch('file://' + filePath)
+  })
+  console.log('app:// protocol handler registered')
+
   console.log('System username:', getSystemUsername())
-  
+
   // 禁用跨域限制 (CORS)
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     // 检查是否已存在Access-Control-Allow-Origin头

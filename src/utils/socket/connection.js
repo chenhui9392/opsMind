@@ -46,7 +46,7 @@ function handleSocketMessage(data) {
   console.log('[SocketConnectionService] 收到消息:', data)
   console.log('[SocketConnectionService] 消息类型:', data.type)
 
-  // 根据[object Object]消息类型分发处理
+  // 根据消息类型分发处理
   switch (data.type) {
     case 'raw':
       // 处理原始非 JSON 格式消息
@@ -94,7 +94,7 @@ function handleBroadcastMessage(data) {
 
   // 通过 IPC 发送未读消息通知到悬浮球窗口
   // 悬浮球和 ChatHeader 都会收到此通知，各自维护自己的计数
-  if (data.type === 'broadcast' && data.message) {
+  if (data.message) {
     console.log('[SocketConnectionService] 发送未读消息通知到悬浮球')
     if (window.mainWindowAPI && window.mainWindowAPI.notifyUnreadMessage) {
       window.mainWindowAPI.notifyUnreadMessage(data)

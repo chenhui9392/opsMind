@@ -12,29 +12,27 @@
     <!-- 用户头像 -->
     <div class="message-avatar user-avatar-wrapper" v-if="message.sender === 'user'">
       <div class="avatar-icon user-avatar">
-<!--        <SvgIcon name="user" width="20" height="20" />-->
         <img :src="userAvatarImg" class="bot-avatar-img"/>
       </div>
     </div>
     <div class="message-wrapper">
       <!-- 表单信息渲染（当 hasFull=true 时） -->
-      <div v-if="message.hasFull && message.formInfo" class="message-form-container" style="position: relative;">
-        <A2UIRoot
-          ref="a2uiRootRef"
-          @message="handleA2UIMessage"
-          @complete="handleA2UIComplete"
-        />
-        <!-- 提交 loading 遮罩 -->
-        <div v-if="isSubmitting" class="form-loading-overlay">
-          <div class="form-loading-spinner"></div>
-          <div class="form-loading-text">提交中...</div>
-        </div>
-      </div>
+      <A2UIForm
+        v-if="message.hasFull && message.formInfo"
+        :form-info="message.formInfo"
+        :has-full="message.hasFull"
+        :raw-content="message.rawContent"
+        :order-status="message.orderStatus"
+        @form-submit="handleFormSubmit"
+        @submit-success="handleSubmitSuccess"
+      />
 
       <!-- 消息内容 -->
       <div class="message-content" v-if="message.text">
         <!-- 文本 -->
-        <div class="message-text markdown-body" v-html="renderedText"></div>
+        <div class="message-text">
+          <MarkdownRenderer :content="message.text" />
+        </div>
       </div>
       <!-- 图片 -->
       <div v-if="message.images && message.images.length > 0" class="message-images">
@@ -65,6 +63,8 @@
       <div v-if="message.sender === 'resolve-status'" class="resolve-status-wrapper">
         <ResolveStatusCard
           :disabled="message.resolved"
+          :conversation-id="conversationId"
+          :feedback-record="message.feedbackRecord"
           @resolved="handleResolved"
           @unresolved="handleUnresolved"
         />
@@ -90,29 +90,24 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { marked } from 'marked'
+import { ref, computed } from 'vue'
+import MarkdownRenderer from '../common/MarkdownRenderer.vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import { CopyDocument } from '@element-plus/icons-vue'
-import { A2UIRoot } from 'a2ui-vue-engine'
-import { submitWorkOrder } from '../../api'
+import A2UIForm from './A2UIForm.vue'
 import dolphinImg from '../../assets/dolphin.png'
 import userAvatarImg from '../../assets/user_avatar.png'
-import chatMessageService from '../../services/chatMessageService'
 import ResolveStatusCard from '../common/ResolveStatusCard.vue'
-
-// 配置 marked 选项
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-  sanitize: false
-})
 
 // Props
 const props = defineProps({
   message: {
     type: Object,
     required: true
+  },
+  conversationId: {
+    type: String,
+    default: ''
   }
 })
 
@@ -122,201 +117,8 @@ const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-su
 // 响应式数据
 const copySuccess = ref(false)
 const copyTimer = ref(null)
-const a2uiRootRef = ref(null)
-const isSubmitting = ref(false)
-const isSubmitted = ref(false)
 
-// 计算属性
-/**
- * 渲染 Markdown 文本
- * 同时将图片链接转换为 <img> 标签显示
- */
-const renderedText = computed(() => {
-  if (!props.message.text) return ''
-  const textStr = String(props.message.text)
-  const escapedText = textStr.replace(/</g, '&lt;')
-  let html = marked(escapedText)
 
-  // 将指向图片文件的 <a> 标签转换为 <img> 标签
-  const imageExtensions = /\.(png|jpg|jpeg|gif|webp)(\?[^"]*)?$/i
-  html = html.replace(
-    /<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/gi,
-    (match, href, text) => {
-      if (imageExtensions.test(href)) {
-        return `<img src="${href}" alt="${text}" style="max-width:100%;max-height:300px;border-radius:4px;margin:4px 0;display:block;" />`
-      }
-      return match
-    }
-  )
-
-  return html
-})
-
-/**
- * 处理 A2UI 消息
- */
-const handleA2UIMessage = async (payload) => {
-  if(payload.type === 'action') {
-    const eventName = payload.payload.eventName
-    emit('form-submit', eventName)
-
-    // 处理提交工单事件
-    if (eventName === 'submitWorkOrder') {
-      // 如果已经提交成功，不再处理
-      if (isSubmitted.value) {
-        return
-      }
-
-      try {
-        isSubmitting.value = true
-
-        // 获取聊天接口返回的原始 content JSON 字符串作为 submitJson
-        const submitJson = props.message.rawContent
-        if (!submitJson) {
-          console.error('原始 content 数据不存在')
-          isSubmitting.value = false
-          return
-        }
-
-        // 获取当前会话信息
-        const conversationId = chatMessageService.getCurrentConversationId()
-        const systemName = chatMessageService.getCurrentSystemName()
-        const userName = chatMessageService.getCurrentUserName()
-
-        const result = await submitWorkOrder({
-          submitJson,
-          conversationId,
-          systemName,
-          userName
-        })
-
-        console.log('工单提交返回:', result)
-
-        // 检查接口返回是否成功
-        if (result && result.code === 200) {
-          isSubmitted.value = true
-
-          // 解析返回的 content
-          const responseContent = result.data?.message?.content
-          let parsedContent = null
-          if (responseContent) {
-            try {
-              parsedContent = JSON.parse(responseContent)
-            } catch (e) {
-              console.log('submit 返回的 content 不是 JSON:', responseContent)
-            }
-          }
-
-          // 判断 hasfull 字段
-          if (parsedContent && parsedContent.hasfull === false) {
-            // hasfull=false：展示 tip 内容，禁用所有操作按钮
-            const tipText = parsedContent.tip || '工单已提交'
-
-            // 禁用表单提交按钮
-            disableSubmitButton()
-
-            // 在消息列表中追加 tip 消息
-            emit('submit-success', { tip: tipText })
-          } else {
-            // hasfull=true 或其他情况：保持原有表单逻辑
-            // 禁用表单提交按钮
-            disableSubmitButton()
-            // 通知父组件提交成功
-            emit('submit-success')
-          }
-        }
-      } catch (error) {
-        console.error('工单提交失败:', error)
-      } finally {
-        isSubmitting.value = false
-      }
-    }
-  }
-}
-
-/**
- * 禁用表单提交按钮
- * 通过更新 formInfo 中的按钮配置来禁用提交按钮
- */
-const disableSubmitButton = () => {
-  if (a2uiRootRef.value && props.message.formInfo) {
-    try {
-      // 解析当前的 formInfo
-      let nodeList = props.message.formInfo
-      if (typeof nodeList === 'string') {
-        nodeList = JSON.parse(nodeList)
-      }
-
-      // 查找提交按钮节点并更新 disabled 属性
-      const updatedNodeList = nodeList.map(node => {
-        if (node.id === 'submit-btn') {
-          return {
-            ...node,
-            disabled: true
-          }
-        }
-        return node
-      })
-
-      // 重新渲染整个表单
-      a2uiRootRef.value.processMessage({
-        type: 'node',
-        node: updatedNodeList
-      })
-    } catch (error) {
-      console.error('禁用提交按钮失败:', error)
-    }
-  }
-}
-
-/**
- * 处理 A2UI 完成事件
- */
-const handleA2UIComplete = () => {
-  console.log('A2UI Complete')
-}
-
-/**
- * 处理 formInfo 渲染
- */
-const processFormInfo = () => {
-  if (props.message.hasFull && props.message.formInfo && a2uiRootRef.value) {
-    const formInfoData = props.message.formInfo
-
-    // 如果 formInfo 是字符串，先解析成数组
-    let nodeList = formInfoData
-    if (typeof formInfoData === 'string') {
-      try {
-        nodeList = JSON.parse(formInfoData)
-      } catch (e) {
-        console.error('Failed to parse formInfo:', e)
-        return
-      }
-    }
-
-    // 检查是否是数组
-    if (Array.isArray(nodeList) && nodeList.length > 0) {
-      // 如果是从历史会话进入且工单状态为【已创建】（非 DRAFT），禁用提交按钮
-      const orderStatus = props.message.orderStatus
-      if (orderStatus && orderStatus !== 'DRAFT') {
-        nodeList = nodeList.map(node => {
-          if (node.id === 'submit-btn') {
-            return {
-              ...node,
-              disabled: true
-            }
-          }
-          return node
-        })
-      }
-
-      a2uiRootRef.value.processMessage({
-        type: 'node',
-        node: nodeList
-      })
-    }
-  }
-}
 
 /**
  * 格式化时间，只显示时分
@@ -341,23 +143,6 @@ const formattedTime = computed(() => {
   return props.message.time
 })
 
-// 监听消息变化，处理 formInfo（不使用 immediate，等组件挂载后才处理）
-watch(() => props.message, (newVal, oldVal) => {
-  // 只在消息变化时处理，初次加载由 onMounted 处理
-  if (newVal !== oldVal) {
-    nextTick(() => {
-      processFormInfo()
-    })
-  }
-})
-
-// 生命周期钩子
-onMounted(() => {
-  nextTick(() => {
-    processFormInfo()
-  })
-})
-
 // 方法
 const handleImageClick = (image, index) => {
   emit('image-click', image, props.message.images, index)
@@ -365,6 +150,20 @@ const handleImageClick = (image, index) => {
 
 const handleFileClick = (file) => {
   emit('file-click', file)
+}
+
+/**
+ * 处理表单提交事件
+ */
+const handleFormSubmit = (eventName) => {
+  emit('form-submit', eventName)
+}
+
+/**
+ * 处理表单提交成功事件
+ */
+const handleSubmitSuccess = (payload) => {
+  emit('submit-success', payload)
 }
 
 /**
@@ -477,6 +276,21 @@ const handleCopy = async () => {
   min-width: 300px;
 }
 
+/* 修复 a2ui 组件图标样式被全局样式覆盖的问题 */
+.message-form-container ::v-deep(.card-header-box) {
+  box-sizing: content-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.message-form-container ::v-deep(.card-header-icon) {
+  display: block;
+  max-width: none;
+  max-height: none;
+}
+
 /* 表单提交 loading 遮罩 */
 .form-loading-overlay {
   position: absolute;
@@ -581,7 +395,7 @@ const handleCopy = async () => {
   font-size: 14px;
   line-height: 1.4;
   color: #333;
-  //margin-bottom: 8px;
+  /* margin-bottom: 8px; */
 }
 
 /* 图片消息 */
@@ -745,135 +559,5 @@ const handleCopy = async () => {
   height: 12px;
 }
 
-/* Markdown样式 */
-.markdown-body {
-  font-size: 14px;
-  line-height: 1.6;
-}
 
-.markdown-body h1,
-.markdown-body h2,
-.markdown-body h3,
-.markdown-body h4,
-.markdown-body h5,
-.markdown-body h6 {
-  margin-top: 20px;
-  margin-bottom: 10px;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.markdown-body h1 {
-  font-size: 2em;
-  border-bottom: 1px solid #eaecef;
-  padding-bottom: 0.3em;
-}
-
-.markdown-body h2 {
-  font-size: 1.5em;
-  border-bottom: 1px solid #eaecef;
-  padding-bottom: 0.3em;
-}
-
-.markdown-body h3 {
-  font-size: 1.25em;
-}
-
-.markdown-body h4 {
-  font-size: 1em;
-}
-
-.markdown-body h5 {
-  font-size: 0.875em;
-}
-
-.markdown-body h6 {
-  font-size: 0.85em;
-  color: #6a737d;
-}
-
-.markdown-body p {
-  margin-top: 0;
-  margin-bottom: 16px;
-}
-
-.markdown-body ul,
-.markdown-body ol {
-  padding-left: 2em;
-  margin-top: 0;
-  margin-bottom: 16px;
-}
-
-.markdown-body li {
-  margin-top: 0.25em;
-}
-
-.markdown-body code {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 0.85em;
-  padding: 0.2em 0.4em;
-  background-color: rgba(27, 31, 35, 0.05);
-  border-radius: 3px;
-}
-
-.markdown-body pre {
-  background-color: #f6f8fa;
-  border-radius: 3px;
-  padding: 16px;
-  overflow: auto;
-  font-size: 0.85em;
-  line-height: 1.45;
-  margin-top: 0;
-  margin-bottom: 16px;
-}
-
-.markdown-body pre code {
-  background-color: transparent;
-  padding: 0;
-}
-
-.markdown-body a {
-  color: #0366d6;
-  text-decoration: none;
-}
-
-.markdown-body a:hover {
-  text-decoration: underline;
-}
-
-.markdown-body blockquote {
-  padding: 0 1em;
-  color: #6a737d;
-  border-left: 0.25em solid #dfe2e5;
-  margin: 0 0 16px 0;
-}
-
-.markdown-body table {
-  border-collapse: collapse;
-  margin-bottom: 16px;
-  width: 100%;
-  overflow: auto;
-  display: block;
-}
-
-.markdown-body table th {
-  font-weight: 600;
-  padding: 6px 13px;
-  border: 1px solid #dfe2e5;
-  background-color: #f6f8fa;
-}
-
-.markdown-body table td {
-  padding: 6px 13px;
-  border: 1px solid #dfe2e5;
-}
-
-.markdown-body table tr {
-  background-color: #ffffff;
-  border-top: 1px solid #c6cbd1;
-}
-
-.markdown-body table tr:nth-child(2n) {
-  background-color: #f6f8fa;
-}
 </style>

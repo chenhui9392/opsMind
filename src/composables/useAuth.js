@@ -86,6 +86,7 @@ export function useAuth() {
     // 清除 localStorage
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
+    localStorage.removeItem('userName')
     localStorage.removeItem('rememberedUsername')
     localStorage.removeItem('rememberedPassword')
 

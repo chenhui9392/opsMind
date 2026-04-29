@@ -12,7 +12,7 @@
       <div
         v-for="item in satisfactionList"
         :key="item.value"
-        :class="['satisfaction-bar__item', { 'is-active': selectedValue === item.value }]"
+        :class="['satisfaction-bar__item', { 'is-active': selectedValue === item.value, 'is-disabled': props.disabled }]"
         @click="handleClick(item.value)"
       >
         <img
@@ -38,10 +38,35 @@ import icon02Active from '../../assets/evaluation/evaluation_02_active.png'
 import icon03Active from '../../assets/evaluation/evaluation_03_active.png'
 import icon04Active from '../../assets/evaluation/evaluation_04_active.png'
 import icon05Active from '../../assets/evaluation/evaluation_05_active.png'
+import { updateOrder } from '../../api'
+
+const props = defineProps({
+  conversationId: {
+    type: String,
+    default: ''
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
+  customerSatisfaction: {
+    type: String,
+    default: ''
+  }
+})
 
 const emit = defineEmits(['change'])
 
 const selectedValue = ref(null)
+
+// 满意度字符串与数值的反向映射
+const satisfactionReverseMap = {
+  'VERY_DISSATISFIED': 1,
+  'DISSATISFIED': 2,
+  'NEUTRAL': 3,
+  'SATISFIED': 4,
+  'VERY_SATISFIED': 5
+}
 
 const satisfactionList = [
   { value: 1, label: '很不满', icon: icon01, activeIcon: icon01Active },
@@ -51,9 +76,41 @@ const satisfactionList = [
   { value: 5, label: '非常满意', icon: icon05, activeIcon: icon05Active }
 ]
 
+const satisfactionMap = {
+  1: 'VERY_DISSATISFIED',
+  2: 'DISSATISFIED',
+  3: 'NEUTRAL',
+  4: 'SATISFIED',
+  5: 'VERY_SATISFIED'
+}
+
 const handleClick = (value) => {
+  if (props.disabled) return
   selectedValue.value = value
   emit('change', value)
+  submitSatisfaction(value)
+}
+
+// 初始化：如果传入了历史满意度值，自动选中
+if (props.customerSatisfaction && satisfactionReverseMap[props.customerSatisfaction]) {
+  selectedValue.value = satisfactionReverseMap[props.customerSatisfaction]
+}
+
+/**
+ * 提交满意度评价
+ * @param {number} value - 评分值
+ */
+const submitSatisfaction = async (value) => {
+  const satisfaction = satisfactionMap[value]
+  if (!satisfaction || !props.conversationId) return
+  try {
+    await updateOrder({
+      id: props.conversationId,
+      customerSatisfaction: satisfaction
+    })
+  } catch (error) {
+    console.error('提交满意度失败:', error)
+  }
 }
 </script>
 
@@ -91,6 +148,14 @@ const handleClick = (value) => {
 
 .satisfaction-bar__item:hover {
   transform: scale(1.05);
+}
+
+.satisfaction-bar__item.is-disabled {
+  cursor: pointer;
+}
+
+.satisfaction-bar__item.is-disabled:hover {
+  transform: none;
 }
 
 .satisfaction-bar__item.is-active .satisfaction-bar__label {

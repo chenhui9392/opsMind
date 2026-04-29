@@ -302,8 +302,8 @@ defineExpose({
 .chat-input-container {
   display: flex;
   flex-direction: column;
-  //border-top: 1px solid #e0e0e0;
-  //background-color: #F8F8FB;
+  /* border-top: 1px solid #e0e0e0;
+  background-color: #F8F8FB; */
 }
 
 /* 图片预览区域 */
@@ -452,7 +452,7 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  //border-top: 1px solid #f0f0f0;
+  /* border-top: 1px solid #f0f0f0; */
   min-height: 40px;
 }
 
@@ -467,6 +467,17 @@ defineExpose({
 /* 附件按钮样式 */
 .upload-component {
   display: inline-block;
+}
+
+/* 隐藏 Element Plus Upload 内部原生文件输入框的默认提示 */
+.upload-component :deep(.el-upload__input) {
+  display: none;
+}
+
+/* 确保上传组件内不会出现额外的文件列表或提示区域 */
+.upload-component :deep(.el-upload-list),
+.upload-component :deep(.el-upload__tip) {
+  display: none;
 }
 
 .attachment-btn {
