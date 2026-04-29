@@ -7,27 +7,35 @@ jobs:
   build-mac:
     runs-on: macos-latest
 
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
 
-      # ✅ 关键：先删 .npmrc（必须在 install 前）
-      - name: Remove npmrc
-        run: rm -f .npmrc
+      # ✅ 删除 .npmrc（防污染）
+      - run: rm -f .npmrc
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
 
-      # ✅ 再设置 registry
-      - run: npm config set registry https://registry.npmjs.org/
+      # ✅ 关键：用 corepack 启用 pnpm（官方推荐）
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@8 --activate
+          pnpm -v
 
-      # ✅ install（此时不会被污染）
-      - run: npm install
+      # ✅ 安装依赖
+      - run: pnpm install
 
-      - run: npm run build
+      # ✅ 构建
+      - run: pnpm run build
 
+      # ✅ 打包
       - name: Build Electron App
-        run: npx electron-builder --mac --publish never
+        run: pnpm exec electron-builder --mac --publish never
         env:
           ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
 
@@ -37,7 +45,8 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
+      # ✅ 上传
       - uses: actions/upload-artifact@v4
         with:
           name: mac-build
-          path: release/*.dmg
+          path: release/*

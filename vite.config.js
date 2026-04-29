@@ -82,7 +82,7 @@ export default defineConfig(async ({ mode }) => {
         output: {
           manualChunks: {
             vendor: ['vue'],
-            marked: ['marked']
+            markdownIt: ['markdown-it']
           },
           compact: true
         },

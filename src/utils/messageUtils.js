@@ -118,7 +118,7 @@ export function convertHistoryToMessages(historyData, options = {}) {
     return []
   }
 
-  const { orderStatus, orderType } = options
+  const { orderStatus, orderType, feedbackRecord, customerSatisfaction } = options
 
   const messages = historyData.map(item => {
     // 使用统一的解析逻辑处理 content
@@ -137,14 +137,35 @@ export function convertHistoryToMessages(historyData, options = {}) {
     }
   })
 
-  // 当 orderType=CONSULTATION 且 orderStatus=PENDING 时，添加是否已解决卡片
-  if (orderType === 'CONSULTATION' && orderStatus === 'PENDING') {
+  // 当存在历史反馈记录时，添加反馈状态展示卡片（仅展示，不可点击）
+  if (feedbackRecord) {
+    messages.push({
+      sender: 'resolve-status',
+      text: '',
+      time: '',
+      images: [],
+      feedbackRecord: feedbackRecord,
+      resolved: true
+    })
+  } else if (orderType === 'CONSULTATION' && orderStatus === 'PENDING') {
+    // 没有历史反馈记录时，根据工单状态添加可交互的解决状态卡片
     messages.push({
       sender: 'resolve-status',
       text: '',
       time: '',
       images: [],
       orderStatus: orderStatus
+    })
+  }
+
+  // 当存在历史满意度评价时，添加满意度展示卡片（仅展示，不可点击）
+  if (customerSatisfaction) {
+    messages.push({
+      sender: 'satisfaction-status',
+      text: '',
+      time: '',
+      images: [],
+      customerSatisfaction: customerSatisfaction
     })
   }
 

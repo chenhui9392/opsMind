@@ -15,6 +15,7 @@
         v-for="(message, index) in messages"
         :key="index"
         :message="message"
+        :conversation-id="conversationId"
         @image-click="handleImageClick"
         @file-click="handleFileClick"
         @submit-success="handleSubmitSuccess"
@@ -44,6 +45,10 @@ const props = defineProps({
   messages: {
     type: Array,
     default: () => []
+  },
+  conversationId: {
+    type: String,
+    default: ''
   }
 })
 

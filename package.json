@@ -93,7 +93,8 @@
     "a2ui-vue-engine": "^1.0.12",
     "crypto-js": "^4.2.0",
     "element-plus": "^2.13.7",
-    "marked": "^17.0.4",
+    "markdown-it": "^14.1.0",
+    "mermaid": "^11.6.0",
     "pinia": "^3.0.4",
     "vue": "^3.5.30",
     "vue-router": "^4.6.4"

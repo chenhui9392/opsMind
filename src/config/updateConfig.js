@@ -53,13 +53,38 @@ function getYYYYMMDDHHMMSS() {
 }
 
 /**
+ * 获取平台后缀
+ * Windows 返回 '_w'，macOS 返回 '_m'
+ * @returns {string} 平台后缀
+ */
+function getPlatformSuffix() {
+  // Electron 环境通过 process.platform 判断
+  if (typeof process !== 'undefined' && process.platform) {
+    return process.platform === 'darwin' ? '_m' : '_w'
+  }
+  // 浏览器环境兜底判断
+  if (typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/.test(navigator.userAgent)) {
+    return '_m'
+  }
+  return '_w'
+}
+
+/**
+ * 获取应用名称
+ * Windows 返回 'tineco_ops_w'，macOS 返回 'tineco_ops_m'
+ * @returns {string} 应用名称
+ */
+function getAppName() {
+  return `tineco_ops${getPlatformSuffix()}`
+}
+
+/**
  * 获取应用代码
- * Electron环境返回 
+ * Windows 返回 'tineco_ops_w'，macOS 返回 'tineco_ops_m'
  * @returns {string} 应用代码
  */
 function getAppCode() {
-  // Electron 环境使用 
-  return 'tineco_ops_w'
+  return getAppName()
 }
 
 /**
@@ -130,7 +155,8 @@ function generateAuthSign(timeSpan) {
  */
 export function getVersionCheckUrl() {
   const { baseUrl, pathParams } = UPDATE_API_CONFIG
-  const { clientId, appName, packageName, packageVersion } = pathParams
+  const { clientId, packageName, packageVersion } = pathParams
+  const appName = getAppName()
   const appVersion = APP_VERSION
 
   // 构建基础路径

@@ -24,6 +24,7 @@ class ChatMessageService {
     this.activeChatSession = 0
     this.isNewSession = false
     this.currentConversationId = null
+    this.currentOrderId = null
     this.currentBusinessType = ''
     this.currentSystemName = ''
     this.currentModuleName = ''
@@ -38,6 +39,7 @@ class ChatMessageService {
     this.messageStore[0] = initialMessages
     this.isNewSession = true
     this.currentConversationId = null
+    this.currentOrderId = null
   }
 
   /**
@@ -445,6 +447,14 @@ class ChatMessageService {
    */
   getCurrentConversationId() {
     return this.currentConversationId
+  }
+
+  /**
+   * 获取当前工单ID
+   * @returns {string|null} - 当前 orderId
+   */
+  getCurrentOrderId() {
+    return this.currentOrderId
   }
 
   /**

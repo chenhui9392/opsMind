@@ -69,7 +69,8 @@ class WindowManager {
       title: '海豚',
       webPreferences: {
         preload: path.join(app.getAppPath(), 'preload.js'),
-        devTools: true
+        devTools: true,
+        webSecurity: false
       },
       show: true,
       alwaysOnTop: true, // 确保窗口在最前面
@@ -104,9 +105,10 @@ class WindowManager {
       console.log(`Loading Vite dev server at http://localhost:${devPort}`)
       this.mainWindow.loadURL(`http://localhost:${devPort}`)
     } else {
-      // 已打包：加载静态文件
-      console.log('Loading static file at dist/index.html')
-      this.mainWindow.loadFile('dist/index.html')
+      // 已打包：使用 app:// 自定义协议加载，避免 file:// 的 CORS 问题
+      const indexUrl = 'app://./dist/index.html'
+      console.log('Loading via app:// protocol:', indexUrl)
+      this.mainWindow.loadURL(indexUrl)
     }
 
     // 在 development 环境下打开开发者工具

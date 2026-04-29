@@ -104,9 +104,8 @@ const initWindowPosition = async () => {
  * @param {Object} data - 消息数据
  */
 const handleUnreadMessage = (data) => {
-
-  // 只对 broadcast 类型的消息进行计数
-  if (data.type === 'broadcast' && data.message) {
+  // 对有效的未读消息进行计数
+  if (data.message) {
     unreadCount.value++
   }
 }

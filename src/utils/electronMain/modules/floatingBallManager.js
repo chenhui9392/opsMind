@@ -48,7 +48,8 @@ class FloatingBallManager {
         webPreferences: {
           preload: preloadPath,
           nodeIntegration: false,
-          contextIsolation: true
+          contextIsolation: true,
+          webSecurity: false
         }
       })
 
@@ -57,10 +58,8 @@ class FloatingBallManager {
         // 开发模式：加载Vite开发服务器的悬浮球路由
         this.floatingBallWindow.loadURL(`http://localhost:${devPort}/#/floating-ball`)
       } else {
-        // 生产模式：加载打包后的静态文件
-        this.floatingBallWindow.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'), {
-          hash: '/floating-ball'
-        })
+        // 生产模式：使用 app:// 自定义协议加载，避免 file:// 的 CORS 问题
+        this.floatingBallWindow.loadURL('app://./dist/index.html#/floating-ball')
       }
 
       // 隐藏默认菜单
