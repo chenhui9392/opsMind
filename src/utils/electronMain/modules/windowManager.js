@@ -111,9 +111,9 @@ class WindowManager {
       this.mainWindow.loadURL(indexUrl)
     }
 
-    // 在 development 环境下打开开发者工具
-    if (isDev) {
-      // 打开开发者工具，方便调试，并调整位置
+    // 在未打包的开发环境下打开开发者工具
+    // 打包后的应用即使设置了 development 标记也不自动打开
+    if (!app.isPackaged) {
       this.mainWindow.webContents.openDevTools({ mode: 'detach' })
     }
 

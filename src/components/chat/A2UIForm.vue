@@ -1,9 +1,7 @@
 <!--
  * @Author: hui.chenn
- * @Description: 
+ * @Description: A2UI 表单渲染组件
  * @Date: 2026-04-29 11:49:56
- * @LastEditTime: 2026-04-29 11:50:07
- * @LastEditors: hui.chenn
 -->
 <template>
   <div class="a2ui-form-container" style="position: relative;">
@@ -26,6 +24,30 @@ import { A2UIRoot } from 'a2ui-vue-engine'
 import { submitWorkOrder } from '../../api'
 import chatMessageService from '../../services/chatMessageService'
 
+// ============================================
+// 常量定义
+// ============================================
+
+/** 可输入组件类型列表 */
+const INPUT_COMPONENT_TYPES = [
+  'DateTimeInput',
+  'TextField',
+  'SelectField',
+  'ChoicePicker',
+  'NumberField',
+  'Checkbox',
+  'RadioGroup',
+  'Switch',
+  'Slider',
+  'Textarea',
+  'TimePicker',
+  'DatePicker'
+]
+
+// ============================================
+// Props & Emits
+// ============================================
+
 const props = defineProps({
   formInfo: {
     type: [String, Array],
@@ -47,125 +69,268 @@ const props = defineProps({
 
 const emit = defineEmits(['form-submit', 'submit-success'])
 
+// ============================================
 // 响应式数据
+// ============================================
+
 const a2uiRootRef = ref(null)
 const isSubmitting = ref(false)
 const isSubmitted = ref(false)
+
+// ============================================
+// 工具方法
+// ============================================
+
+/**
+ * 根据 path 从 formData 中提取值
+ * @param {Object} formData - 表单数据对象
+ * @param {string} path - 数据路径，如 '/form/applyDate'
+ * @returns {*} - 对应的值
+ */
+const getFormDataValueByPath = (formData, path) => {
+  if (!path || !formData) return undefined
+
+  const pathParts = path.replace(/^\//, '').split('/')
+  let current = formData
+
+  for (const part of pathParts) {
+    if (current === undefined || current === null) return undefined
+    current = current[part]
+  }
+
+  return current
+}
+
+/**
+ * 解析 JSON 字符串或返回原数组
+ * @param {string|Array} data - 数据
+ * @returns {Array|null} - 解析后的数组
+ */
+const parseNodeList = (data) => {
+  if (!data) return null
+
+  let nodeList = data
+  if (typeof data === 'string') {
+    try {
+      nodeList = JSON.parse(data)
+    } catch (e) {
+      console.error('解析 JSON 失败:', e)
+      return null
+    }
+  }
+
+  return Array.isArray(nodeList) ? nodeList : null
+}
+
+/**
+ * 从 rawContent 中提取节点数组
+ * @param {string} rawContent - 原始 JSON 字符串
+ * @returns {Object} - { nodeList, parsedData } 或 null
+ */
+const extractNodeListFromRawContent = (rawContent) => {
+  if (!rawContent) return null
+
+  try {
+    const parsedData = JSON.parse(rawContent)
+    let nodeList = parsedData.formInfo || parsedData
+
+    if (!Array.isArray(nodeList) && Array.isArray(parsedData)) {
+      nodeList = parsedData
+    }
+
+    if (!Array.isArray(nodeList)) {
+      console.error('无法从 rawContent 中提取节点数组', parsedData)
+      return null
+    }
+
+    return { nodeList, parsedData }
+  } catch (e) {
+    console.error('解析 rawContent 失败:', e)
+    return null
+  }
+}
+
+/**
+ * 更新节点列表的 value.default 值
+ * @param {Array} nodeList - 节点数组
+ * @param {Object} formData - 表单数据
+ * @returns {Array} - 更新后的节点数组
+ */
+const updateNodeListDefaultValues = (nodeList, formData) => {
+  return nodeList.map(node => {
+    if (node.value && node.value.path) {
+      const userValue = getFormDataValueByPath(formData, node.value.path)
+      node.value.default = userValue !== undefined && userValue !== null ? userValue : ''
+    }
+    return node
+  })
+}
+
+/**
+ * 重建提交 JSON
+ * @param {Object} parsedData - 解析后的数据
+ * @param {Array} nodeList - 更新后的节点数组
+ * @returns {string} - JSON 字符串
+ */
+const buildUpdatedSubmitJson = (parsedData, nodeList) => {
+  if (parsedData.formInfo) {
+    parsedData.formInfo = nodeList
+    return JSON.stringify(parsedData)
+  }
+  return JSON.stringify(nodeList)
+}
+
+// ============================================
+// 表单渲染方法
+// ============================================
+
+/**
+ * 禁用节点列表中的可输入组件和按钮
+ * @param {Array} nodeList - 节点数组
+ * @param {boolean} disableAll - 是否禁用所有可输入组件
+ * @returns {Array} - 更新后的节点数组
+ */
+const disableNodes = (nodeList, disableAll = false) => {
+  return nodeList.map(node => {
+    // 禁用提交按钮
+    if (node.id === 'submit-btn') {
+      return { ...node, disabled: true }
+    }
+    // 禁用所有可输入组件
+    if (disableAll && INPUT_COMPONENT_TYPES.includes(node.component)) {
+      return { ...node, disabled: true }
+    }
+    // 禁用按钮组件
+    if (disableAll && node.component === 'Button') {
+      return { ...node, disabled: true }
+    }
+    return node
+  })
+}
+
+/**
+ * 重新渲染表单
+ * @param {Array} nodeList - 节点数组
+ */
+const renderForm = (nodeList) => {
+  if (a2uiRootRef.value && nodeList) {
+    a2uiRootRef.value.processMessage({
+      type: 'node',
+      node: nodeList
+    })
+  }
+}
+
+/**
+ * 禁用表单所有组件
+ */
+const disableAllFormComponents = () => {
+  const nodeList = parseNodeList(props.formInfo)
+  if (nodeList) {
+    renderForm(disableNodes(nodeList, true))
+  }
+}
+
+// ============================================
+// 提交工单相关方法
+// ============================================
+
+/**
+ * 获取当前表单数据
+ * @returns {Object} - 表单数据
+ */
+const getCurrentFormData = () => {
+  return a2uiRootRef.value?.getFormData?.() || {}
+}
+
+/**
+ * 构建提交数据
+ * @returns {string|null} - 更新后的 JSON 字符串
+ */
+const buildSubmitData = () => {
+  const extracted = extractNodeListFromRawContent(props.rawContent)
+  if (!extracted) return null
+
+  const formData = getCurrentFormData()
+  const updatedNodeList = updateNodeListDefaultValues(extracted.nodeList, formData)
+  return buildUpdatedSubmitJson(extracted.parsedData, updatedNodeList)
+}
+
+/**
+ * 处理提交响应
+ * @param {Object} result - API 返回结果
+ */
+const handleSubmitResponse = (result) => {
+  if (!result || result.code !== 200) return
+
+  isSubmitted.value = true
+
+  // 解析返回的 content
+  const responseContent = result.data?.message?.content
+  let parsedContent = null
+
+  if (responseContent) {
+    try {
+      parsedContent = JSON.parse(responseContent)
+    } catch (e) {
+      console.log('submit 返回的 content 不是 JSON:', responseContent)
+    }
+  }
+
+  // 禁用所有表单组件
+  disableAllFormComponents()
+
+  // 根据返回内容触发相应事件
+  if (parsedContent?.hasfull === false && parsedContent.tip) {
+    emit('submit-success', { tip: parsedContent.tip })
+  } else {
+    emit('submit-success')
+  }
+}
+
+/**
+ * 执行提交工单
+ */
+const executeSubmitWorkOrder = async () => {
+  const submitJson = buildSubmitData()
+  if (!submitJson) {
+    console.error('原始 content 数据不存在')
+    return
+  }
+
+  const result = await submitWorkOrder({
+    submitJson,
+    conversationId: chatMessageService.getCurrentConversationId(),
+    systemName: chatMessageService.getCurrentSystemName(),
+    userName: chatMessageService.getCurrentUserName()
+  })
+
+  console.log('工单提交返回:', result)
+  handleSubmitResponse(result)
+}
+
+// ============================================
+// 事件处理方法
+// ============================================
 
 /**
  * 处理 A2UI 消息
  */
 const handleA2UIMessage = async (payload) => {
-  if (payload.type === 'action') {
-    const eventName = payload.payload.eventName
-    emit('form-submit', eventName)
+  if (payload.type !== 'action') return
 
-    // 处理提交工单事件
-    if (eventName === 'submitWorkOrder') {
-      // 如果已经提交成功，不再处理
-      if (isSubmitted.value) {
-        return
-      }
+  const eventName = payload.payload.eventName
+  emit('form-submit', eventName)
 
-      try {
-        isSubmitting.value = true
+  if (eventName !== 'submitWorkOrder' || isSubmitted.value) return
 
-        // 获取聊天接口返回的原始 content JSON 字符串作为 submitJson
-        const submitJson = props.rawContent
-        if (!submitJson) {
-          console.error('原始 content 数据不存在')
-          isSubmitting.value = false
-          return
-        }
-
-        // 获取当前会话信息
-        const conversationId = chatMessageService.getCurrentConversationId()
-        const systemName = chatMessageService.getCurrentSystemName()
-        const userName = chatMessageService.getCurrentUserName()
-
-        const result = await submitWorkOrder({
-          submitJson,
-          conversationId,
-          systemName,
-          userName
-        })
-
-        console.log('工单提交返回:', result)
-
-        // 检查接口返回是否成功
-        if (result && result.code === 200) {
-          isSubmitted.value = true
-
-          // 解析返回的 content
-          const responseContent = result.data?.message?.content
-          let parsedContent = null
-          if (responseContent) {
-            try {
-              parsedContent = JSON.parse(responseContent)
-            } catch (e) {
-              console.log('submit 返回的 content 不是 JSON:', responseContent)
-            }
-          }
-
-          // 判断 hasfull 字段
-          if (parsedContent && parsedContent.hasfull === false) {
-            // hasfull=false：展示 tip 内容，禁用所有操作按钮
-            const tipText = parsedContent.tip || '工单已提交'
-
-            // 禁用表单提交按钮
-            disableSubmitButton()
-
-            // 在消息列表中追加 tip 消息
-            emit('submit-success', { tip: tipText })
-          } else {
-            // hasfull=true 或其他情况：保持原有表单逻辑
-            // 禁用表单提交按钮
-            disableSubmitButton()
-            // 通知父组件提交成功
-            emit('submit-success')
-          }
-        }
-      } catch (error) {
-        console.error('工单提交失败:', error)
-      } finally {
-        isSubmitting.value = false
-      }
-    }
-  }
-}
-
-/**
- * 禁用表单提交按钮
- * 通过更新 formInfo 中的按钮配置来禁用提交按钮
- */
-const disableSubmitButton = () => {
-  if (a2uiRootRef.value && props.formInfo) {
-    try {
-      // 解析当前的 formInfo
-      let nodeList = props.formInfo
-      if (typeof nodeList === 'string') {
-        nodeList = JSON.parse(nodeList)
-      }
-
-      // 查找提交按钮节点并更新 disabled 属性
-      const updatedNodeList = nodeList.map(node => {
-        if (node.id === 'submit-btn') {
-          return {
-            ...node,
-            disabled: true
-          }
-        }
-        return node
-      })
-
-      // 重新渲染整个表单
-      a2uiRootRef.value.processMessage({
-        type: 'node',
-        node: updatedNodeList
-      })
-    } catch (error) {
-      console.error('禁用提交按钮失败:', error)
-    }
+  try {
+    isSubmitting.value = true
+    await executeSubmitWorkOrder()
+  } catch (error) {
+    console.error('工单提交失败:', error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -180,58 +345,28 @@ const handleA2UIComplete = () => {
  * 处理 formInfo 渲染
  */
 const processFormInfo = () => {
-  if (props.hasFull && props.formInfo && a2uiRootRef.value) {
-    const formInfoData = props.formInfo
+  if (!props.hasFull || !props.formInfo || !a2uiRootRef.value) return
 
-    // 如果 formInfo 是字符串，先解析成数组
-    let nodeList = formInfoData
-    if (typeof formInfoData === 'string') {
-      try {
-        nodeList = JSON.parse(formInfoData)
-      } catch (e) {
-        console.error('Failed to parse formInfo:', e)
-        return
-      }
-    }
+  const nodeList = parseNodeList(props.formInfo)
+  if (!nodeList) return
 
-    // 检查是否是数组
-    if (Array.isArray(nodeList) && nodeList.length > 0) {
-      // 如果是从历史会话进入且工单状态为【已创建】（非 DRAFT），禁用提交按钮
-      const orderStatus = props.orderStatus
-      if (orderStatus && orderStatus !== 'DRAFT') {
-        nodeList = nodeList.map(node => {
-          if (node.id === 'submit-btn') {
-            return {
-              ...node,
-              disabled: true
-            }
-          }
-          return node
-        })
-      }
-
-      a2uiRootRef.value.processMessage({
-        type: 'node',
-        node: nodeList
-      })
-    }
-  }
+  // 历史会话且工单已创建（非 DRAFT），禁用所有可输入组件和按钮
+  const shouldDisable = props.orderStatus && props.orderStatus !== 'DRAFT'
+  renderForm(shouldDisable ? disableNodes(nodeList, true) : nodeList)
 }
 
-// 监听 formInfo 变化，重新渲染表单
+// ============================================
+// 生命周期
+// ============================================
+
 watch(() => props.formInfo, (newVal, oldVal) => {
   if (newVal !== oldVal) {
-    nextTick(() => {
-      processFormInfo()
-    })
+    nextTick(() => processFormInfo())
   }
 })
 
-// 生命周期钩子
 onMounted(() => {
-  nextTick(() => {
-    processFormInfo()
-  })
+  nextTick(() => processFormInfo())
 })
 </script>
 
@@ -248,7 +383,7 @@ onMounted(() => {
   min-width: 300px;
 }
 
-/* 修复 a2ui 组件图标样式被全局样式覆盖的问题 */
+/* 修复 a2ui 组件图标样式 */
 .a2ui-form-container ::v-deep(.card-header-box) {
   box-sizing: content-box;
   display: inline-flex;
@@ -263,7 +398,7 @@ onMounted(() => {
   max-height: none;
 }
 
-/* 表单提交 loading 遮罩 */
+/* 提交 loading 遮罩 */
 .form-loading-overlay {
   position: absolute;
   top: 0;

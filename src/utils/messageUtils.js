@@ -11,7 +11,8 @@ export function parseMessageContent(content) {
   const result = {
     text: content || '稍后再试，系统正在全力维修中....',
     hasFull: false,
-    formInfo: null
+    formInfo: null,
+    rawContent: content // 保存原始 content 字符串
   }
 
   // content 为空时返回默认提示
@@ -132,6 +133,8 @@ export function convertHistoryToMessages(historyData, options = {}) {
       // 新增：表单信息字段
       hasFull: parsedResult.hasFull,
       formInfo: parsedResult.formInfo,
+      // 新增：原始 content 字段，用于提交表单时更新数据
+      rawContent: parsedResult.rawContent,
       // 新增：工单状态字段
       orderStatus: orderStatus
     }

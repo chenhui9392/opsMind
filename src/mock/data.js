@@ -159,7 +159,7 @@ export const leaveRequestSchema = [
     "placeholder": "选择日期",
     "enableDate": true,
     "enableTime": false,
-    "value": { "path": "/form/applyDate" }
+    "value": { "path": "/form/applyDate", "default": "" }
   },
   {
     "id": "action-row",
