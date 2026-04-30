@@ -23,6 +23,7 @@
         :has-full="message.hasFull"
         :raw-content="message.rawContent"
         :order-status="message.orderStatus"
+        :order-type-actual="message.orderTypeActual"
         @form-submit="handleFormSubmit"
         @submit-success="handleSubmitSuccess"
       />

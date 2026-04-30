@@ -64,6 +64,10 @@ const props = defineProps({
   orderStatus: {
     type: String,
     default: ''
+  },
+  orderTypeActual: {
+    type: String,
+    default: ''
   }
 })
 
@@ -350,8 +354,13 @@ const processFormInfo = () => {
   const nodeList = parseNodeList(props.formInfo)
   if (!nodeList) return
 
-  // 历史会话且工单已创建（非 DRAFT），禁用所有可输入组件和按钮
-  const shouldDisable = props.orderStatus && props.orderStatus !== 'DRAFT'
+  // 判断是否可编辑：
+  // 1. orderStatus = 'DRAFT' → 可编辑
+  // 2. orderStatus = 'PENDING' && orderTypeActual = 'BUG' → 可编辑
+  // 3. 其他情况 → 禁用
+  const isEditable = props.orderStatus === 'DRAFT' ||
+    (props.orderStatus === 'PENDING' && props.orderTypeActual === 'BUG')
+  const shouldDisable = props.orderStatus && !isEditable
   renderForm(shouldDisable ? disableNodes(nodeList, true) : nodeList)
 }
 

@@ -40,6 +40,7 @@ class MessageService {
         const messages = convertHistoryToMessages(response, {
           orderStatus: order.orderStatus,
           orderType: order.orderType,
+          orderTypeActual: order.orderTypeActual,
           feedbackRecord: order.feedbackRecord,
           customerSatisfaction: order.customerSatisfaction
         })

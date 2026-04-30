@@ -119,7 +119,7 @@ export function convertHistoryToMessages(historyData, options = {}) {
     return []
   }
 
-  const { orderStatus, orderType, feedbackRecord, customerSatisfaction } = options
+  const { orderStatus, orderType, orderTypeActual, feedbackRecord, customerSatisfaction } = options
 
   const messages = historyData.map(item => {
     // 使用统一的解析逻辑处理 content
@@ -136,7 +136,9 @@ export function convertHistoryToMessages(historyData, options = {}) {
       // 新增：原始 content 字段，用于提交表单时更新数据
       rawContent: parsedResult.rawContent,
       // 新增：工单状态字段
-      orderStatus: orderStatus
+      orderStatus: orderStatus,
+      // 新增：工单实际类型字段
+      orderTypeActual: orderTypeActual
     }
   })
 
