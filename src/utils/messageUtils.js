@@ -152,7 +152,7 @@ export function convertHistoryToMessages(historyData, options = {}) {
       feedbackRecord: feedbackRecord,
       resolved: true
     })
-  } else if (orderType === 'CONSULTATION' && orderStatus === 'PENDING') {
+  } else if (orderType === 'CONSULTATION' && orderStatus === 'FINISH') {
     // 没有历史反馈记录时，根据工单状态添加可交互的解决状态卡片
     messages.push({
       sender: 'resolve-status',
