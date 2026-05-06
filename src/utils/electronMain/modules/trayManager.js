@@ -1,6 +1,7 @@
 const { Tray, Menu, nativeImage, app } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const windowManager = require('./windowManager')
 
 class TrayManager {
   constructor() {
@@ -156,13 +157,16 @@ class TrayManager {
 
       // 点击托盘图标显示/隐藏窗口
       this.tray.on('click', () => {
-        if (require('electron').BrowserWindow.getAllWindows().length > 0) {
-          const mainWindow = require('electron').BrowserWindow.getAllWindows()[0]
+        const mainWindow = windowManager.getMainWindow()
+        if (mainWindow && !mainWindow.isDestroyed()) {
           if (mainWindow.isVisible()) {
             mainWindow.hide()
           } else {
             mainWindow.show()
+            mainWindow.focus()
           }
+        } else {
+          showWindowCallback()
         }
       })
       console.log('Tray created successfully')

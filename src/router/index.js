@@ -26,10 +26,10 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/floating-ball',
+    path: '/floatingBall',
     name: 'floatingBall',
     component: floatingBall,
-    meta: { requiresAuth: true }
+    meta: { public: true }
   },
   {
     path: '/a2ui-test',
