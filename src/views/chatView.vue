@@ -211,14 +211,12 @@ const handleRefreshOrdersWithNotification = () => {
 
 /**
  * 处理 Socket 广播消息
- * 收到消息时显示红点通知（只在侧边栏收起时显示）
+ * 收到消息时显示红点通知（无论侧边栏是否收起都显示）
  */
 const handleSocketBroadcast = (event) => {
   console.log('[chatView] 收到 socket 广播消息:', event.detail)
-  // 只在侧边栏收起时显示红点通知
-  if (isSidebarCollapsed.value) {
-    hasSocketNotification.value = true
-  }
+  // 收到 socket 消息时显示红点通知
+  hasSocketNotification.value = true
 }
 
 /**

@@ -16,6 +16,7 @@
         :key="index"
         :message="message"
         :conversation-id="conversationId"
+        :is-last-a2-u-i-form="lastA2UIFormIndex === index"
         @image-click="handleImageClick"
         @file-click="handleFileClick"
         @submit-success="handleSubmitSuccess"
@@ -36,7 +37,7 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import MessageItem from './MessageItem.vue'
 
@@ -54,6 +55,18 @@ const props = defineProps({
 
 // Emits
 const emit = defineEmits(['file-click', 'submit-success', 'resolved', 'unresolved'])
+
+/**
+ * 计算最后一条包含 a2ui 表单的消息索引
+ */
+const lastA2UIFormIndex = computed(() => {
+  for (let i = props.messages.length - 1; i >= 0; i--) {
+    if (props.messages[i].hasFull && props.messages[i].formInfo) {
+      return i
+    }
+  }
+  return -1
+})
 
 // 响应式数据
 const imagePreview = reactive({

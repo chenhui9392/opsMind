@@ -24,6 +24,7 @@
         :raw-content="message.rawContent"
         :order-status="message.orderStatus"
         :order-type-actual="message.orderTypeActual"
+        :is-last-a2-u-i-form="isLastA2UIForm"
         @form-submit="handleFormSubmit"
         @submit-success="handleSubmitSuccess"
       />
@@ -109,6 +110,10 @@ const props = defineProps({
   conversationId: {
     type: String,
     default: ''
+  },
+  isLastA2UIForm: {
+    type: Boolean,
+    default: false
   }
 })
 
