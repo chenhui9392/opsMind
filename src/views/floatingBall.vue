@@ -1,8 +1,8 @@
 <!--
  * @Author: hui.chenn
- * @Description: 
+ * @Description:
  * @Date: 2026-04-13 10:54:48
- * @LastEditTime: 2026-04-13 10:55:09
+ * @LastEditTime: 2026-05-06 17:11:42
  * @LastEditors: hui.chenn
 -->
 <!--
@@ -26,9 +26,9 @@
     >
       <img src="/app.png" alt="海豚" />
       <!-- 未读消息红点 -->
-<!--      <div v-if="unreadCount > 0" class="notification-badge">-->
-<!--        <span class="notification-count">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>-->
-<!--      </div>-->
+      <!-- <div v-if="unreadCount > 0" class="notification-badge">
+        <span class="notification-count">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+      </div> -->
     </div>
   </div>
 </template>
@@ -104,10 +104,8 @@ const initWindowPosition = async () => {
  * @param {Object} data - 消息数据
  */
 const handleUnreadMessage = (data) => {
-  // 对有效的未读消息进行计数
-  if (data.message) {
-    unreadCount.value++
-  }
+  // 收到未读消息通知，计数加一
+  unreadCount.value++
 }
 
 /**

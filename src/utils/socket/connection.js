@@ -93,12 +93,10 @@ function handleBroadcastMessage(data) {
   }))
 
   // 通过 IPC 发送未读消息通知到悬浮球窗口
-  // 悬浮球和 ChatHeader 都会收到此通知，各自维护自己的计数
-  if (data.message) {
-    console.log('[SocketConnectionService] 发送未读消息通知到悬浮球')
-    if (window.mainWindowAPI && window.mainWindowAPI.notifyUnreadMessage) {
-      window.mainWindowAPI.notifyUnreadMessage(data)
-    }
+  // 收到广播消息即视为有新的未读消息
+  console.log('[SocketConnectionService] 发送未读消息通知到悬浮球')
+  if (window.mainWindowAPI && window.mainWindowAPI.notifyUnreadMessage) {
+    window.mainWindowAPI.notifyUnreadMessage(data)
   }
 }
 
