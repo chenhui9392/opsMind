@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description: 路由配置
  * @Date: 2026-03-31 09:30:00
- * @LastEditTime: 2026-04-15 15:44:58
+ * @LastEditTime: 2026-05-06 13:41:20
  * @LastEditors: hui.chenn
  */
 import { createRouter, createWebHashHistory } from 'vue-router'
@@ -26,7 +26,7 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/floatingBall',
+    path: '/floating-ball',
     name: 'floatingBall',
     component: floatingBall,
     meta: { public: true }
@@ -71,7 +71,7 @@ router.beforeEach((to, from, next) => {
   }
 
   // 如果已登录但访问登录页，重定向到首页
-  if (isPublicPage && token) {
+  if (to.path === '/login' && token) {
     next('/')
     return
   }
