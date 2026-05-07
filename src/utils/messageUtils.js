@@ -26,7 +26,6 @@ export function parseMessageContent(content) {
     parsed = JSON.parse(content)
   } catch (parseError) {
     // 解析失败，content 不是 JSON，直接显示原始内容
-    console.log('Content is not JSON, treating as plain text:', content)
     return result
   }
 

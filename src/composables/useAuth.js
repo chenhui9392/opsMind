@@ -57,6 +57,9 @@ export function useAuth() {
         localStorage.setItem('userName', username.trim())
         localStorage.setItem('userInfo', JSON.stringify(response.data))
 
+        // 启动定时任务
+        startScheduledTask()
+
         return { success: true }
       } else {
         return {
@@ -65,7 +68,6 @@ export function useAuth() {
         }
       }
     } catch (error) {
-      console.error('登录失败:', error)
       return {
         success: false,
         message: '登录过程中出现错误，请稍后重试'
@@ -90,6 +92,9 @@ export function useAuth() {
     localStorage.removeItem('rememberedUsername')
     localStorage.removeItem('rememberedPassword')
 
+    // 停止定时任务
+    stopScheduledTask()
+
     // 重定向到登录页
     if (redirect) {
       router.push('/login')
@@ -111,12 +116,34 @@ export function useAuth() {
         try {
           userInfo.value = JSON.parse(storedUserInfo)
         } catch (e) {
-          console.error('解析用户信息失败:', e)
         }
       }
+      // 启动定时任务
+      startScheduledTask()
+
       return true
     }
     return false
+  }
+
+  /**
+   * 启动定时任务
+   */
+  const startScheduledTask = () => {
+    if (typeof window !== 'undefined' && window.scheduledTaskAPI) {
+      window.scheduledTaskAPI.start().catch((error) => {
+      })
+    }
+  }
+
+  /**
+   * 停止定时任务
+   */
+  const stopScheduledTask = () => {
+    if (typeof window !== 'undefined' && window.scheduledTaskAPI) {
+      window.scheduledTaskAPI.stop().catch((error) => {
+      })
+    }
   }
 
   /**

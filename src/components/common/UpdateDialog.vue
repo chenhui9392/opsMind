@@ -140,7 +140,6 @@ watch(() => props.visible, (newVal) => {
  */
 const handleConfirm = () => {
   if (!props.downloadUrl) {
-    console.error('下载链接为空')
     emit('error', '下载链接为空')
     return
   }

@@ -12,6 +12,7 @@ const windowManager = require('./modules/windowManager')
 const trayManager = require('./modules/trayManager')
 const floatingBallManager = require('./modules/floatingBallManager')
 const ipcHandler = require('./modules/ipcHandler')
+const scheduledTaskManager = require('./modules/scheduledTaskManager')
 
 /**
  * 检查是否为 development 环境
@@ -33,7 +34,6 @@ const checkIsDevelopmentEnv = () => {
       return mode === 'development'
     }
   } catch (error) {
-    console.log('Error checking env mode file:', error)
   }
 
   return false
@@ -43,12 +43,10 @@ const checkIsDevelopmentEnv = () => {
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
-  console.log('Another instance is already running. Quitting...')
   app.quit()
   process.exit(0)
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
-    console.log('Second instance detected. Focusing existing window...')
     // 当第二个实例启动时，显示主窗口
     const mainWindow = windowManager.getMainWindow()
     if (mainWindow) {
@@ -67,7 +65,6 @@ const getSystemUsername = () => {
   try {
     return require('os').userInfo().username
   } catch (error) {
-    console.error('Error getting system username:', error)
     return 'unknown'
   }
 }
@@ -80,9 +77,7 @@ app.whenReady().then(() => {
     const filePath = path.join(app.getAppPath(), pathname)
     return net.fetch('file://' + filePath)
   })
-  console.log('app:// protocol handler registered')
-
-  console.log('System username:', getSystemUsername())
+  
 
   // 禁用跨域限制 (CORS)
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -106,7 +101,6 @@ app.whenReady().then(() => {
   
   // 判断是否为开发环境
   const isDev = checkIsDevelopmentEnv()
-  console.log('Is development environment:', isDev)
 
   // 创建窗口
   windowManager.createWindow()
@@ -140,6 +134,8 @@ app.on('window-all-closed', function () {
 // 防止应用完全退出
 app.on('before-quit', () => {
   app.quitting = true
+  // 停止定时任务
+  scheduledTaskManager.stop()
   // 清理所有窗口
   floatingBallManager.destroyFloatingBall()
   windowManager.destroyMainWindow()

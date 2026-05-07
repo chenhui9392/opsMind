@@ -148,7 +148,6 @@ const selectOrder = (order) => {
         }
       })
       .catch(error => {
-        console.error('更新消息状态失败:', error)
       })
   }
   emit('select-order', order)
@@ -226,7 +225,6 @@ const fetchHistoryOrders = async (isLoadMore = false, silent = false) => {
       hasMoreData.value = false
     }
   } catch (err) {
-    console.error('获取历史工单失败:', err)
     error.value = '加载失败，请稍后重试'
     if (!isLoadMore) {
       historyOrders.value = []
@@ -319,7 +317,6 @@ const handleScroll = () => {
   const distanceToBottom = scrollHeight - scrollTop - clientHeight
 
   if (distanceToBottom < 300 && !isLoadingMore.value && hasMoreData.value) {
-    console.log('触发加载更多数据')
     fetchHistoryOrders(true)
   }
 }

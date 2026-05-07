@@ -86,13 +86,11 @@ const loadTreeData = async (isRetry = false) => {
       throw new Error('返回数据为空或格式不正确')
     }
   } catch (error) {
-    console.error('加载系统配置树失败:', error)
     loadError.value = true
 
     // 自动重试机制
     if (!isRetry && retryCount.value < MAX_RETRY) {
       retryCount.value++
-      console.log(`级联选择器数据加载失败，${retryCount.value}秒后重试(${retryCount.value}/${MAX_RETRY})...`)
       setTimeout(() => {
         loadTreeData(true)
       }, retryCount.value * 1000)

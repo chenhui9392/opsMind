@@ -31,9 +31,6 @@ class FloatingBallManager {
     try {
       const preloadPath = this.getPreloadPath()
       const devPort = this.getDevServerPort()
-      console.log('Floating ball preload path:', preloadPath)
-      console.log('Dev server port:', devPort)
-
       // 创建悬浮球窗口
       this.floatingBallWindow = new BrowserWindow({
         width: 60,
@@ -69,9 +66,7 @@ class FloatingBallManager {
       const { width, height } = screen.getPrimaryDisplay().workAreaSize
       this.floatingBallWindow.setPosition(width - 100, height - 200)
 
-      console.log('Floating ball created successfully')
     } catch (error) {
-      console.error('Error creating floating ball:', error)
     }
   }
 

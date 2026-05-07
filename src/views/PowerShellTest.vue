@@ -163,7 +163,6 @@ const handleDirectExecute = async () => {
 
 // 组件挂载时检查 API
 onMounted(() => {
-  console.log('[PowerShell Test] API 状态:', apiAvailable.value)
 })
 </script>
 

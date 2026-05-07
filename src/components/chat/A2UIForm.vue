@@ -122,7 +122,6 @@ const parseNodeList = (data) => {
     try {
       nodeList = JSON.parse(data)
     } catch (e) {
-      console.error('解析 JSON 失败:', e)
       return null
     }
   }
@@ -147,13 +146,11 @@ const extractNodeListFromRawContent = (rawContent) => {
     }
 
     if (!Array.isArray(nodeList)) {
-      console.error('无法从 rawContent 中提取节点数组', parsedData)
       return null
     }
 
     return { nodeList, parsedData }
   } catch (e) {
-    console.error('解析 rawContent 失败:', e)
     return null
   }
 }
@@ -281,7 +278,6 @@ const handleSubmitResponse = (result) => {
     try {
       parsedContent = JSON.parse(responseContent)
     } catch (e) {
-      console.log('submit 返回的 content 不是 JSON:', responseContent)
     }
   }
 
@@ -302,7 +298,6 @@ const handleSubmitResponse = (result) => {
 const executeSubmitWorkOrder = async () => {
   const submitJson = buildSubmitData()
   if (!submitJson) {
-    console.error('原始 content 数据不存在')
     return
   }
 
@@ -313,7 +308,6 @@ const executeSubmitWorkOrder = async () => {
     userName: chatMessageService.getCurrentUserName()
   })
 
-  console.log('工单提交返回:', result)
   handleSubmitResponse(result)
 }
 
@@ -336,7 +330,6 @@ const handleA2UIMessage = async (payload) => {
     isSubmitting.value = true
     await executeSubmitWorkOrder()
   } catch (error) {
-    console.error('工单提交失败:', error)
   } finally {
     isSubmitting.value = false
   }
@@ -346,7 +339,6 @@ const handleA2UIMessage = async (payload) => {
  * 处理 A2UI 完成事件
  */
 const handleA2UIComplete = () => {
-  console.log('A2UI Complete')
 }
 
 /**

@@ -79,7 +79,6 @@ const loadTreeData = async () => {
       treeData.value = []
     }
   } catch (error) {
-    console.error('加载系统配置树失败:', error)
     treeData.value = []
   } finally {
     loading.value = false
@@ -141,8 +140,6 @@ const handleCascadeChange = (value) => {
       systemName.push(node.name)
     }
   })
-  console.log('选中值:', value)
-  console.log('系统名称:', systemName.join('-'))
 }
 
 /**

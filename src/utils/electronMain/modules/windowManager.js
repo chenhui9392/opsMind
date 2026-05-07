@@ -23,7 +23,6 @@ const checkIsDevelopmentEnv = () => {
       return mode === 'development'
     }
   } catch (error) {
-    console.log('Error checking env mode file:', error)
   }
 
   return false
@@ -84,12 +83,8 @@ class WindowManager {
       try {
         // Windows 上直接使用路径字符串更可靠
         windowOptions.icon = iconPath
-        console.log('Window icon set to:', iconPath)
       } catch (error) {
-        console.error('Error setting window icon:', error)
       }
-    } else {
-      console.log('Window icon path not found')
     }
 
     // 创建窗口
@@ -97,17 +92,14 @@ class WindowManager {
 
     // 检查是否为 development 环境
     const isDev = checkIsDevelopmentEnv()
-    console.log('Is development environment:', isDev)
 
     if (!app.isPackaged) {
       // 未打包：加载Vite开发服务器
       const devPort = process.env.VITE_DEV_SERVER_PORT || 9090
-      console.log(`Loading Vite dev server at http://localhost:${devPort}`)
       this.mainWindow.loadURL(`http://localhost:${devPort}`)
     } else {
       // 已打包：使用 app:// 自定义协议加载，避免 file:// 的 CORS 问题
       const indexUrl = 'app://./dist/index.html'
-      console.log('Loading via app:// protocol:', indexUrl)
       this.mainWindow.loadURL(indexUrl)
     }
 
@@ -119,11 +111,6 @@ class WindowManager {
 
     // 监听页面加载事件
     this.mainWindow.webContents.on('did-finish-load', () => {
-      console.log('Page loaded successfully')
-      console.log('Window visible:', this.mainWindow.isVisible())
-      console.log('Window position:', this.mainWindow.getPosition())
-      console.log('Window size:', this.mainWindow.getSize())
-
       // 确保窗口在最前面
       this.mainWindow.setAlwaysOnTop(true)
       this.mainWindow.focus()
@@ -136,7 +123,6 @@ class WindowManager {
 
     // 监听页面加载失败事件
     this.mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-      console.error('Page load failed:', errorCode, errorDescription)
     })
 
     // 关闭窗口时最小化到托盘
@@ -153,7 +139,6 @@ class WindowManager {
     setTimeout(() => {
       this.mainWindow.show()
       this.mainWindow.focus()
-      console.log('Window forced to show after timeout')
     }, 1000)
 
     return this.mainWindow
@@ -178,7 +163,6 @@ class WindowManager {
       // 通知悬浮球窗口主窗口已显示
       const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
       if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
-        console.log('[WindowManager] 通知悬浮球主窗口已显示')
         floatingBallWindow.webContents.send('main-window-shown', {})
       }
     }

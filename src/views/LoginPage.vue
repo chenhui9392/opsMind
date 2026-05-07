@@ -235,7 +235,6 @@ const handleLogin = async () => {
       showError(result.message || '登录失败，请检查用户名和密码')
     }
   } catch (err) {
-    console.error('登录错误:', err)
     showError('登录过程中出现错误，请稍后重试')
   } finally {
     // 重置加载状态

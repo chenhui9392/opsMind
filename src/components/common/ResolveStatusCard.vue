@@ -92,7 +92,6 @@ const submitResolveStatus = async (resolveStatus) => {
     })
     return res
   } catch (error) {
-    console.error('提交解决状态失败:', error)
     return null
   }
 }

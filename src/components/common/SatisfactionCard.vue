@@ -109,7 +109,6 @@ const submitSatisfaction = async (value) => {
       customerSatisfaction: satisfaction
     })
   } catch (error) {
-    console.error('提交满意度失败:', error)
   }
 }
 </script>

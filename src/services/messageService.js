@@ -26,7 +26,6 @@ class MessageService {
    * @returns {Promise<Array>} - 消息列表
    */
   async selectOrder(order) {
-    console.log('选择工单:', order)
     this.chatService.currentChatSession = 0
     this.chatService.isNewSession = false
     this.chatService.currentConversationId = order.conversationId

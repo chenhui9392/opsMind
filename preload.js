@@ -6,10 +6,8 @@ contextBridge.exposeInMainWorld('systemInfo', {
   getUserName: async () => {
     try {
       const username = await ipcRenderer.invoke('getSystemUsername')
-      console.log('Got username from main process:', username)
       return username
     } catch (error) {
-      console.error('Error getting username via IPC:', error)
       return 'unknown'
     }
   },
@@ -18,10 +16,8 @@ contextBridge.exposeInMainWorld('systemInfo', {
     try {
       // 使用同步 IPC 调用
       const username = ipcRenderer.sendSync('getSystemUsernameSync')
-      console.log('Got username sync from main process:', username)
       return username
     } catch (error) {
-      console.error('Error getting username sync via IPC:', error)
       return 'unknown'
     }
   }
@@ -33,10 +29,8 @@ contextBridge.exposeInMainWorld('appUpdater', {
   downloadAndInstall: async (downloadUrl, fileName) => {
     try {
       const result = await ipcRenderer.invoke('downloadAndInstallUpdate', downloadUrl, fileName)
-      console.log('Download and install result:', result)
       return result
     } catch (error) {
-      console.error('Error downloading and installing update:', error)
       return { success: false, message: error.message }
     }
   },
@@ -45,10 +39,8 @@ contextBridge.exposeInMainWorld('appUpdater', {
   openExternalLink: async (url) => {
     try {
       const result = await ipcRenderer.invoke('openExternalLink', url)
-      console.log('Open external link result:', result)
       return result
     } catch (error) {
-      console.error('Error opening external link:', error)
       return { success: false, message: error.message }
     }
   }
@@ -62,7 +54,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       const pos = await ipcRenderer.invoke('getWindowPosition')
       return pos
     } catch (error) {
-      console.error('Error getting window position:', error)
       return { x: 0, y: 0 }
     }
   },
@@ -76,7 +67,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       const displays = await ipcRenderer.invoke('getAllDisplays')
       return displays
     } catch (error) {
-      console.error('Error getting displays:', error)
       return []
     }
   },
@@ -136,7 +126,71 @@ contextBridge.exposeInMainWorld('mainWindowAPI', {
   }
 })
 
-console.log('preload.js loaded and APIs exposed')
+// 暴露定时任务控制接口给渲染进程
+contextBridge.exposeInMainWorld('scheduledTaskAPI', {
+  /**
+   * 启动定时任务
+   * @returns {Promise<Object>} - { success: boolean, message: string }
+   */
+  start: async () => {
+    try {
+      const result = await ipcRenderer.invoke('startScheduledTask')
+      console.log('[ScheduledTask API] 启动结果:', result)
+      return result
+    } catch (error) {
+      console.error('[ScheduledTask API] 启动异常:', error)
+      return { success: false, message: error.message }
+    }
+  },
+
+  /**
+   * 停止定时任务
+   * @returns {Promise<Object>} - { success: boolean, message: string }
+   */
+  stop: async () => {
+    try {
+      const result = await ipcRenderer.invoke('stopScheduledTask')
+      console.log('[ScheduledTask API] 停止结果:', result)
+      return result
+    } catch (error) {
+      console.error('[ScheduledTask API] 停止异常:', error)
+      return { success: false, message: error.message }
+    }
+  },
+
+  /**
+   * 立即执行一次定时任务
+   * @returns {Promise<Object>} - { success: boolean, message: string }
+   */
+  executeNow: async () => {
+    try {
+      const result = await ipcRenderer.invoke('executeScheduledTaskNow')
+      console.log('[ScheduledTask API] 立即执行结果:', result)
+      return result
+    } catch (error) {
+      console.error('[ScheduledTask API] 立即执行异常:', error)
+      return { success: false, message: error.message }
+    }
+  },
+
+  /**
+   * 监听定时任务执行结果（主进程推送）
+   * @param {Function} callback - 回调函数 (data) => void
+   */
+  onScheduledTaskResult: (callback) => {
+    ipcRenderer.on('scheduled-task-result', (event, data) => {
+      callback(data)
+    })
+  },
+
+  /**
+   * 移除定时任务执行结果监听
+   * @param {Function} callback - 回调函数
+   */
+  offScheduledTaskResult: (callback) => {
+    ipcRenderer.removeListener('scheduled-task-result', callback)
+  }
+})
 
 // 暴露 PowerShell 执行接口给渲染进程（安全执行）
 contextBridge.exposeInMainWorld('powerShellAPI', {

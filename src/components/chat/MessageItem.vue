@@ -229,7 +229,6 @@ const handleCopy = async () => {
       copySuccess.value = false
     }, 2000)
   } catch (error) {
-    console.error('复制失败:', error)
     // 降级方案：使用传统的复制方法
     const textarea = document.createElement('textarea')
     textarea.value = props.message.text
@@ -244,7 +243,6 @@ const handleCopy = async () => {
         copySuccess.value = false
       }, 2000)
     } catch (err) {
-      console.error('复制失败:', err)
     }
     document.body.removeChild(textarea)
   }

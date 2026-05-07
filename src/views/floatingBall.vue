@@ -95,7 +95,6 @@ const initWindowPosition = async () => {
     document.addEventListener('click', dragController.handleDocumentClick, true)
 
   } catch (error) {
-    console.error('[FloatingBall] 初始化窗口位置失败:', error)
   }
 }
 
@@ -129,7 +128,6 @@ const handleMainWindowShown = () => {
  * 处理屏幕配置变化（多显示器热插拔）
  */
 const handleDisplayChange = async () => {
-  console.log('[FloatingBall] 检测到屏幕配置变化，更新显示器信息')
   if (dragController && dragController.initDisplays) {
     await dragController.initDisplays()
   }

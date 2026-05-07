@@ -137,7 +137,6 @@ class SocketConnection {
         this.socket = new WebSocket(url, this.protocols)
 
         this.socket.onopen = (event) => {
-          console.log(`[SocketConnection:${this.connectionId}] 连接成功`)
           this.isConnected = true
           this.isConnecting = false
           this.reconnectAttempts = 0
@@ -158,7 +157,6 @@ class SocketConnection {
         }
 
         this.socket.onclose = (event) => {
-          console.log(`[SocketConnection:${this.connectionId}] 连接关闭:`, event.code, event.reason)
           const wasConnected = this.isConnected
 
           // 停止心跳机制
@@ -193,7 +191,6 @@ class SocketConnection {
         }
 
         this.socket.onerror = (error) => {
-          console.error(`[SocketConnection:${this.connectionId}] 连接错误:`, error)
           this.isConnecting = false
 
           // 拒绝连接 Promise，防止泄漏
@@ -211,7 +208,6 @@ class SocketConnection {
           this._handleMessage(event)
         }
       } catch (error) {
-        console.error(`[SocketConnection:${this.connectionId}] 连接失败:`, error)
         this.isConnecting = false
         if (this._connectReject) {
           this._connectReject(error)
@@ -279,7 +275,6 @@ class SocketConnection {
         this.socket.send(data)
         resolve()
       } catch (error) {
-        console.error(`[SocketConnection:${this.connectionId}] 消息发送失败:`, error)
         reject(error)
       }
     })
@@ -314,7 +309,6 @@ class SocketConnection {
       }
 
       // 2. 不是 pong，将原始数据作为 message 通知（不抛出错误，让监听器自己处理）
-      console.warn(`[SocketConnection:${this.connectionId}] 消息非 JSON 格式，传递原始数据:`, event.data)
       this._notifyListeners('message', {
         type: 'raw',
         rawContent: event.data,
@@ -336,7 +330,6 @@ class SocketConnection {
         clearTimeout(this.heartbeatTimeoutTimer)
         this.heartbeatTimeoutTimer = null
       }
-      console.log(`[SocketConnection:${this.connectionId}] 收到心跳响应`)
     }
   }
 
@@ -346,13 +339,11 @@ class SocketConnection {
    */
   _flushMessageQueue() {
     if (this.messageQueue.length > 0) {
-      console.log(`[SocketConnection:${this.connectionId}] 发送队列中的 ${this.messageQueue.length} 条消息`)
       const queue = [...this.messageQueue]
       this.messageQueue = []
 
       queue.forEach(message => {
         this.send(message).catch(error => {
-          console.error(`[SocketConnection:${this.connectionId}] 队列消息发送失败:`, error)
         })
       })
     }
@@ -367,8 +358,6 @@ class SocketConnection {
   _startHeartbeat() {
     // 先停止之前的心跳（避免重复）
     this._stopHeartbeat()
-
-    console.log(`[SocketConnection:${this.connectionId}] 启动心跳机制，间隔: ${this.heartbeatInterval}ms`)
 
     // 重置心跳状态
     this.heartbeatTimeouts = 0
@@ -400,8 +389,6 @@ class SocketConnection {
     // 重置状态
     this.heartbeatTimeouts = 0
     this.waitingForPong = false
-
-    console.log(`[SocketConnection:${this.connectionId}] 心跳机制已停止`)
   }
 
   /**
@@ -415,11 +402,8 @@ class SocketConnection {
 
     // 如果已经在等待 pong 响应，不发送新的 ping
     if (this.waitingForPong) {
-      console.warn(`[SocketConnection:${this.connectionId}] 等待前一次心跳响应中，跳过本次发送`)
       return
     }
-
-    console.log(`[SocketConnection:${this.connectionId}] 发送心跳 ping`)
 
     // 发送 ping 消息
     try {
@@ -430,7 +414,6 @@ class SocketConnection {
       // 启动超时检测
       this._startHeartbeatTimeoutCheck()
     } catch (error) {
-      console.error(`[SocketConnection:${this.connectionId}] 心跳发送失败:`, error)
       // 发送失败，可能连接已断开，触发重连
       this._handleHeartbeatTimeout()
     }
@@ -442,7 +425,6 @@ class SocketConnection {
    */
   _startHeartbeatTimeoutCheck() {
     this.heartbeatTimeoutTimer = setTimeout(() => {
-      console.warn(`[SocketConnection:${this.connectionId}] 心跳超时，未收到 pong 响应`)
       this._handleHeartbeatTimeout()
     }, this.heartbeatTimeout)
   }
@@ -455,11 +437,8 @@ class SocketConnection {
     this.waitingForPong = false
     this.heartbeatTimeouts++
 
-    console.warn(`[SocketConnection:${this.connectionId}] 心跳超时次数: ${this.heartbeatTimeouts}/${this.maxHeartbeatTimeouts}`)
-
     // 达到最大超时次数，认为连接已断开，触发重连
     if (this.heartbeatTimeouts >= this.maxHeartbeatTimeouts) {
-      console.error(`[SocketConnection:${this.connectionId}] 心跳连续超时 ${this.heartbeatTimeouts} 次，判定连接已断开`)
 
       // 清除心跳超时定时器
       if (this.heartbeatTimeoutTimer) {
@@ -481,18 +460,15 @@ class SocketConnection {
   _handleReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++
-      console.log(`[SocketConnection:${this.connectionId}] 尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
 
       // 指数退避重连
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
 
       this.reconnectTimer = setTimeout(() => {
         this.connect().catch(error => {
-          console.error(`[SocketConnection:${this.connectionId}] 重连失败:`, error)
         })
       }, delay)
     } else {
-      console.error(`[SocketConnection:${this.connectionId}] 重连失败，已达到最大尝试次数`)
       this._notifyListeners('error', {
         type: 'reconnect_failed',
         connectionId: this.connectionId,
@@ -540,7 +516,6 @@ class SocketConnection {
         try {
           callback(data)
         } catch (error) {
-          console.error(`[SocketConnection:${this.connectionId}] 监听器执行错误:`, error)
         }
       })
     }
@@ -589,7 +564,6 @@ class SocketManager {
    */
   createConnection(connectionId, options = {}) {
     if (this.connections.has(connectionId)) {
-      console.warn(`[SocketManager] 连接 ${connectionId} 已存在，返回现有实例`)
       return this.connections.get(connectionId)
     }
 
@@ -634,8 +608,6 @@ class SocketManager {
     if (connection) {
       connection.disconnect(code, reason)
       this.connections.delete(connectionId)
-    } else {
-      console.warn(`[SocketManager] 连接 ${connectionId} 不存在`)
     }
   }
 
@@ -670,7 +642,6 @@ class SocketManager {
   broadcast(message) {
     this.connections.forEach((connection, id) => {
       connection.send(message).catch(error => {
-        console.error(`[SocketManager] 向 ${id} 广播消息失败:`, error)
       })
     })
   }
@@ -684,8 +655,6 @@ class SocketManager {
     const connection = this.connections.get(connectionId)
     if (connection) {
       connection.on('message', callback)
-    } else {
-      console.warn(`[SocketManager] 连接 ${connectionId} 不存在，无法注册消息监听器`)
     }
   }
 
@@ -698,8 +667,6 @@ class SocketManager {
     const connection = this.connections.get(connectionId)
     if (connection) {
       connection.on('error', callback)
-    } else {
-      console.warn(`[SocketManager] 连接 ${connectionId} 不存在，无法注册错误监听器`)
     }
   }
 
@@ -712,8 +679,6 @@ class SocketManager {
     const connection = this.connections.get(connectionId)
     if (connection) {
       connection.on('close', callback)
-    } else {
-      console.warn(`[SocketManager] 连接 ${connectionId} 不存在，无法注册关闭监听器`)
     }
   }
 
@@ -726,8 +691,6 @@ class SocketManager {
     const connection = this.connections.get(connectionId)
     if (connection) {
       connection.on('open', callback)
-    } else {
-      console.warn(`[SocketManager] 连接 ${connectionId} 不存在，无法注册打开监听器`)
     }
   }
 

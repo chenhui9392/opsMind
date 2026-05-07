@@ -31,7 +31,6 @@ class UpdateService {
 
     // 防止重复检查
     if (this.isChecking) {
-      console.log('版本检查正在进行中...')
       return { hasUpdate: false, checking: true }
     }
 
@@ -39,7 +38,6 @@ class UpdateService {
     if (!force && this.lastCheckTime) {
       const timeSinceLastCheck = Date.now() - this.lastCheckTime
       if (timeSinceLastCheck < this.checkInterval) {
-        console.log('距离上次检查时间太短，跳过本次检查')
         return { hasUpdate: false, skipped: true }
       }
     }
@@ -47,8 +45,6 @@ class UpdateService {
     this.isChecking = true
 
     try {
-      console.log('开始检查应用版本更新...')
-
       const response = await checkAppVersion()
       this.lastCheckTime = Date.now()
 
@@ -57,7 +53,6 @@ class UpdateService {
 
       // parseUpdateResponse 返回 null 表示已是最新版本 (r === 0)
       if (!updateInfo) {
-        console.log('当前已是最新版本，无需更新')
         return {
           hasUpdate: false,
           currentVersion: getCurrentVersion(),
@@ -75,11 +70,8 @@ class UpdateService {
         updateInfo: updateInfo
       }
 
-      console.log(`发现新版本: ${updateInfo.version}，当前版本: ${getCurrentVersion()}`)
-
       return result
     } catch (error) {
-      console.error('版本检查失败:', error)
 
       if (!silent) {
         // 非静默模式下可以抛出错误或返回错误信息
@@ -105,11 +97,8 @@ class UpdateService {
    */
   parseUpdateResponse(response) {
     if (!response) {
-      console.error('版本检查响应为空')
       return null
     }
-
-    console.log('版本检查原始响应:', response)
 
     // 获取响应数据
     // 响应格式: { code: "0000", msg: "操作成功", data: { r: 0, ut: 0, u: null, v: null, ... } }
@@ -124,14 +113,12 @@ class UpdateService {
     }
 
     if (!data) {
-      console.error('无法从响应中解析数据:', response)
       return null
     }
 
     // 根据接口规范判断是否需要更新
     // r: 更新说明	0:无更新、1 有更新，只是提示 2、必须更新
     if (data.r === 0) {
-      console.log('当前已是最新版本 (r=0)')
       return null
     }
 
@@ -179,23 +166,19 @@ class UpdateService {
    */
   async downloadAndInstall(downloadUrl, fileName) {
     if (!downloadUrl) {
-      console.error('下载链接为空')
       return { success: false, message: '下载链接为空' }
     }
 
     try {
       // 检查是否在Electron环境中
       if (window.appUpdater && window.appUpdater.downloadAndInstall) {
-        console.log('使用Electron主进程下载并安装更新')
         return await window.appUpdater.downloadAndInstall(downloadUrl, fileName)
       } else {
         // 非Electron环境，使用浏览器打开下载链接
-        console.log('非Electron环境，使用浏览器打开下载链接')
         window.open(downloadUrl, '_blank')
         return { success: true, message: '已在浏览器中打开下载链接' }
       }
     } catch (error) {
-      console.error('下载更新失败:', error)
       return { success: false, message: error.message || '下载更新失败' }
     }
   }
@@ -218,7 +201,6 @@ class UpdateService {
         return { success: true, message: '已在浏览器中打开链接' }
       }
     } catch (error) {
-      console.error('打开链接失败:', error)
       return { success: false, message: error.message }
     }
   }

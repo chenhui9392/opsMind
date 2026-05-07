@@ -116,7 +116,6 @@ const renderMermaid = async () => {
       node.setAttribute('data-processed', 'true')
     })
   } catch (error) {
-    console.error('Mermaid 渲染失败:', error)
   }
 }
 

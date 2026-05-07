@@ -210,7 +210,6 @@ const handleSend = async (data) => {
       emit('refresh-orders', true)
     }
   } catch (error) {
-    console.error('发送消息失败:', error)
     updatedMessages = [...props.messages]
     updatedMessages.splice(loadingMessageId, 1)
 
@@ -259,10 +258,8 @@ const downloadFile = (file) => {
       link.click()
       document.body.removeChild(link)
     } else {
-      console.error('文件URL不存在')
     }
   } catch (error) {
-    console.error('文件下载失败:', error)
   }
 }
 
@@ -294,7 +291,6 @@ const resetCascader = () => {
  * @param {number} value - 评分值 1-5
  */
 const handleSatisfactionChange = (value) => {
-  console.log('用户满意度评分：', value)
 }
 
 /**

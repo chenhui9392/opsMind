@@ -163,7 +163,6 @@ const fetchUserName = () => {
       userName.value = '未知用户'
     }
   } catch (error) {
-    console.error('获取用户名失败:', error)
     userName.value = '未知用户'
   }
 }
@@ -174,7 +173,6 @@ const fetchUserName = () => {
  */
 const handleSelectOrder = async (order) => {
   if (props.isSending) {
-    console.log('正在发送消息中，无法切换会话')
     return
   }
   await selectOrder(order)
@@ -203,7 +201,6 @@ const handleSearch = (query) => {
  * @param {Object} order - 工单对象
  */
 const selectOrder = async (order) => {
-  console.log('OrderList: 选择工单', order)
   const messages = await messageService.selectOrder(order)
   emit('update:selectedContact', order.id)
   // 所有状态都显示聊天框，非草稿状态禁用输入
@@ -211,7 +208,6 @@ const selectOrder = async (order) => {
   const isDisabled = order.orderStatus !== 'DRAFT'
   emit('update:isInputDisabled', isDisabled)
   emit('update:messages', messages)
-  console.log('OrderList: 已从缓存获取工单消息', order.id, '显示聊天框:', true, '输入禁用:', isDisabled)
 }
 
 /**

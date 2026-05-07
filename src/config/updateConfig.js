@@ -144,8 +144,6 @@ function generateAuthSign(timeSpan) {
     'v=' + appVersion +
     AUTH_CONFIG.appSecret
 
-  console.log('Sign string:', signStr)
-
   return md5(signStr)
 }
 
@@ -167,9 +165,6 @@ export function getVersionCheckUrl() {
 
   // 生成认证签名
   const authSign = generateAuthSign(timeSpan)
-
-  console.log('Generated authSign:', authSign)
-  console.log('Time span:', timeSpan)
 
   // 构建查询参数
   const queryParams = {

@@ -214,7 +214,6 @@ const handleRefreshOrdersWithNotification = () => {
  * 收到消息时显示红点通知（无论侧边栏是否收起都显示）
  */
 const handleSocketBroadcast = (event) => {
-  console.log('[chatView] 收到 socket 广播消息:', event.detail)
   // 收到 socket 消息时显示红点通知
   hasSocketNotification.value = true
 }
@@ -283,7 +282,6 @@ const handleNewOrder = () => {
     chatComponent.value.resetCascader()
   }
 
-  console.log('创建新工单会话')
 }
 
 /**
@@ -320,7 +318,6 @@ const checkForAppUpdates = async (options = {}) => {
     }
   } catch (error) {
     // 静默处理错误，不影响用户正常使用
-    console.error('检查更新失败:', error)
   }
 }
 
@@ -334,12 +331,10 @@ const handleUpdateConfirm = async (data) => {
   if (result.success) {
     if (result.delayed) {
       // 用户选择稍后安装，可以显示一个提示
-      console.log('用户选择稍后安装，安装包路径:', result.installerPath)
     }
   } else {
     // 如果下载失败，尝试用浏览器打开下载链接
     const fallbackResult = await updateService.openExternalLink(data.downloadUrl)
-    console.log('备用下载方式结果:', fallbackResult.message)
   }
 }
 
@@ -347,7 +342,6 @@ const handleUpdateConfirm = async (data) => {
  * 处理更新取消
  */
 const handleUpdateCancel = () => {
-  console.log('用户取消更新')
   // 可以记录用户选择，下次不再提示或延迟提示
 }
 

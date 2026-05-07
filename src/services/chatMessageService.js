@@ -105,7 +105,6 @@ class ChatMessageService {
       const responseMessage = this.handleServerResponse(response)
       return responseMessage || this.receiveErrorMessage('服务器未返回有效消息')
     } catch (error) {
-      console.error('发送消息失败:', error)
       return this.receiveErrorMessage('发送消息失败，请稍后重试')
     }
   }
@@ -216,7 +215,6 @@ class ChatMessageService {
    * @returns {Object} - 错误消息对象
    */
   handleInvalidResponse(response) {
-    console.error('Invalid response format:', response)
     const errorMessage = this.receiveErrorMessage(response?.message || '服务器响应格式不正确')
     this.saveMessageToStore(errorMessage)
     return errorMessage
@@ -278,7 +276,6 @@ class ChatMessageService {
       }
     } catch (parseError) {
       // 3. 解析失败，content 不是 JSON，直接显示原始内容
-      console.log('Content is not JSON, treating as plain text:', content)
     }
 
     return result

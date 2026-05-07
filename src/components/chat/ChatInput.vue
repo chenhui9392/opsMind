@@ -196,11 +196,9 @@ const handleFileChange = async (uploadFile) => {
         })
       }
     } else {
-      console.error('文件上传失败:', data.message)
       emit('show-error', '文件上传失败')
     }
   } catch (error) {
-    console.error('文件上传失败:', error)
     emit('show-error', '文件上传失败')
   } finally {
     isUploading.value = false

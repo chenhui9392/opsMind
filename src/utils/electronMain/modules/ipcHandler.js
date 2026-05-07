@@ -6,6 +6,7 @@ const path = require('path')
 const floatingBallManager = require('./floatingBallManager')
 const windowManager = require('./windowManager')
 const powerShellExecutor = require('./powerShellExecutor')
+const scheduledTaskManager = require('./scheduledTaskManager')
 
 class IpcHandler {
   constructor() {
@@ -76,6 +77,19 @@ class IpcHandler {
     ipcMain.on('executePowerShellStream', (event, actionKey, options) => {
       this.handleExecutePowerShellStream(event, actionKey, options)
     })
+
+    // 处理定时任务相关 IPC 事件
+    ipcMain.handle('startScheduledTask', async () => {
+      return await this.handleStartScheduledTask()
+    })
+
+    ipcMain.handle('stopScheduledTask', async () => {
+      return await this.handleStopScheduledTask()
+    })
+
+    ipcMain.handle('executeScheduledTaskNow', async () => {
+      return await this.handleExecuteScheduledTaskNow()
+    })
   }
 
   /**
@@ -86,7 +100,6 @@ class IpcHandler {
     try {
       return os.userInfo().username
     } catch (error) {
-      console.error('Error getting system username:', error)
       return 'unknown'
     }
   }
@@ -106,7 +119,6 @@ class IpcHandler {
         // 通知悬浮球窗口主窗口已显示
         const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
         if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
-          console.log('[IPC] 通知悬浮球主窗口已显示')
           floatingBallWindow.webContents.send('main-window-shown', {})
         }
       }
@@ -120,11 +132,9 @@ class IpcHandler {
    */
   async openExternalLink(url) {
     try {
-      console.log('Opening external link:', url)
       await shell.openExternal(url)
       return { success: true, message: '已在浏览器中打开下载链接' }
     } catch (error) {
-      console.error('Failed to open external link:', error)
       return { success: false, message: error.message }
     }
   }
@@ -139,19 +149,13 @@ class IpcHandler {
     const mainWindow = windowManager.getMainWindow()
     
     try {
-      console.log('Starting download and install update:', downloadUrl)
-      
       // 获取下载目录
       const downloadsPath = path.join(os.homedir(), 'Downloads')
       const installerName = fileName || `update-${Date.now()}.exe`
       const installerPath = path.join(downloadsPath, installerName)
       
-      console.log('Download path:', installerPath)
-      
       // 下载文件
       await this.downloadFile(downloadUrl, installerPath)
-      
-      console.log('Download completed:', installerPath)
       
       // 显示提示对话框
       const result = await dialog.showMessageBox(mainWindow, {
@@ -166,7 +170,6 @@ class IpcHandler {
       
       if (result.response === 0) {
         // 用户选择立即安装
-        console.log('User chose to install now')
         
         // 关闭当前应用
         mainWindow.close()
@@ -177,13 +180,10 @@ class IpcHandler {
         return { success: true, message: '正在启动安装程序...', installerPath }
       } else {
         // 用户选择稍后安装
-        console.log('User chose to install later')
         return { success: true, message: '安装包已保存到下载目录', installerPath, delayed: true }
       }
       
     } catch (error) {
-      console.error('Download and install failed:', error)
-      
       // 下载失败，尝试用浏览器打开下载链接
       try {
         await shell.openExternal(downloadUrl)
@@ -208,7 +208,6 @@ class IpcHandler {
   setupMessageForwarders() {
     // 监听来自主窗口的未读消息通知
     ipcMain.on('notify-unread-message', (event, data) => {
-      console.log('[IPC] 转发未读消息到悬浮球:', data)
       const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
       if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
         floatingBallWindow.webContents.send('unread-message', data)
@@ -217,7 +216,6 @@ class IpcHandler {
 
     // 监听主窗口显示事件，通知悬浮球清空未读
     ipcMain.on('main-window-shown', () => {
-      console.log('[IPC] 主窗口显示，通知悬浮球清空未读')
       const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
       if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
         floatingBallWindow.webContents.send('main-window-shown', {})
@@ -226,7 +224,6 @@ class IpcHandler {
 
     // 监听未读消息计数同步（从主窗口到悬浮球）
     ipcMain.on('sync-unread-count', (event, data) => {
-      console.log('[IPC] 同步未读消息计数到悬浮球:', data)
       const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
       if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
         floatingBallWindow.webContents.send('sync-unread-count', data)
@@ -235,7 +232,6 @@ class IpcHandler {
 
     // 监听未读消息总数同步（从主窗口到悬浮球，用于初始加载）
     ipcMain.on('sync-total-unread-count', (event, data) => {
-      console.log('[IPC] 同步未读消息总数到悬浮球:', data)
       const floatingBallWindow = floatingBallManager.getFloatingBallWindow()
       if (floatingBallWindow && !floatingBallWindow.isDestroyed()) {
         floatingBallWindow.webContents.send('sync-unread-count', data)
@@ -352,6 +348,51 @@ class IpcHandler {
         actionKey
       })
     })
+  }
+
+  /**
+   * 启动定时任务
+   * @returns {Promise<Object>} - { success: boolean, message: string }
+   */
+  async handleStartScheduledTask() {
+    console.log('[IPC] 启动定时任务')
+    try {
+      scheduledTaskManager.start()
+      return { success: true, message: '定时任务已启动' }
+    } catch (error) {
+      console.error('[IPC] 启动定时任务失败:', error)
+      return { success: false, message: error.message }
+    }
+  }
+
+  /**
+   * 停止定时任务
+   * @returns {Promise<Object>} - { success: boolean, message: string }
+   */
+  async handleStopScheduledTask() {
+    console.log('[IPC] 停止定时任务')
+    try {
+      scheduledTaskManager.stop()
+      return { success: true, message: '定时任务已停止' }
+    } catch (error) {
+      console.error('[IPC] 停止定时任务失败:', error)
+      return { success: false, message: error.message }
+    }
+  }
+
+  /**
+   * 立即执行定时任务
+   * @returns {Promise<Object>} - { success: boolean, message: string }
+   */
+  async handleExecuteScheduledTaskNow() {
+    console.log('[IPC] 立即执行定时任务')
+    try {
+      scheduledTaskManager.executeImmediately()
+      return { success: true, message: '定时任务已触发立即执行' }
+    } catch (error) {
+      console.error('[IPC] 立即执行定时任务失败:', error)
+      return { success: false, message: error.message }
+    }
   }
 }
 
