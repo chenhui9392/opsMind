@@ -1,6 +1,6 @@
 <!--
  * @Author: hui.chenn
- * @Description: 
+ * @Description:
  * @Date: 2026-04-29 09:17:59
  * @LastEditTime: 2026-04-29 09:18:19
  * @LastEditors: hui.chenn
@@ -191,7 +191,7 @@ onMounted(() => {
 
 .markdown-body :deep(p) {
   margin-top: 0;
-  margin-bottom: 10px;
+  //margin-bottom: 10px;
 }
 
 .markdown-body :deep(ul),

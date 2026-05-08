@@ -40,6 +40,9 @@ class ChatMessageService {
     this.isNewSession = true
     this.currentConversationId = null
     this.currentOrderId = null
+    this.currentBusinessType = ''
+    this.currentSystemName = ''
+    this.currentModuleName = ''
   }
 
   /**
@@ -410,6 +413,9 @@ class ChatMessageService {
     this.activeChatSession = newSessionId
     this.isNewSession = true
     this.currentConversationId = null
+    this.currentBusinessType = ''
+    this.currentSystemName = ''
+    this.currentModuleName = ''
 
     const messages = [
       {

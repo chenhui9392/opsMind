@@ -275,6 +275,13 @@ const handleStop = () => {
   emit('stop')
 }
 
+// 监听 isNewSession 变化，新建会话时自动重置级联选择器
+watch(() => props.isNewSession, (newVal) => {
+  if (newVal) {
+    resetCascader()
+  }
+})
+
 // 生命周期钩子
 onMounted(() => {
   autoResize()
