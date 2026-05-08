@@ -75,7 +75,37 @@ app.whenReady().then(() => {
   protocol.handle('app', (request) => {
     const { pathname } = new URL(request.url)
     const filePath = path.join(app.getAppPath(), pathname)
-    return net.fetch('file://' + filePath)
+
+    try {
+      const data = fs.readFileSync(filePath)
+      const ext = path.extname(filePath).toLowerCase()
+      const mimeTypes = {
+        '.html': 'text/html',
+        '.js': 'application/javascript',
+        '.mjs': 'application/javascript',
+        '.css': 'text/css',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.webp': 'image/webp',
+        '.ico': 'image/x-icon',
+        '.woff': 'font/woff',
+        '.woff2': 'font/woff2',
+        '.ttf': 'font/ttf',
+        '.eot': 'application/vnd.ms-fontobject',
+        '.otf': 'font/otf'
+      }
+      const contentType = mimeTypes[ext] || 'application/octet-stream'
+      return new Response(data, {
+        headers: { 'Content-Type': contentType }
+      })
+    } catch (error) {
+      console.error('[Protocol] 读取文件失败:', filePath, error.message)
+      return new Response('Not Found', { status: 404 })
+    }
   })
   
 
@@ -134,6 +164,8 @@ app.on('window-all-closed', function () {
 // 防止应用完全退出
 app.on('before-quit', () => {
   app.quitting = true
+  // 关闭开发者工具
+  windowManager.closeDevTools()
   // 停止定时任务
   scheduledTaskManager.stop()
   // 清理所有窗口

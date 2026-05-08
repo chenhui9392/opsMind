@@ -67,6 +67,7 @@ class FloatingBallManager {
       this.floatingBallWindow.setPosition(width - 100, height - 200)
 
     } catch (error) {
+      console.error('[FloatingBallManager] 创建悬浮球窗口失败:', error)
     }
   }
 

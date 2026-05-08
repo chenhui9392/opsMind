@@ -90,9 +90,6 @@ class WindowManager {
     // 创建窗口
     this.mainWindow = new BrowserWindow(windowOptions)
 
-    // 检查是否为 development 环境
-    const isDev = checkIsDevelopmentEnv()
-
     if (!app.isPackaged) {
       // 未打包：加载Vite开发服务器
       const devPort = process.env.VITE_DEV_SERVER_PORT || 9090
@@ -101,11 +98,6 @@ class WindowManager {
       // 已打包：使用 app:// 自定义协议加载，避免 file:// 的 CORS 问题
       const indexUrl = 'app://./dist/index.html'
       this.mainWindow.loadURL(indexUrl)
-    }
-
-    // 在 development 环境下自动打开开发者工具（包括已打包的 development 模式）
-    if (isDev) {
-      this.mainWindow.webContents.openDevTools({ mode: 'detach' })
     }
 
     // 监听页面加载事件
@@ -173,6 +165,15 @@ class WindowManager {
   hideMainWindow() {
     if (this.mainWindow) {
       this.mainWindow.hide()
+    }
+  }
+
+  /**
+   * 关闭开发者工具
+   */
+  closeDevTools() {
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      this.mainWindow.webContents.closeDevTools()
     }
   }
 
