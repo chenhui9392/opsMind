@@ -7,7 +7,7 @@
     <div class="contacts">
       <!-- 用户信息区域 -->
       <div class="user-info-section">
-        <div class="user-avatar">
+        <div class="user-avatar" @click="handleAvatarClick" title="点击头像">
 <!--          <SvgIcon name="user" width="20" height="20" />-->
           <img :src="userAvatarImg" class="bot-avatar-img"/>
         </div>
@@ -136,6 +136,34 @@ const isResizing = ref(false)
 const resizeMethods = ref(null)
 const userName = ref('')
 const isRefreshing = ref(false)
+
+// 开发者模式彩蛋：连续点击头像计数
+const avatarClickCount = ref(0)
+const avatarClickTimer = ref(null)
+const CLICK_THRESHOLD = 5
+const CLICK_TIMEOUT = 1500
+
+/**
+ * 处理头像点击（开发者模式彩蛋）
+ * 连续快速点击5次切换开发者工具
+ */
+const handleAvatarClick = () => {
+  avatarClickCount.value++
+
+  if (avatarClickCount.value === 1) {
+    avatarClickTimer.value = setTimeout(() => {
+      avatarClickCount.value = 0
+    }, CLICK_TIMEOUT)
+  }
+
+  if (avatarClickCount.value >= CLICK_THRESHOLD) {
+    clearTimeout(avatarClickTimer.value)
+    avatarClickCount.value = 0
+    if (window.devToolsAPI && window.devToolsAPI.toggleDevTools) {
+      window.devToolsAPI.toggleDevTools()
+    }
+  }
+}
 
 // useAuth composable
 const { logout } = useAuth()
@@ -418,6 +446,8 @@ defineExpose({
   align-items: center;
   justify-content: center;
   color: white;
+  cursor: pointer;
+  user-select: none;
 }
 
 .user-name {

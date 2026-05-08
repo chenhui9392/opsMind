@@ -270,6 +270,13 @@ contextBridge.exposeInMainWorld('powerShellAPI', {
   }
 })
 
+// 暴露开发者工具控制接口给渲染进程
+contextBridge.exposeInMainWorld('devToolsAPI', {
+  toggleDevTools: () => {
+    ipcRenderer.send('toggleDevTools')
+  }
+})
+
 window.addEventListener('DOMContentLoaded', () => {
   const replaceText = (selector, text) => {
     const element = document.getElementById(selector)

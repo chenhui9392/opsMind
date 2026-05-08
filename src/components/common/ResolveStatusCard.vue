@@ -84,7 +84,10 @@ const handleUnresolvedClick = async () => {
  * @returns {Object|null} - 接口响应结果
  */
 const submitResolveStatus = async (resolveStatus) => {
-  if (!props.conversationId) return null
+  if (!props.conversationId) {
+    ElMessage.warning('会话信息不存在，请稍后重试')
+    return null
+  }
   try {
     const res = await updateOrder({
       id: props.conversationId,

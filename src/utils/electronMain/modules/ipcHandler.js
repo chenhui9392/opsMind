@@ -53,6 +53,14 @@ class IpcHandler {
       this.toggleMainWindow()
     })
 
+    // 处理切换开发者工具显示/隐藏
+    ipcMain.on('toggleDevTools', () => {
+      const mainWindow = windowManager.getMainWindow()
+      if (mainWindow) {
+        mainWindow.webContents.toggleDevTools()
+      }
+    })
+
     // 处理下载并安装更新
     ipcMain.handle('downloadAndInstallUpdate', async (event, downloadUrl, fileName) => {
       return await this.downloadAndInstallUpdate(downloadUrl, fileName)

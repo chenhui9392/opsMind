@@ -109,11 +109,11 @@ const historyCustomerSatisfaction = useHistorySatisfaction(computed(() => props.
 const historyFeedbackRecord = useHistoryFeedbackRecord(computed(() => props.messages))
 
 // 当前会话ID
-const conversationId = computed(() => {
-  // 建立对 messages 的依赖，确保消息列表更新时重新获取
-  props.messages
-  return chatMessageService.getCurrentOrderId() || ''
-})
+const conversationId = ref('')
+
+watch(() => props.messages, () => {
+  conversationId.value = chatMessageService.getCurrentOrderId() || ''
+}, { immediate: true })
 
 // 模板引用
 const messageList = ref(null)
