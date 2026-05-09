@@ -10,6 +10,32 @@ class MessageService {
   constructor() {
     // 委托给 chatMessageService 的状态
     this.chatService = chatMessageService
+    // 本地缓存用户提交的反馈状态（解决切换会话后状态回退的问题）
+    this.feedbackRecordCache = {}
+    // 本地缓存用户提交的满意度评价（解决切换会话后状态回退的问题）
+    this.customerSatisfactionCache = {}
+  }
+
+  /**
+   * 缓存反馈状态
+   * @param {string} orderId - 工单ID
+   * @param {string} feedbackRecord - 反馈状态
+   */
+  cacheFeedbackRecord(orderId, feedbackRecord) {
+    if (orderId) {
+      this.feedbackRecordCache[orderId] = feedbackRecord
+    }
+  }
+
+  /**
+   * 缓存满意度评价
+   * @param {string} orderId - 工单ID
+   * @param {string} customerSatisfaction - 满意度评价
+   */
+  cacheCustomerSatisfaction(orderId, customerSatisfaction) {
+    if (orderId) {
+      this.customerSatisfactionCache[orderId] = customerSatisfaction
+    }
   }
 
   /**
@@ -40,8 +66,8 @@ class MessageService {
           orderStatus: order.orderStatus,
           orderType: order.orderType,
           orderTypeActual: order.orderTypeActual,
-          feedbackRecord: order.feedbackRecord,
-          customerSatisfaction: order.customerSatisfaction
+          feedbackRecord: this.feedbackRecordCache[order.id] || order.feedbackRecord,
+          customerSatisfaction: this.customerSatisfactionCache[order.id] || order.customerSatisfaction
         })
         // 保存到消息存储
         this.chatService.messageStore[order.id] = [...messages]

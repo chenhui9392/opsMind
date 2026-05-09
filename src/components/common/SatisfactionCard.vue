@@ -12,7 +12,7 @@
       <div
         v-for="item in satisfactionList"
         :key="item.value"
-        :class="['satisfaction-bar__item', { 'is-active': selectedValue === item.value, 'is-disabled': props.disabled }]"
+        :class="['satisfaction-bar__item', { 'is-active': selectedValue === item.value, 'is-disabled': props.disabled || hasSubmitted }]"
         @click="handleClick(item.value)"
       >
         <img
@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import icon01 from '../../assets/evaluation/evaluation_01.png'
 import icon02 from '../../assets/evaluation/evaluation_02.png'
 import icon03 from '../../assets/evaluation/evaluation_03.png'
@@ -58,6 +58,13 @@ const props = defineProps({
 const emit = defineEmits(['change'])
 
 const selectedValue = ref(null)
+const hasSubmitted = ref(props.disabled || !!props.customerSatisfaction)
+
+// 监听会话ID变化，切换会话时重置本地状态，防止不同会话间状态污染
+watch(() => props.conversationId, () => {
+  selectedValue.value = null
+  hasSubmitted.value = props.disabled || !!props.customerSatisfaction
+})
 
 // 满意度字符串与数值的反向映射
 const satisfactionReverseMap = {
@@ -85,16 +92,19 @@ const satisfactionMap = {
 }
 
 const handleClick = (value) => {
-  if (props.disabled) return
+  if (props.disabled || hasSubmitted.value) return
   selectedValue.value = value
   emit('change', value)
   submitSatisfaction(value)
 }
 
-// 初始化：如果传入了历史满意度值，自动选中
-if (props.customerSatisfaction && satisfactionReverseMap[props.customerSatisfaction]) {
-  selectedValue.value = satisfactionReverseMap[props.customerSatisfaction]
-}
+// 监听历史满意度值变化，自动选中并禁用
+watch(() => props.customerSatisfaction, (newVal) => {
+  if (newVal && satisfactionReverseMap[newVal]) {
+    selectedValue.value = satisfactionReverseMap[newVal]
+    hasSubmitted.value = true
+  }
+}, { immediate: true })
 
 /**
  * 提交满意度评价
@@ -108,7 +118,9 @@ const submitSatisfaction = async (value) => {
       id: props.conversationId,
       customerSatisfaction: satisfaction
     })
+    hasSubmitted.value = true
   } catch (error) {
+    // 提交失败，不设置 hasSubmitted，允许用户重新选择
   }
 }
 </script>
@@ -150,7 +162,8 @@ const submitSatisfaction = async (value) => {
 }
 
 .satisfaction-bar__item.is-disabled {
-  cursor: pointer;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .satisfaction-bar__item.is-disabled:hover {

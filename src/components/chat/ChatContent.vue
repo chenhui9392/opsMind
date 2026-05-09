@@ -44,6 +44,7 @@ import ChatInput from './ChatInput.vue'
 import MessageList from './MessageList.vue'
 import SatisfactionCard from '../common/SatisfactionCard.vue'
 import chatMessageService from '../../services/chatMessageService'
+import messageService from '../../services/messageService'
 
 // 从消息列表中提取历史满意度评价
 const useHistorySatisfaction = (messages) => {
@@ -124,14 +125,16 @@ const chatInputRef = ref(null)
  */
 const handleResolved = () => {
   showSatisfaction.value = true
-  // 给 resolve-status 消息添加 resolved 标记
+  // 给 resolve-status 消息添加 resolved 标记和 feedbackRecord
   const updatedMessages = props.messages.map(msg => {
     if (msg.sender === 'resolve-status') {
-      return { ...msg, resolved: true }
+      return { ...msg, resolved: true, feedbackRecord: 'RESOLVED' }
     }
     return msg
   })
   emit('update:messages', updatedMessages)
+  // 缓存反馈状态到 messageService，防止切换会话后状态回退
+  messageService.cacheFeedbackRecord(conversationId.value, 'RESOLVED')
 }
 
 /**
@@ -139,14 +142,16 @@ const handleResolved = () => {
  */
 const handleUnresolved = () => {
   showSatisfaction.value = true
-  // 给 resolve-status 消息添加 resolved 标记
+  // 给 resolve-status 消息添加 resolved 标记和 feedbackRecord
   const updatedMessages = props.messages.map(msg => {
     if (msg.sender === 'resolve-status') {
-      return { ...msg, resolved: true }
+      return { ...msg, resolved: true, feedbackRecord: 'UNRESOLVED' }
     }
     return msg
   })
   emit('update:messages', updatedMessages)
+  // 缓存反馈状态到 messageService，防止切换会话后状态回退
+  messageService.cacheFeedbackRecord(conversationId.value, 'UNRESOLVED')
 }
 
 /**
@@ -287,10 +292,49 @@ const resetCascader = () => {
 }
 
 /**
+ * 满意度数值与字符串映射
+ */
+const satisfactionMap = {
+  1: 'VERY_DISSATISFIED',
+  2: 'DISSATISFIED',
+  3: 'NEUTRAL',
+  4: 'SATISFIED',
+  5: 'VERY_SATISFIED'
+}
+
+/**
  * 处理满意度评价
  * @param {number} value - 评分值 1-5
  */
 const handleSatisfactionChange = (value) => {
+  const satisfactionStr = satisfactionMap[value]
+  if (!satisfactionStr || !conversationId.value) return
+
+  // 更新消息列表中的 satisfaction-status 消息
+  const existingIndex = props.messages.findIndex(msg => msg.sender === 'satisfaction-status')
+  let updatedMessages
+  if (existingIndex !== -1) {
+    updatedMessages = props.messages.map((msg, index) => {
+      if (index === existingIndex) {
+        return { ...msg, customerSatisfaction: satisfactionStr }
+      }
+      return msg
+    })
+  } else {
+    updatedMessages = [
+      ...props.messages,
+      {
+        sender: 'satisfaction-status',
+        text: '',
+        time: '',
+        images: [],
+        customerSatisfaction: satisfactionStr
+      }
+    ]
+  }
+  emit('update:messages', updatedMessages)
+  // 缓存满意度到 messageService，防止切换会话后状态回退
+  messageService.cacheCustomerSatisfaction(conversationId.value, satisfactionStr)
 }
 
 /**
