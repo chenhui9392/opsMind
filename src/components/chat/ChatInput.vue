@@ -282,6 +282,13 @@ watch(() => props.isNewSession, (newVal) => {
   }
 })
 
+// 监听输入框禁用状态，禁用时自动清除输入内容
+watch(() => props.isInputDisabled, (newVal) => {
+  if (newVal) {
+    clearInput()
+  }
+})
+
 // 生命周期钩子
 onMounted(() => {
   autoResize()
@@ -297,9 +304,21 @@ const resetCascader = () => {
   }
 }
 
+/**
+ * 清除输入框内容（切换会话时调用）
+ */
+const clearInput = () => {
+  inputMessage.value = ''
+  uploadedImages.value = []
+  uploadedFiles.value = []
+  isInCodeBlock.value = false
+  resetResize()
+}
+
 // 暴露方法给父组件
 defineExpose({
-  resetCascader
+  resetCascader,
+  clearInput
 })
 </script>
 
