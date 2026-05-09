@@ -353,12 +353,8 @@ const processFormInfo = () => {
   // 判断是否可编辑：
   // 1. 必须是最后一条 a2ui 表单
   // 2. orderStatus = 'DRAFT' → 可编辑
-  // 3. orderStatus = 'PROCESSING' && orderTypeActual = 'BUG' → 可编辑
-  // 4. 其他情况 → 禁用
-  const isEditable = props.isLastA2UIForm && (
-    props.orderStatus === 'DRAFT' ||
-    (props.orderStatus === 'PROCESSING' && props.orderTypeActual === 'BUG')
-  )
+  // 3. 其他情况 → 禁用
+  const isEditable = props.isLastA2UIForm && props.orderStatus === 'DRAFT'
   const shouldDisable = props.orderStatus && !isEditable
   renderForm(shouldDisable ? disableNodes(nodeList, true) : nodeList)
 }

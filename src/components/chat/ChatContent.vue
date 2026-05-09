@@ -116,6 +116,13 @@ watch(() => props.messages, () => {
   conversationId.value = chatMessageService.getCurrentOrderId() || ''
 }, { immediate: true })
 
+// 监听会话ID变化，切换会话时清除输入框内容
+watch(conversationId, (newVal, oldVal) => {
+  if (newVal && newVal !== oldVal && chatInputRef.value?.clearInput) {
+    chatInputRef.value.clearInput()
+  }
+})
+
 // 模板引用
 const messageList = ref(null)
 const chatInputRef = ref(null)
