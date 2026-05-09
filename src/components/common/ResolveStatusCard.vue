@@ -7,8 +7,8 @@
         <button
           type="button"
           class="status-btn status-btn--resolved"
-          :class="{ 'is-disabled': disabled && !activeFeedbackRecord, 'is-unselected': activeFeedbackRecord === 'UNRESOLVED' }"
-          :disabled="disabled || !!activeFeedbackRecord"
+          :class="{ 'is-disabled': disabled && !activeFeedbackRecord, 'is-unselected': activeFeedbackRecord && activeFeedbackRecord !== 'RESOLVED' }"
+          :disabled="isReadonly"
           @click="handleResolvedClick"
         >
           <img :src="iconResolvedImg" class="bot-avatar-img" />
@@ -17,8 +17,8 @@
         <button
           type="button"
           class="status-btn status-btn--unresolved"
-          :class="{ 'is-disabled': disabled && !activeFeedbackRecord, 'is-unselected': activeFeedbackRecord === 'RESOLVED' }"
-          :disabled="disabled || !!activeFeedbackRecord"
+          :class="{ 'is-disabled': disabled && !activeFeedbackRecord, 'is-unselected': activeFeedbackRecord && activeFeedbackRecord !== 'UNRESOLVED' }"
+          :disabled="isReadonly"
           @click="handleUnresolvedClick"
         >
           <img :src="iconUnresolvedImg" class="bot-avatar-img" />
@@ -33,7 +33,7 @@
 import iconResolvedImg from '../../assets/icon_resolved.png'
 import iconUnresolvedImg from '../../assets/icon_unresolved.png'
 import { updateOrder } from '../../api'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   disabled: {
@@ -55,13 +55,21 @@ const emit = defineEmits(['resolved', 'unresolved'])
 // 本地记录用户点击的选择（实时交互场景）
 const localFeedbackRecord = ref('')
 
+// 监听会话ID变化，切换会话时重置本地状态，防止不同会话间状态污染
+watch(() => props.conversationId, () => {
+  localFeedbackRecord.value = ''
+})
+
 // 综合判断：优先使用本地记录，其次使用接口返回的历史记录
 const activeFeedbackRecord = computed(() => {
   return localFeedbackRecord.value || props.feedbackRecord || ''
 })
 
+// 统一判断是否处于只读状态（禁用或已有反馈记录）
+const isReadonly = computed(() => props.disabled || !!activeFeedbackRecord.value)
+
 const handleResolvedClick = async () => {
-  if (props.disabled) return
+  if (isReadonly.value) return
   const res = await submitResolveStatus('RESOLVED')
   if (res && res.code === 200) {
     localFeedbackRecord.value = 'RESOLVED'
@@ -70,7 +78,7 @@ const handleResolvedClick = async () => {
 }
 
 const handleUnresolvedClick = async () => {
-  if (props.disabled) return
+  if (isReadonly.value) return
   const res = await submitResolveStatus('UNRESOLVED')
   if (res && res.code === 200) {
     localFeedbackRecord.value = 'UNRESOLVED'
@@ -185,6 +193,10 @@ const submitResolveStatus = async (resolveStatus) => {
 .status-btn--unresolved {
   color: #E0640C;
   background: #FAF1EB;
+}
+
+.status-btn:disabled {
+  cursor: not-allowed;
 }
 
 .status-btn.is-disabled {
