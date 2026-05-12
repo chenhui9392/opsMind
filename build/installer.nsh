@@ -1,4 +1,4 @@
-!define INSTALL_PATH "D:\${PRODUCT_NAME}App"
+!define INSTALL_PATH "D:\dolphinApp"
 
 !ifdef BUILD_UNINSTALLER
   Function un.AddAppData
