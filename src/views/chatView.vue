@@ -142,7 +142,8 @@ const handleNavigateToSession = async (sessionId) => {
   const order = historyOrders.find(contact => contact.id === sessionId);
   if (order) {
     showInput.value = true;
-    isInputDisabled.value = order.orderStatus !== 'DRAFT';
+    // 非草稿状态禁用输入，但未解决反馈时解除禁用
+    isInputDisabled.value = order.orderStatus !== 'DRAFT' && order.feedbackRecord !== 'UNRESOLVED';
   } else {
     showInput.value = false;
     isInputDisabled.value = false;

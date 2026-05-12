@@ -162,8 +162,8 @@ export function convertHistoryToMessages(historyData, options = {}) {
     })
   }
 
-  // 当存在历史满意度评价时，添加满意度展示卡片（仅展示，不可点击）
-  if (customerSatisfaction) {
+  // 当存在历史满意度评价且用户未选择"未解决"时，添加满意度展示卡片（仅展示，不可点击）
+  if (customerSatisfaction && feedbackRecord !== 'UNRESOLVED') {
     messages.push({
       sender: 'satisfaction-status',
       text: '',

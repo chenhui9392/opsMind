@@ -231,9 +231,9 @@ const handleSearch = (query) => {
 const selectOrder = async (order) => {
   const messages = await messageService.selectOrder(order)
   emit('update:selectedContact', order.id)
-  // 所有状态都显示聊天框，非草稿状态禁用输入
+  // 所有状态都显示聊天框，非草稿状态禁用输入（未解决反馈除外）
   emit('update:showInput', true)
-  const isDisabled = order.orderStatus !== 'DRAFT'
+  const isDisabled = order.orderStatus !== 'DRAFT' && order.feedbackRecord !== 'UNRESOLVED'
   emit('update:isInputDisabled', isDisabled)
   emit('update:messages', messages)
 }

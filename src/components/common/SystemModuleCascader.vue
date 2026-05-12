@@ -20,6 +20,7 @@
         :options="item.children"
         :props="cascaderProps"
         :placeholder="item.name"
+        :disabled="props.disabled"
         @change="(value) => handleCascadeChange(value, index, item)"
       />
     </template>

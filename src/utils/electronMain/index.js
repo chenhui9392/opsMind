@@ -47,10 +47,18 @@ if (!gotTheLock) {
   process.exit(0)
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // 当第二个实例启动时，显示主窗口
+    // 当第二个实例启动时，显示/恢复主窗口
     const mainWindow = windowManager.getMainWindow()
     if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore()
+      // 如果窗口隐藏（用户点击关闭按钮隐藏到托盘），先显示窗口
+      if (!mainWindow.isVisible()) {
+        mainWindow.show()
+      }
+      // 如果窗口最小化，恢复窗口
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore()
+      }
+      // 聚焦窗口
       mainWindow.focus()
     }
   })

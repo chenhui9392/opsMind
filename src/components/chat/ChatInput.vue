@@ -42,6 +42,7 @@
           v-model="cascaderValue"
           placeholder="请选择系统和模块"
           class="toolbar-cascader"
+          :disabled="props.isInputDisabled"
         />
 
         <div class="input-actions">

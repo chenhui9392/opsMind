@@ -12,7 +12,7 @@
 
     <!-- 满意度评价 -->
     <SatisfactionCard
-      v-if="showInput && (showSatisfaction || !!historyCustomerSatisfaction || !!historyFeedbackRecord)"
+      v-if="showInput && historyFeedbackRecord !== 'UNRESOLVED' && (showSatisfaction || !!historyCustomerSatisfaction || historyFeedbackRecord === 'RESOLVED')"
       class="satisfaction-wrapper"
       :conversation-id="conversationId"
       :disabled="!!historyCustomerSatisfaction"
@@ -148,7 +148,8 @@ const handleResolved = () => {
  * 处理未解决点击
  */
 const handleUnresolved = () => {
-  showSatisfaction.value = true
+  // 用户选择未解决时隐藏满意度评价
+  showSatisfaction.value = false
   // 给 resolve-status 消息添加 resolved 标记和 feedbackRecord
   const updatedMessages = props.messages.map(msg => {
     if (msg.sender === 'resolve-status') {
@@ -159,6 +160,8 @@ const handleUnresolved = () => {
   emit('update:messages', updatedMessages)
   // 缓存反馈状态到 messageService，防止切换会话后状态回退
   messageService.cacheFeedbackRecord(conversationId.value, 'UNRESOLVED')
+  // 通知父组件解除输入框禁用，允许用户继续提问
+  emit('unresolved')
 }
 
 /**

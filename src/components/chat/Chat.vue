@@ -31,6 +31,7 @@
         @update:isSending="$emit('update:isSending', $event)"
         @stop="handleStop"
         @submit-success="handleSubmitSuccess"
+        @unresolved="handleUnresolved"
         @refresh-orders="$emit('refresh-orders', $event)"
       />
     </div>
@@ -262,6 +263,14 @@ const handleSubmitSuccess = (payload) => {
 
   // 同时触发 submit-success 事件，供父组件做其他处理
   emit('submit-success')
+}
+
+/**
+ * 处理未解决反馈点击
+ * 解除输入框禁用状态，允许用户继续提问
+ */
+const handleUnresolved = () => {
+  emit('update:isInputDisabled', false)
 }
 
 // 生命周期钩子
