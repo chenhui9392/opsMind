@@ -11,6 +11,7 @@ import floatingBall from '../views/floatingBall.vue'
 import LoginPage from '../views/LoginPage.vue'
 import A2uiTest from '../views/A2uiTest.vue'
 import PowerShellTest from '../views/PowerShellTest.vue'
+import { checkEnvironmentChange, clearAllAuthState } from '../composables/useAuth'
 
 const routes = [
   {
@@ -53,8 +54,20 @@ const router = createRouter({
 /**
  * 路由守卫 - 认证检查
  * 在应用启动时检查是否存在有效的身份验证token
+ * 同时检测安装包环境是否变更，防止测试版/正式版切换后使用错误的认证状态
  */
 router.beforeEach((to, from, next) => {
+  // 优先检测环境一致性
+  // 当安装包环境变更时，强制清除登录状态并跳转到登录页
+  if (!checkEnvironmentChange()) {
+    clearAllAuthState()
+    if (to.path !== '/login') {
+      next('/login')
+      return
+    }
+    // 已在登录页，正常放行
+  }
+
   // 检查是否需要认证
   const requiresAuth = to.meta?.requiresAuth
 

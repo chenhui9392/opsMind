@@ -8,6 +8,13 @@ import 'element-plus/dist/index.css'
 import A2UIPlugin from 'a2ui-vue-engine'
 import 'a2ui-vue-engine/style.css'
 import './style.css'
+import { checkEnvironmentChange, clearAllAuthState } from './composables/useAuth'
+
+// 应用启动时检测环境一致性
+// 当安装包环境变更（测试版/正式版切换）时，强制清除登录状态
+if (!checkEnvironmentChange()) {
+  clearAllAuthState()
+}
 
 const app = createApp(App)
 app.use(pinia)

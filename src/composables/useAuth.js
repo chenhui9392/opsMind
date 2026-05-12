@@ -15,6 +15,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login as loginApi } from '../api'
+import { isDev } from '../config/env.js'
 
 // 认证状态（全局共享）
 const isAuthenticated = ref(false)
@@ -56,6 +57,7 @@ export function useAuth() {
         localStorage.setItem('token', response.data.access_token)
         localStorage.setItem('userName', username.trim())
         localStorage.setItem('userInfo', JSON.stringify(response.data))
+        localStorage.setItem('app_environment', isDev ? 'development' : 'production')
 
         // 启动定时任务
         startScheduledTask()
@@ -91,6 +93,7 @@ export function useAuth() {
     localStorage.removeItem('userName')
     localStorage.removeItem('rememberedUsername')
     localStorage.removeItem('rememberedPassword')
+    localStorage.removeItem('app_environment')
 
     // 停止定时任务
     stopScheduledTask()
@@ -200,4 +203,42 @@ export function useAuth() {
     clearRememberedCredentials,
     getToken
   }
+}
+
+/**
+ * 检查应用环境是否发生变更
+ * 用于检测安装包切换（测试版/正式版）时环境是否一致
+ * @returns {boolean} 环境是否一致（true=一致或首次登录，false=不一致）
+ */
+export function checkEnvironmentChange() {
+  const storedEnv = localStorage.getItem('app_environment')
+  const currentEnv = isDev ? 'development' : 'production'
+
+  // 没有存储的环境信息，可能是首次使用或旧版本
+  if (!storedEnv) {
+    // 如果已有登录状态，记录当前环境
+    if (localStorage.getItem('token')) {
+      localStorage.setItem('app_environment', currentEnv)
+    }
+    return true
+  }
+
+  return storedEnv === currentEnv
+}
+
+/**
+ * 强制清除所有认证相关状态（不依赖 Vue Router）
+ * 用于应用启动时环境不一致的场景
+ */
+export function clearAllAuthState() {
+  isAuthenticated.value = false
+  userInfo.value = null
+  token.value = ''
+
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+  localStorage.removeItem('userName')
+  localStorage.removeItem('app_environment')
+  localStorage.removeItem('rememberedUsername')
+  localStorage.removeItem('rememberedPassword')
 }
