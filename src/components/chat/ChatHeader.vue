@@ -33,7 +33,7 @@
       <!-- 右侧：环境标识 + 下载按钮 -->
       <div class="header-right">
         <!-- 测试环境标识 -->
-        <span v-if="isDev" class="env-badge">测试</span>
+        <span v-if="isDev" class="env-badge">Beta版</span>
 <!--        <button class="download-btn" @click="handleDownload" title="下载会话">-->
 <!--          <SvgIcon name="download" width="18" height="18" />-->
 <!--        </button>-->
