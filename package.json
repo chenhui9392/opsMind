@@ -22,7 +22,6 @@
   "build": {
     "appId": "com.opsmin.app",
     "productName": "海豚",
-    "artifactName": "${productName}.exe",
     "directories": {
       "output": "release"
     },
