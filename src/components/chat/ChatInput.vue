@@ -24,7 +24,7 @@
     <!-- 输入区域 -->
     <div class="chat-input-wrapper">
       <textarea
-        v-model="inputMessage"
+        v-model.trim="inputMessage"
         class="chat-input"
         :placeholder="placeholderText"
         @keydown.enter.prevent="handleEnterKey"
