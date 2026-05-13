@@ -48,15 +48,13 @@
         {
           "target": "dmg",
           "arch": [
-            "x64",
-            "arm64"
+            "x64"
           ]
         },
         {
           "target": "zip",
           "arch": [
-            "x64",
-            "arm64"
+            "x64"
           ]
         }
       ],
@@ -66,10 +64,12 @@
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "identity": "Suzhou Uni Technology Co.,Ltd. (CG65HC99F7)"
+      "identity": "Suzhou Uni Technology Co.,Ltd. (CG65HC99F7)",
+      "artifactName": "${productName}-${arch}.${ext}"
     },
     "dmg": {
-      "sign": false
+      "sign": false,
+      "artifactName": "${productName}-${arch}.dmg"
     },
     "electronVersion": "41.0.2",
     "files": [

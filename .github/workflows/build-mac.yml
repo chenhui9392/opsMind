@@ -33,9 +33,9 @@ jobs:
       # ✅ 构建
       - run: pnpm run build
 
-      # ✅ 打包
-      - name: Build Electron App
-        run: pnpm exec electron-builder --mac --publish never
+      # ✅ 打包 Intel 版本 (x64)
+      - name: Build Electron App (Intel x64)
+        run: pnpm exec electron-builder --mac --x64 --publish never
         env:
           ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
 
@@ -45,8 +45,36 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      # ✅ 上传
+      # ✅ 上传 Intel 版本
       - uses: actions/upload-artifact@v4
         with:
-          name: mac-build
-          path: release/*
+          name: mac-build-intel
+          path: |
+            release/*.dmg
+            release/*.zip
+          retention-days: 7
+
+      # ✅ 清理 Intel 版本产物
+      - name: Clean Intel build
+        run: rm -rf release/*
+
+      # ✅ 打包 Apple Silicon 版本 (arm64)
+      - name: Build Electron App (Apple Silicon arm64)
+        run: pnpm exec electron-builder --mac --arm64 --publish never
+        env:
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      # ✅ 上传 Apple Silicon 版本
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-build-arm64
+          path: |
+            release/*.dmg
+            release/*.zip
+          retention-days: 7
