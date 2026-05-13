@@ -5,6 +5,7 @@
  * @LastEditTime: 2026-04-24 14:05:28
  * @LastEditors: hui.chenn
  */
+import { ref } from 'vue'
 import { sendChatMessage, downloadSoftware } from '../api'
 import { createMessageObject, convertHistoryToMessages } from '../utils/messageUtils'
 
@@ -29,6 +30,7 @@ class ChatMessageService {
     this.currentSystemName = ''
     this.currentModuleName = ''
     this.chatAbortController = null
+    this.isFormSubmitting = ref(false)
   }
 
   /**
@@ -43,6 +45,7 @@ class ChatMessageService {
     this.currentBusinessType = ''
     this.currentSystemName = ''
     this.currentModuleName = ''
+    this.isFormSubmitting.value = false
   }
 
   /**
@@ -65,20 +68,22 @@ class ChatMessageService {
       this.sessionConfigStore[this.currentChatSession] = {}
     }
 
-    if (businessType) {
-      this.currentBusinessType = businessType
-      this.sessionConfigStore[this.currentChatSession].businessType = businessType
-    }
+    this.currentBusinessType = businessType || ''
+    this.sessionConfigStore[this.currentChatSession].businessType = businessType || ''
 
-    if (systemName) {
-      this.currentSystemName = systemName
-      this.sessionConfigStore[this.currentChatSession].systemName = systemName
-    }
+    this.currentSystemName = systemName || ''
+    this.sessionConfigStore[this.currentChatSession].systemName = systemName || ''
 
-    if (moduleName) {
-      this.currentModuleName = moduleName
-      this.sessionConfigStore[this.currentChatSession].moduleName = moduleName
-    }
+    this.currentModuleName = moduleName || ''
+    this.sessionConfigStore[this.currentChatSession].moduleName = moduleName || ''
+  }
+
+  /**
+   * 设置表单提交状态
+   * @param {boolean} value - 是否正在提交
+   */
+  setFormSubmitting(value) {
+    this.isFormSubmitting.value = value
   }
 
   /**

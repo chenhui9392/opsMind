@@ -328,10 +328,12 @@ const handleA2UIMessage = async (payload) => {
 
   try {
     isSubmitting.value = true
+    chatMessageService.setFormSubmitting(true)
     await executeSubmitWorkOrder()
   } catch (error) {
   } finally {
     isSubmitting.value = false
+    chatMessageService.setFormSubmitting(false)
   }
 }
 
@@ -352,10 +354,10 @@ const processFormInfo = () => {
 
   // 判断是否可编辑：
   // 1. 必须是最后一条 a2ui 表单
-  // 2. orderStatus = 'DRAFT' → 可编辑
-  // 3. 其他情况 → 禁用
-  const isEditable = props.isLastA2UIForm && props.orderStatus === 'DRAFT'
-  const shouldDisable = props.orderStatus && !isEditable
+  // 2. orderStatus = 'DRAFT' 或无 orderStatus（新表单）→ 可编辑
+  // 3. 其他情况（非最后一条、或已提交）→ 禁用
+  const isEditable = props.isLastA2UIForm && (props.orderStatus === 'DRAFT' || !props.orderStatus)
+  const shouldDisable = !isEditable
   renderForm(shouldDisable ? disableNodes(nodeList, true) : nodeList)
 }
 
@@ -367,6 +369,10 @@ watch(() => props.formInfo, (newVal, oldVal) => {
   if (newVal !== oldVal) {
     nextTick(() => processFormInfo())
   }
+})
+
+watch(() => props.isLastA2UIForm, () => {
+  nextTick(() => processFormInfo())
 })
 
 onMounted(() => {

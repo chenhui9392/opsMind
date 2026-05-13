@@ -22,6 +22,14 @@
       </span>
       <span v-if="hasValue" class="selected-text">{{ displayText }}</span>
       <span v-else class="placeholder-text">{{ placeholder }}</span>
+      <!-- 清除按钮 -->
+      <span
+        v-if="hasValue && clearable && !disabled"
+        class="clear-btn"
+        @click.stop="clearSelection"
+      >
+        ×
+      </span>
     </div>
 
     <!-- 下拉面板 -->
@@ -33,6 +41,25 @@
           class="custom-cascader-dropdown"
           :style="dropdownStyle"
         >
+          <!-- 搜索框（固定在顶部，仅在第一级超过10条时显示） -->
+          <div v-if="needSearch" class="cascader-search-box">
+            <div class="search-input-wrapper">
+              <input
+                v-model="searchKeyword"
+                type="text"
+                class="search-input"
+                placeholder="搜索..."
+                @click.stop
+              />
+              <button
+                v-if="searchKeyword"
+                class="search-clear-btn"
+                @click.stop="clearSearch"
+              >
+                ×
+              </button>
+            </div>
+          </div>
           <!-- 级联面板 -->
           <div class="cascader-menus">
             <div
@@ -104,11 +131,29 @@ const props = defineProps({
   separator: {
     type: String,
     default: ' / '
+  },
+  // 是否可清空
+  clearable: {
+    type: Boolean,
+    default: true
   }
 })
 
 // Emits
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits(['update:modelValue', 'change', 'clear'])
+
+/**
+ * 统计当前菜单的节点总数（只统计第一级）
+ */
+const totalNodesCount = computed(() => {
+  const firstMenu = props.options
+  return firstMenu ? firstMenu.length : 0
+})
+
+/**
+ * 是否需要显示搜索框（第一级超过10条）
+ */
+const needSearch = computed(() => totalNodesCount.value > 10)
 
 // 响应式数据
 const isOpen = ref(false)
@@ -116,6 +161,8 @@ const triggerRef = ref(null)
 const dropdownRef = ref(null)
 const dropdownStyle = ref({})
 const activePath = ref([]) // 当前激活的路径
+const searchKeyword = ref('') // 搜索关键词
+const menuRefs = ref([]) // 菜单DOM引用，用于滚动定位
 
 // 合并 props 配置
 const config = computed(() => ({
@@ -149,10 +196,24 @@ const displayText = computed(() => {
   return labels.join(props.separator)
 })
 
+/**
+ * 根据搜索关键词过滤第一级选项
+ */
+const filteredFirstLevelOptions = computed(() => {
+  if (!searchKeyword.value || !needSearch.value) {
+    return props.options
+  }
+  const keyword = searchKeyword.value.toLowerCase()
+  return props.options.filter(item => {
+    const label = getLabel(item)
+    return label && label.toLowerCase().includes(keyword)
+  })
+})
+
 // 菜单列表（多级）
 const menuList = computed(() => {
   const menus = []
-  let currentOptions = props.options
+  let currentOptions = filteredFirstLevelOptions.value
 
   // 第一级菜单
   if (currentOptions && currentOptions.length > 0) {
@@ -267,6 +328,25 @@ const toggleDropdown = () => {
 }
 
 /**
+ * 清除搜索关键词并还原所有级联内容
+ */
+const clearSearch = () => {
+  searchKeyword.value = ''
+  activePath.value = []
+}
+
+/**
+ * 清除选中数据
+ */
+const clearSelection = () => {
+  emit('update:modelValue', [])
+  emit('change', [])
+  emit('clear')
+  activePath.value = []
+  searchKeyword.value = ''
+}
+
+/**
  * 打开下拉面板
  */
 const openDropdown = () => {
@@ -286,6 +366,26 @@ const openDropdown = () => {
 const closeDropdown = () => {
   isOpen.value = false
   activePath.value = []
+  searchKeyword.value = ''
+}
+
+/**
+ * 滚动到选中项
+ */
+const scrollToSelectedItem = () => {
+  nextTick(() => {
+    // 遍历每一级菜单，滚动到激活的节点
+    const menuElements = dropdownRef.value?.querySelectorAll('.cascader-menu')
+    if (!menuElements) return
+
+    menuElements.forEach((menuEl, level) => {
+      const activeEl = menuEl.querySelector('.cascader-node.is-active')
+      if (activeEl) {
+        // 将激活节点滚动到可视区域中心
+        activeEl.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }
+    })
+  })
 }
 
 /**
@@ -295,8 +395,15 @@ const updateDropdownPosition = () => {
   if (!triggerRef.value || !dropdownRef.value) return
 
   const triggerRect = triggerRef.value.getBoundingClientRect()
-  const dropdownHeight = dropdownRef.value.offsetHeight || 200
   const windowHeight = window.innerHeight
+
+  // 根据菜单数量计算下拉面板宽度
+  const menuCount = visibleMenuList.value.length
+  const menuWidth = 216 // 每个菜单固定宽度
+  const dropdownWidth = menuCount * menuWidth
+
+  // 固定高度（搜索框40px + 菜单区域300px = 340px，有搜索框时为340px）
+  const dropdownHeight = 340
 
   // 判断下方空间是否足够
   const spaceBelow = windowHeight - triggerRect.bottom
@@ -318,7 +425,7 @@ const updateDropdownPosition = () => {
     position: 'fixed',
     top: `${top}px`,
     left: `${left}px`,
-    minWidth: `${triggerRect.width}px`,
+    width: `${dropdownWidth}px`,
     zIndex: 9999
   }
 }
@@ -353,6 +460,35 @@ watch(() => props.modelValue, (newVal) => {
     activePath.value = []
   }
 }, { immediate: true })
+
+// 监听搜索关键词变化，搜索时清空子级数据并更新面板宽度
+watch(searchKeyword, (newVal) => {
+  if (newVal) {
+    activePath.value = []
+    // 清空子级后需要更新下拉面板宽度
+    nextTick(() => {
+      updateDropdownPosition()
+    })
+  }
+})
+
+// 监听菜单数量变化，更新下拉面板宽度
+watch(visibleMenuList, () => {
+  if (isOpen.value) {
+    nextTick(() => {
+      updateDropdownPosition()
+    })
+  }
+})
+
+// 监听 dropdown 打开状态，打开时滚动到选中项
+watch(isOpen, (newVal) => {
+  if (newVal && hasValue.value) {
+    nextTick(() => {
+      scrollToSelectedItem()
+    })
+  }
+})
 
 // 生命周期
 onMounted(() => {
@@ -397,6 +533,7 @@ defineExpose({
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 12px;
+  position: relative;
 }
 
 .custom-cascader-trigger:hover:not(.is-disabled) {
@@ -445,10 +582,10 @@ defineExpose({
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 14px;
+  padding-right: 18px;
 }
 
 /* 选中状态样式 */
-
 
 .custom-cascader-trigger.has-value .selected-text {
   color: #2260FA;
@@ -463,27 +600,113 @@ defineExpose({
   background-color: #e0eaff;
 }
 
+/* 清除按钮 */
+.clear-btn {
+  position: absolute;
+  top: 1px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #c0c4cc;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.clear-btn:hover {
+  background-color: #909399;
+}
+
 /* 下拉面板样式 */
 .custom-cascader-dropdown {
   background-color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 340px;
+}
+
+/* 搜索框样式 */
+.cascader-search-box {
+  padding: 8px 12px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e4e7ed;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.search-input-wrapper {
+  position: relative;
+  width: 170px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 32px 6px 10px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+  background-color: #f5f7fa;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  border-color: #2260FA;
+  background-color: #ffffff;
+}
+
+.search-input::placeholder {
+  color: #c0c4cc;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background-color: #c0c4cc;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  line-height: 1;
+  padding: 0;
+}
+
+.search-clear-btn:hover {
+  background-color: #909399;
 }
 
 /* 级联菜单容器 */
 .cascader-menus {
   display: flex;
-  max-height: 300px;
-  overflow: auto;
+  height: 300px;
+  overflow: hidden;
 }
 
 /* 单个菜单 */
 .cascader-menu {
-  min-width: 140px;
-  width: auto;
-  max-width: 200px;
-  max-height: 300px;
+  width: 216px;
+  height: 300px;
   overflow-y: auto;
   border-right: 1px solid #e4e7ed;
   padding: 6px 0;

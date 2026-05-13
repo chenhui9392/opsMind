@@ -26,7 +26,7 @@
       </div>
 
       <!-- 历史工单列表组件 -->
-      <div class="order-item-list" :class="{ 'disabled': isSending }">
+      <div class="order-item-list" :class="{ 'disabled': isSending || isFormSubmitting }">
         <OrderItemList
           ref="orderItemList"
           :selectedContact="selectedContact"
@@ -76,6 +76,7 @@ import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import OrderItemList from './OrderItemList.vue'
 import BottomToolbar from '../common/BottomToolbar.vue'
 import messageService from '../../services/messageService'
+import chatMessageService from '../../services/chatMessageService'
 import { useAuth } from '../../composables/useAuth'
 import { getSystemUsername } from '../../utils/system'
 import { createResizeMethods } from '../../utils/resizeHandler'
@@ -136,6 +137,7 @@ const isResizing = ref(false)
 const resizeMethods = ref(null)
 const userName = ref('')
 const isRefreshing = ref(false)
+const isFormSubmitting = chatMessageService.isFormSubmitting
 
 // 开发者模式彩蛋：连续点击头像计数
 const avatarClickCount = ref(0)
@@ -200,7 +202,7 @@ const fetchUserName = () => {
  * @param {Object} order - 工单对象
  */
 const handleSelectOrder = async (order) => {
-  if (props.isSending) {
+  if (props.isSending || isFormSubmitting.value) {
     return
   }
   await selectOrder(order)

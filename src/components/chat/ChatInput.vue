@@ -43,6 +43,7 @@
           placeholder="请选择系统和模块"
           class="toolbar-cascader"
           :disabled="props.isInputDisabled"
+          @change="handleCascaderChange"
         />
 
         <div class="input-actions">
@@ -150,6 +151,21 @@ const placeholderText = computed(() => {
 const checkIfInCodeBlock = () => {
   const codeBlockMarkers = (inputMessage.value.match(/```/g) || []).length
   isInCodeBlock.value = codeBlockMarkers % 2 === 1
+}
+
+/**
+ * 处理级联选择变化
+ * @param {Object} eventData - 级联变化事件数据
+ */
+const handleCascaderChange = (eventData) => {
+  if (eventData && eventData.cascaderData) {
+    // 直接更新 cascaderValue 确保响应式更新
+    cascaderValue.value = {
+      businessType: eventData.cascaderData.businessType || '',
+      systemName: eventData.cascaderData.systemName || '',
+      moduleName: eventData.cascaderData.moduleName || ''
+    }
+  }
 }
 
 /**
@@ -314,6 +330,7 @@ const clearInput = () => {
   uploadedFiles.value = []
   isInCodeBlock.value = false
   resetResize()
+  resetCascader()
 }
 
 // 暴露方法给父组件

@@ -21,7 +21,9 @@
         :props="cascaderProps"
         :placeholder="item.name"
         :disabled="props.disabled"
+        :clearable="true"
         @change="(value) => handleCascadeChange(value, index, item)"
+        @clear="() => handleCascadeClear(index)"
       />
     </template>
   </div>
@@ -129,6 +131,12 @@ const findSystemByCode = (code, data = treeData.value) => {
  * @param {Object} systemItem - 当前系统项数据
  */
 const handleCascadeChange = (value, index, systemItem) => {
+  // 如果值为空数组，表示清除选择，直接清空所有字段
+  if (!value || value.length === 0) {
+    handleCascadeClear(index)
+    return
+  }
+
   // 重置其他级联选择器的值
   for (let i = 0; i < cascaderValues.value.length; i++) {
     if (i !== index) {
@@ -141,7 +149,7 @@ const handleCascadeChange = (value, index, systemItem) => {
   let businessType = systemItem.name
   let systemName = ''
   let moduleName = ''
-  
+
   value.forEach(code => {
     const node = findSystemByCode(code)
     if (node && node.name) {
@@ -161,9 +169,28 @@ const handleCascadeChange = (value, index, systemItem) => {
     moduleName: moduleName,
     businessType: businessType
   }
-  
+
   emit('update:modelValue', cascaderData)
   emit('change', { value, systemItem, index, cascaderData })
+}
+
+/**
+ * 处理级联选择清除
+ * @param {number} index - 当前级联选择器的索引
+ */
+const handleCascadeClear = (index) => {
+  // 清空当前级联选择器的值
+  cascaderValues.value[index] = []
+
+  // 发射空对象，清空所有字段
+  const cascaderData = {
+    systemName: '',
+    moduleName: '',
+    businessType: ''
+  }
+
+  emit('update:modelValue', cascaderData)
+  emit('change', { value: [], systemItem: null, index, cascaderData })
 }
 
 /**
