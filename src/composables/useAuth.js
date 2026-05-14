@@ -87,12 +87,11 @@ export function useAuth() {
     userInfo.value = null
     token.value = ''
 
-    // 清除 localStorage
+    // 清除 localStorage（保留 rememberedUsername / rememberedPassword，
+    // 登出不应清除【记住我】的凭据，只有用户取消勾选时才清除）
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
     localStorage.removeItem('userName')
-    localStorage.removeItem('rememberedUsername')
-    localStorage.removeItem('rememberedPassword')
     localStorage.removeItem('app_environment')
 
     // 停止定时任务
@@ -239,6 +238,6 @@ export function clearAllAuthState() {
   localStorage.removeItem('userInfo')
   localStorage.removeItem('userName')
   localStorage.removeItem('app_environment')
-  localStorage.removeItem('rememberedUsername')
-  localStorage.removeItem('rememberedPassword')
+  // 注意：不清除 rememberedUsername / rememberedPassword，
+  // 【记住我】的凭据不应随认证状态一起被清除
 }

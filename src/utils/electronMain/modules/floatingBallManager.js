@@ -1,5 +1,6 @@
 const { BrowserWindow, screen, app } = require('electron')
 const path = require('path')
+const fs = require('fs')
 
 class FloatingBallManager {
   constructor() {
@@ -12,7 +13,12 @@ class FloatingBallManager {
   getPreloadPath() {
     // 使用 app.getAppPath() 获取应用根目录
     const appPath = app.getAppPath()
-    return path.join(appPath, 'preload.js')
+    const preloadPath = path.join(appPath, 'preload.js')
+    // 校验 preload 文件是否存在，避免窗口创建后 preload 加载失败导致白屏
+    if (!fs.existsSync(preloadPath)) {
+      console.error('[FloatingBallManager] preload.js 不存在:', preloadPath)
+    }
+    return preloadPath
   }
 
   /**
@@ -51,13 +57,25 @@ class FloatingBallManager {
       })
 
       // 加载悬浮球页面（Vue路由）
-      if (isDev) {
-        // 开发模式：加载Vite开发服务器的悬浮球路由
-        this.floatingBallWindow.loadURL(`http://localhost:${devPort}/#/floating-ball`)
-      } else {
-        // 生产模式：使用 app:// 自定义协议加载，避免 file:// 的 CORS 问题
-        this.floatingBallWindow.loadURL('app://./dist/index.html#/floating-ball')
-      }
+      const floatingBallUrl = isDev
+        ? `http://localhost:${devPort}/#/floating-ball`
+        : 'app://./dist/index.html#/floating-ball'
+      console.log('[FloatingBallManager] 加载悬浮球页面:', floatingBallUrl, 'isDev=', isDev)
+      this.floatingBallWindow.loadURL(floatingBallUrl)
+
+      // 监听页面加载完成事件
+      this.floatingBallWindow.webContents.on('did-finish-load', () => {
+        console.log('[FloatingBallManager] 悬浮球页面加载完成')
+      })
+
+      // 监听页面加载失败事件
+      this.floatingBallWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+        console.error('[FloatingBallManager] 悬浮球页面加载失败:', {
+          errorCode,
+          errorDescription,
+          validatedURL
+        })
+      })
 
       // 隐藏默认菜单
       this.floatingBallWindow.setMenu(null)
@@ -65,6 +83,7 @@ class FloatingBallManager {
       // 初始位置：屏幕右下角
       const { width, height } = screen.getPrimaryDisplay().workAreaSize
       this.floatingBallWindow.setPosition(width - 100, height - 200)
+      console.log('[FloatingBallManager] 悬浮球窗口创建成功，位置:', width - 100, height - 200)
 
     } catch (error) {
       console.error('[FloatingBallManager] 创建悬浮球窗口失败:', error)

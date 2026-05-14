@@ -9,6 +9,37 @@ class TrayManager {
   }
 
   /**
+   * 获取当前平台推荐的托盘图标尺寸
+   * @returns {number} 图标边长（像素）
+   */
+  getTrayIconSize() {
+    switch (process.platform) {
+      case 'win32':
+        return 16
+      case 'darwin':
+        return 18
+      default:
+        return 22
+    }
+  }
+
+  /**
+   * 将大图缩放为适合托盘显示的尺寸
+   * @param {Electron.NativeImage} icon - 原始图标
+   * @returns {Electron.NativeImage} - 缩放后的图标
+   */
+  createResizedTrayIcon(icon) {
+    const size = icon.getSize()
+    const traySize = this.getTrayIconSize()
+    // 如果图标已经适合托盘尺寸，直接返回原图
+    if (size.width <= traySize * 2 && size.height <= traySize * 2) {
+      return icon
+    }
+    // 缩放到合适尺寸，避免系统强制缩放导致细节丢失
+    return icon.resize({ width: traySize, height: traySize, quality: 'best' })
+  }
+
+  /**
    * 创建托盘图标
    * @param {Function} showWindowCallback - 显示窗口的回调函数
    * @param {Function} quitAppCallback - 退出应用的回调函数
@@ -37,7 +68,8 @@ class TrayManager {
           // 尝试使用nativeImage.createFromPath()方法加载图标
           const icon = nativeImage.createFromPath(iconPath)
           if (!icon.isEmpty()) {
-            this.tray = new Tray(icon)
+            const trayIcon = this.createResizedTrayIcon(icon)
+            this.tray = new Tray(trayIcon)
           } else {
             // 尝试直接使用路径
             this.tray = new Tray(iconPath)
@@ -57,7 +89,8 @@ class TrayManager {
             // 尝试使用nativeImage.createFromPath()方法加载图标
             const icon = nativeImage.createFromPath(iconPath)
             if (!icon.isEmpty()) {
-              this.tray = new Tray(icon)
+              const trayIcon = this.createResizedTrayIcon(icon)
+              this.tray = new Tray(trayIcon)
             } else {
               // 尝试直接使用路径
               this.tray = new Tray(iconPath)

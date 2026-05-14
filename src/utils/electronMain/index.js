@@ -82,7 +82,15 @@ app.whenReady().then(() => {
   // 注册 app:// 协议处理器
   protocol.handle('app', (request) => {
     const { pathname } = new URL(request.url)
-    const filePath = path.join(app.getAppPath(), pathname)
+    let filePath = path.join(app.getAppPath(), pathname)
+
+    // public 目录资源构建后位于 dist/ 下，对根路径做 fallback
+    if (!fs.existsSync(filePath) && !pathname.startsWith('/dist/')) {
+      const distPath = path.join(app.getAppPath(), 'dist', pathname)
+      if (fs.existsSync(distPath)) {
+        filePath = distPath
+      }
+    }
 
     try {
       const data = fs.readFileSync(filePath)
