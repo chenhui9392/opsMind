@@ -72,9 +72,7 @@ opsmind/
 │   │   └── order/              # 工单相关组件
 │   ├── config/                 # 配置文件
 │   │   ├── env.js              # 环境配置
-│   │   ├── systemModuleData.js # 系统模块数据
 │   │   └── updateConfig.js     # 更新配置
-│   ├── mock/                   # 模拟数据
 │   ├── page/                   # 页面组件
 │   │   ├── ChatView.vue        # 聊天主页面
 │   │   └── FloatingBall.vue    # 悬浮球组件
@@ -363,7 +361,6 @@ VITE_WS_URL=ws://localhost:8080/ws
 |------|------|
 | `src/config/env.js` | 运行时环境配置 |
 | `src/config/updateConfig.js` | 自动更新配置 |
-| `src/config/systemModuleData.js` | 系统模块静态数据 |
 
 ---
 

@@ -44,7 +44,6 @@ import ChatHeader from './ChatHeader.vue'
 import ChatContent from './ChatContent.vue'
 import { getSystemUsername } from '../../utils/system'
 import chatMessageService from '../../services/chatMessageService'
-import { initialMessages } from '../../mock/data'
 
 // Props
 const props = defineProps({
@@ -151,7 +150,7 @@ const createNewSession = () => {
   emit('update:currentChatSession', result.selectedContact)
   // 重置输入框禁用状态
   emit('update:isInputDisabled', false)
-  
+
   // 重置级联选择器
   resetCascader()
 }

@@ -57,9 +57,6 @@ router.beforeEach((to, from, next) => {
   // 检查是否需要认证
   const requiresAuth = to.meta?.requiresAuth
 
-  // 检查是否是公开页面
-  const isPublicPage = to.meta?.public
-
   // 从 localStorage 获取 token
   const token = localStorage.getItem('token')
 
