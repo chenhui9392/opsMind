@@ -22,6 +22,7 @@ const AUTH_CONFIG = {
   appSecret: 'ced565e5a36911ecb0dd006066ad6f14'
 }
 
+console.info('UPDATE_API_BASE_URL:',UPDATE_API_BASE_URL)
 // 版本检查API基础配置
 const UPDATE_API_CONFIG = {
   // 基础URL - 开发环境使用代理路径，生产环境使用完整URL
