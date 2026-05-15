@@ -1,4 +1,29 @@
 // 网络请求封装
+import { ElMessage } from 'element-plus'
+import router from '../router'
+import { clearAllAuthState } from '../composables/useAuth'
+
+// 防止多个请求同时403时重复弹窗和跳转
+let isHandling403 = false
+
+/**
+ * 处理 403 Token 过期
+ * 显示提示信息，3秒后清除登录状态并跳转到登录页
+ */
+const handleTokenExpired = () => {
+  if (isHandling403) {
+    return
+  }
+  isHandling403 = true
+
+  ElMessage.error('登录已过期，请重新登录')
+
+  setTimeout(() => {
+    clearAllAuthState()
+    router.push('/login')
+    isHandling403 = false
+  }, 3000)
+}
 
 /**
  * 获取请求 headers，自动添加 token
@@ -37,6 +62,11 @@ export const get = async (url, params = {}, signal = null) => {
 
   const response = await fetch(`${url}${queryString ? `?${queryString}` : ''}`, options)
 
+  if (response.status === 403) {
+    handleTokenExpired()
+    throw new Error('Token expired')
+  }
+
   return response.json()
 }
 
@@ -59,6 +89,11 @@ export const post = async (url, data = {}, signal = null) => {
   }
 
   const response = await fetch(url, options)
+
+  if (response.status === 403) {
+    handleTokenExpired()
+    throw new Error('Token expired')
+  }
 
   return response.json()
 }
@@ -83,6 +118,11 @@ export const upload = async (url, formData, signal = null) => {
   }
 
   const response = await fetch(url, options)
+
+  if (response.status === 403) {
+    handleTokenExpired()
+    throw new Error('Token expired')
+  }
 
   return response.json()
 }
