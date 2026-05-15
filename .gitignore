@@ -2,7 +2,8 @@
 /dist_electron/
 /dist/
 /release/
-/releasePro/
+/release-beta/
+/release-dev/
 
 # Auto-generated type definitions
 auto-imports.d.ts

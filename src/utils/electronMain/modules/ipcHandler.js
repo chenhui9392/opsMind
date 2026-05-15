@@ -1,4 +1,4 @@
-const { ipcMain, shell, dialog, screen } = require('electron')
+const { ipcMain, shell, dialog, screen, app } = require('electron')
 const os = require('os')
 const https = require('https')
 const fs = require('fs')
@@ -7,6 +7,46 @@ const floatingBallManager = require('./floatingBallManager')
 const windowManager = require('./windowManager')
 const powerShellExecutor = require('./powerShellExecutor')
 const scheduledTaskManager = require('./scheduledTaskManager')
+
+/**
+ * 获取应用环境模式
+ * @returns {'development'|'beta'|'production'} 环境模式
+ */
+const getAppEnvMode = () => {
+  if (!app.isPackaged) {
+    return 'development'
+  }
+
+  try {
+    const envModePath = path.join(process.resourcesPath, 'app.asar', 'dist', '.env-mode')
+    if (fs.existsSync(envModePath)) {
+      const mode = fs.readFileSync(envModePath, 'utf-8').trim()
+      if (mode === 'development') {
+        return 'development'
+      } else if (mode === 'beta') {
+        return 'beta'
+      }
+    }
+  } catch (error) {
+    // ignore error
+  }
+
+  return 'production'
+}
+
+/**
+ * 获取应用名称（根据环境不同）
+ * @returns {string} 应用名称
+ */
+const getAppName = () => {
+  const envMode = getAppEnvMode()
+  if (envMode === 'development') {
+    return '海豚Dev'
+  } else if (envMode === 'beta') {
+    return '海豚Beta'
+  }
+  return '海豚'
+}
 
 class IpcHandler {
   constructor() {
@@ -18,6 +58,23 @@ class IpcHandler {
    * 设置所有IPC处理器
    */
   setupHandlers() {
+    // 处理应用环境信息请求
+    ipcMain.handle('getAppEnvMode', () => {
+      return getAppEnvMode()
+    })
+
+    ipcMain.on('getAppEnvModeSync', (event) => {
+      event.returnValue = getAppEnvMode()
+    })
+
+    ipcMain.handle('getAppName', () => {
+      return getAppName()
+    })
+
+    ipcMain.on('getAppNameSync', (event) => {
+      event.returnValue = getAppName()
+    })
+
     // 处理渲染进程的请求
     ipcMain.handle('getSystemUsername', () => {
       return this.getSystemUsername()

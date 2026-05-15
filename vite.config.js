@@ -1,8 +1,8 @@
 /*
  * @Author: hui.chenn
- * @Description: Vite 配置 - 支持多环境
+ * @Description: Vite 配置 - 支持多环境 (development/beta/production)
  * @Date: 2026-03-17 18:17:56
- * @LastEditTime: 2026-03-30 11:00:00
+ * @LastEditTime: 2026-05-14 10:00:00
  * @LastEditors: hui.chenn
  */
 import { defineConfig, loadEnv } from 'vite'
@@ -15,7 +15,7 @@ export default defineConfig(async ({ mode }) => {
   const { default: AutoImport } = await import('unplugin-auto-import/vite')
   const { default: Components } = await import('unplugin-vue-components/vite')
   const { ElementPlusResolver } = await import('unplugin-vue-components/resolvers')
-  // 加载对应的环境变量文件 (.env.development 或 .env.production)
+  // 加载对应的环境变量文件 (.env.development / .env.beta / .env.production)
   const env = loadEnv(mode, path.resolve(__dirname), '')
 
   // 获取版本检查域名用于代理配置
@@ -28,13 +28,7 @@ export default defineConfig(async ({ mode }) => {
         resolvers: [ElementPlusResolver()],
         imports: ['vue', 'vue-router'],
         dts: true
-      }),
-      // Components({
-      //   resolvers: [ElementPlusResolver()],
-      //   dts: 'components.d.ts',
-      //   dirs: ['src/components'],
-      //   deep: true
-      // })
+      })
     ],
     base: './',
     server: {

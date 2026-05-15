@@ -7,23 +7,14 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }
 ])
 
-// 导入模块
-const windowManager = require('./modules/windowManager')
-const trayManager = require('./modules/trayManager')
-const floatingBallManager = require('./modules/floatingBallManager')
-const ipcHandler = require('./modules/ipcHandler')
-const scheduledTaskManager = require('./modules/scheduledTaskManager')
-
 /**
- * 检查是否为 development 环境
- * 1. 未打包的应用是开发环境
- * 2. 已打包但存在 .env-mode 文件且内容为 development
- * @returns {boolean}
+ * 获取应用环境模式
+ * @returns {'development'|'beta'|'production'} 环境模式
  */
-const checkIsDevelopmentEnv = () => {
-  // 未打包的应用
+const getAppEnvMode = () => {
+  // 未打包的应用返回 development
   if (!app.isPackaged) {
-    return true
+    return 'development'
   }
 
   // 已打包的应用，检查标记文件
@@ -31,38 +22,101 @@ const checkIsDevelopmentEnv = () => {
     const envModePath = path.join(process.resourcesPath, 'app.asar', 'dist', '.env-mode')
     if (fs.existsSync(envModePath)) {
       const mode = fs.readFileSync(envModePath, 'utf-8').trim()
-      return mode === 'development'
+      if (mode === 'development') {
+        return 'development'
+      } else if (mode === 'beta') {
+        return 'beta'
+      }
     }
   } catch (error) {
+    // ignore error
   }
 
-  return false
+  return 'production'
 }
 
-// 确保只运行一个应用实例
-const gotTheLock = app.requestSingleInstanceLock()
+/**
+ * 检查是否为开发/测试环境（用于菜单栏显示开发者工具）
+ * @returns {boolean}
+ */
+const checkIsDevelopmentEnv = () => {
+  const envMode = getAppEnvMode()
+  return envMode === 'development' || envMode === 'beta'
+}
+
+/**
+ * 获取应用名称（根据环境不同）
+ * @returns {string} 应用名称
+ */
+const getAppName = () => {
+  const envMode = getAppEnvMode()
+  if (envMode === 'development') {
+    return '海豚Dev'
+  } else if (envMode === 'beta') {
+    return '海豚Beta'
+  }
+  return '海豚'
+}
+
+/**
+ * 设置应用用户数据目录（根据环境不同）
+ * Dev 和 Beta 版本使用独立的数据目录，避免与正式版冲突
+ */
+const setupUserDataDir = () => {
+  const envMode = getAppEnvMode()
+
+  if (envMode === 'development') {
+    // Dev 版本使用独立的数据目录
+    const userDataPath = path.join(app.getPath('appData'), '海豚Dev')
+    app.setPath('userData', userDataPath)
+    console.log('[Dev] 用户数据目录设置为:', userDataPath)
+  } else if (envMode === 'beta') {
+    // Beta 版本使用独立的数据目录
+    const userDataPath = path.join(app.getPath('appData'), '海豚Beta')
+    app.setPath('userData', userDataPath)
+    console.log('[Beta] 用户数据目录设置为:', userDataPath)
+  }
+
+  return envMode
+}
+
+// 在 app.ready 之前设置用户数据目录
+const appEnvMode = setupUserDataDir()
+
+// 确保只运行同一环境的单个应用实例（Dev、Beta 和正式版可以同时运行）
+const appIdMap = {
+  development: 'com.opsmin.dev',
+  beta: 'com.opsmin.beta',
+  production: 'com.opsmin.app'
+}
+const appId = appIdMap[appEnvMode]
+const gotTheLock = app.requestSingleInstanceLock({ key: appId })
 
 if (!gotTheLock) {
   app.quit()
   process.exit(0)
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // 当第二个实例启动时，显示/恢复主窗口
+    // 当同一个环境的第二个实例启动时，显示/恢复主窗口
     const mainWindow = windowManager.getMainWindow()
     if (mainWindow) {
-      // 如果窗口隐藏（用户点击关闭按钮隐藏到托盘），先显示窗口
       if (!mainWindow.isVisible()) {
         mainWindow.show()
       }
-      // 如果窗口最小化，恢复窗口
       if (mainWindow.isMinimized()) {
         mainWindow.restore()
       }
-      // 聚焦窗口
       mainWindow.focus()
     }
   })
 }
+
+// 导入模块
+const windowManager = require('./modules/windowManager')
+const trayManager = require('./modules/trayManager')
+const floatingBallManager = require('./modules/floatingBallManager')
+const ipcHandler = require('./modules/ipcHandler')
+const scheduledTaskManager = require('./modules/scheduledTaskManager')
 
 // 构建正确的menu模块路径
 const menuPath = path.join(__dirname, '..', 'menu.js')
@@ -123,15 +177,15 @@ app.whenReady().then(() => {
       return new Response('Not Found', { status: 404 })
     }
   })
-  
+
 
   // 禁用跨域限制 (CORS)
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     // 检查是否已存在Access-Control-Allow-Origin头
-    const hasCorsHeader = Object.keys(details.responseHeaders).some(key => 
+    const hasCorsHeader = Object.keys(details.responseHeaders).some(key =>
       key.toLowerCase() === 'access-control-allow-origin'
     )
-    
+
     if (!hasCorsHeader) {
       callback({
         responseHeaders: {
@@ -144,23 +198,27 @@ app.whenReady().then(() => {
       callback({ responseHeaders: details.responseHeaders })
     }
   })
-  
-  // 判断是否为开发环境
+
+  // 判断是否为开发/测试环境（显示开发者工具）
   const isDev = checkIsDevelopmentEnv()
 
-  // 创建窗口
-  windowManager.createWindow()
+  // 获取应用名称（根据环境不同）
+  const appName = getAppName()
 
-  // 创建菜单（开发环境显示开发者工具和开发者模式标识）
-  createMenu(isDev)
+  // 创建窗口（传入应用名称作为窗口标题）
+  windowManager.createWindow(appName)
 
-  // 创建托盘
+  // 创建菜单（开发/测试环境显示开发者工具和环境标识）
+  createMenu(isDev, appEnvMode)
+
+  // 创建托盘（传入应用名称）
   trayManager.createTray(
     () => windowManager.showMainWindow(),
     () => {
       app.quitting = true
       app.quit()
-    }
+    },
+    appName
   )
 
   // 创建悬浮球

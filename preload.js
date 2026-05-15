@@ -1,5 +1,45 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
+// 暴露应用环境信息给渲染进程
+contextBridge.exposeInMainWorld('appEnvInfo', {
+  // 获取应用环境模式
+  getEnvMode: async () => {
+    try {
+      const mode = await ipcRenderer.invoke('getAppEnvMode')
+      return mode
+    } catch (error) {
+      return 'production'
+    }
+  },
+  // 同步获取应用环境模式
+  getEnvModeSync: () => {
+    try {
+      const mode = ipcRenderer.sendSync('getAppEnvModeSync')
+      return mode
+    } catch (error) {
+      return 'production'
+    }
+  },
+  // 获取应用名称
+  getAppName: async () => {
+    try {
+      const name = await ipcRenderer.invoke('getAppName')
+      return name
+    } catch (error) {
+      return '海豚'
+    }
+  },
+  // 同步获取应用名称
+  getAppNameSync: () => {
+    try {
+      const name = ipcRenderer.sendSync('getAppNameSync')
+      return name
+    } catch (error) {
+      return '海豚'
+    }
+  }
+})
+
 // 暴露系统信息给渲染进程
 contextBridge.exposeInMainWorld('systemInfo', {
   // 获取系统用户名

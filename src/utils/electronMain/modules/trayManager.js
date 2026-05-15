@@ -3,6 +3,46 @@ const path = require('path')
 const fs = require('fs')
 const windowManager = require('./windowManager')
 
+/**
+ * 获取应用环境模式
+ * @returns {'development'|'beta'|'production'} 环境模式
+ */
+const getAppEnvMode = () => {
+  if (!app.isPackaged) {
+    return 'development'
+  }
+
+  try {
+    const envModePath = path.join(process.resourcesPath, 'app.asar', 'dist', '.env-mode')
+    if (fs.existsSync(envModePath)) {
+      const mode = fs.readFileSync(envModePath, 'utf-8').trim()
+      if (mode === 'development') {
+        return 'development'
+      } else if (mode === 'beta') {
+        return 'beta'
+      }
+    }
+  } catch (error) {
+    // ignore error
+  }
+
+  return 'production'
+}
+
+/**
+ * 获取图标名称（根据环境不同）
+ * @returns {string} 图标文件名
+ */
+const getIconName = () => {
+  const envMode = getAppEnvMode()
+  if (envMode === 'development') {
+    return 'app-dev.png'
+  } else if (envMode === 'beta') {
+    return 'app-beta.png'
+  }
+  return 'app.png'
+}
+
 class TrayManager {
   constructor() {
     this.tray = null
@@ -31,118 +71,107 @@ class TrayManager {
   createResizedTrayIcon(icon) {
     const size = icon.getSize()
     const traySize = this.getTrayIconSize()
-    // 如果图标已经适合托盘尺寸，直接返回原图
     if (size.width <= traySize * 2 && size.height <= traySize * 2) {
       return icon
     }
-    // 缩放到合适尺寸，避免系统强制缩放导致细节丢失
     return icon.resize({ width: traySize, height: traySize, quality: 'best' })
+  }
+
+  /**
+   * 获取托盘图标路径（根据环境不同）
+   * @returns {string|null} 图标路径
+   */
+  getTrayIconPath() {
+    const iconName = getIconName()
+    let iconPath
+
+    if (app.isPackaged) {
+      iconPath = path.join(process.resourcesPath, 'app.asar', 'public', iconName)
+      if (!fs.existsSync(iconPath)) {
+        iconPath = path.join(process.resourcesPath, 'public', iconName)
+      }
+      // 环境图标不存在时使用默认图标
+      if (!fs.existsSync(iconPath)) {
+        iconPath = path.join(process.resourcesPath, 'app.asar', 'public', 'app.png')
+        if (!fs.existsSync(iconPath)) {
+          iconPath = path.join(process.resourcesPath, 'public', 'app.png')
+        }
+      }
+    } else {
+      iconPath = path.join(app.getAppPath(), 'public', iconName)
+      if (!fs.existsSync(iconPath)) {
+        iconPath = path.join(app.getAppPath(), 'public', 'app.png')
+      }
+    }
+
+    return fs.existsSync(iconPath) ? iconPath : null
   }
 
   /**
    * 创建托盘图标
    * @param {Function} showWindowCallback - 显示窗口的回调函数
    * @param {Function} quitAppCallback - 退出应用的回调函数
+   * @param {string} appName - 应用名称（根据环境不同）
    */
-  createTray(showWindowCallback, quitAppCallback) {
+  createTray(showWindowCallback, quitAppCallback, appName = '海豚') {
     try {
-      // 创建托盘图标
-      let iconPath
+      let iconPath = this.getTrayIconPath()
 
-      // 首先尝试使用app.png
-      if (require('electron').app.isPackaged) {
-        // 生产环境：使用应用根目录下的public文件夹
-        iconPath = path.join(process.resourcesPath, 'app.asar', 'public', 'app.png')
-        // 如果上述路径不存在，尝试另一种可能的路径
-        if (!fs.existsSync(iconPath)) {
-          iconPath = path.join(process.resourcesPath, 'public', 'app.png')
-        }
-      } else {
-        // 开发环境：使用项目根目录下的public文件夹
-        iconPath = path.join(app.getAppPath(), 'public', 'app.png')
-      }
-
-      // 尝试使用PNG文件
-      try {
-        if (fs.existsSync(iconPath)) {
-          // 尝试使用nativeImage.createFromPath()方法加载图标
-          const icon = nativeImage.createFromPath(iconPath)
-          if (!icon.isEmpty()) {
-            const trayIcon = this.createResizedTrayIcon(icon)
-            this.tray = new Tray(trayIcon)
-          } else {
-            // 尝试直接使用路径
-            this.tray = new Tray(iconPath)
-          }
+      // 如果找不到图标，尝试使用 ico 格式
+      if (!iconPath) {
+        const envMode = getAppEnvMode()
+        let icoName
+        if (envMode === 'development') {
+          icoName = 'app-dev.ico'
+        } else if (envMode === 'beta') {
+          icoName = 'app-beta.ico'
         } else {
-          // 尝试使用app.ico
-          if (require('electron').app.isPackaged) {
+          icoName = 'app.ico'
+        }
+
+        if (app.isPackaged) {
+          iconPath = path.join(process.resourcesPath, 'app.asar', 'public', icoName)
+          if (!fs.existsSync(iconPath)) {
+            iconPath = path.join(process.resourcesPath, 'public', icoName)
+          }
+          // 环境图标不存在时使用默认图标
+          if (!fs.existsSync(iconPath)) {
             iconPath = path.join(process.resourcesPath, 'app.asar', 'public', 'app.ico')
             if (!fs.existsSync(iconPath)) {
               iconPath = path.join(process.resourcesPath, 'public', 'app.ico')
             }
-          } else {
+          }
+        } else {
+          iconPath = path.join(app.getAppPath(), 'public', icoName)
+          if (!fs.existsSync(iconPath)) {
             iconPath = path.join(app.getAppPath(), 'public', 'app.ico')
           }
-
-          if (fs.existsSync(iconPath)) {
-            // 尝试使用nativeImage.createFromPath()方法加载图标
-            const icon = nativeImage.createFromPath(iconPath)
-            if (!icon.isEmpty()) {
-              const trayIcon = this.createResizedTrayIcon(icon)
-              this.tray = new Tray(trayIcon)
-            } else {
-              // 尝试直接使用路径
-              this.tray = new Tray(iconPath)
-            }
-          } else {
-            // 在生产环境中，尝试使用应用可执行文件作为图标
-            if (require('electron').app.isPackaged) {
-              try {
-                const icon = nativeImage.createFromPath(process.execPath)
-                if (!icon.isEmpty()) {
-                  this.tray = new Tray(icon)
-                } else {
-                  // 创建一个简单的图标
-                  const emptyIcon = nativeImage.createEmpty()
-                  this.tray = new Tray(emptyIcon)
-                }
-              } catch (execError) {
-                // 创建一个简单的图标
-                const emptyIcon = nativeImage.createEmpty()
-                this.tray = new Tray(emptyIcon)
-              }
-            } else {
-              // 开发环境：尝试使用其他可能的图标路径
-              try {
-                // 尝试使用Electron的默认图标
-                const electronPath = require('electron')
-                const defaultIconPath = path.join(electronPath.app.getAppPath(), 'node_modules', 'electron', 'dist', 'resources', 'electron.exe')
-                if (fs.existsSync(defaultIconPath)) {
-                  const icon = nativeImage.createFromPath(defaultIconPath)
-                  if (!icon.isEmpty()) {
-                    this.tray = new Tray(icon)
-                  } else {
-                    throw new Error('Default Electron icon is empty')
-                  }
-                } else {
-                  throw new Error('Default Electron icon not found')
-                }
-              } catch (defaultError) {
-                // 创建一个简单的图标
-                const emptyIcon = nativeImage.createEmpty()
-                this.tray = new Tray(emptyIcon)
-              }
-            }
-          }
         }
-      } catch (iconError) {
-        // 备用方案：创建一个简单的图标
-        try {
-          const emptyIcon = nativeImage.createEmpty()
-          this.tray = new Tray(emptyIcon)
-        } catch (fallbackError) {
-          throw fallbackError
+
+        if (!fs.existsSync(iconPath)) {
+          iconPath = null
+        }
+      }
+
+      if (iconPath) {
+        const icon = nativeImage.createFromPath(iconPath)
+        if (!icon.isEmpty()) {
+          const trayIcon = this.createResizedTrayIcon(icon)
+          this.tray = new Tray(trayIcon)
+        } else {
+          this.tray = new Tray(iconPath)
+        }
+      } else {
+        // 使用可执行文件作为图标
+        if (app.isPackaged) {
+          const icon = nativeImage.createFromPath(process.execPath)
+          if (!icon.isEmpty()) {
+            this.tray = new Tray(icon)
+          } else {
+            this.tray = new Tray(nativeImage.createEmpty())
+          }
+        } else {
+          this.tray = new Tray(nativeImage.createEmpty())
         }
       }
 
@@ -158,9 +187,8 @@ class TrayManager {
         }
       ])
 
-      // 设置托盘图标提示
-      this.tray.setToolTip('海豚')
-      // 设置托盘菜单
+      // 设置托盘图标提示（根据环境不同）
+      this.tray.setToolTip(appName)
       this.tray.setContextMenu(contextMenu)
 
       // 点击托盘图标显示/隐藏窗口
@@ -178,6 +206,7 @@ class TrayManager {
         }
       })
     } catch (error) {
+      console.error('[TrayManager] 创建托盘失败:', error.message)
     }
   }
 

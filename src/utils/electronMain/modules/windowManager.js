@@ -4,28 +4,43 @@ const fs = require('fs')
 const floatingBallManager = require('./floatingBallManager')
 
 /**
- * 检查是否为 development 环境
- * 1. 未打包的应用是开发环境
- * 2. 已打包但存在 .env-mode 文件且内容为 development
- * @returns {boolean}
+ * 获取应用环境模式
+ * @returns {'development'|'beta'|'production'} 环境模式
  */
-const checkIsDevelopmentEnv = () => {
-  // 未打包的应用
+const getAppEnvMode = () => {
   if (!app.isPackaged) {
-    return true
+    return 'development'
   }
 
-  // 已打包的应用，检查标记文件
   try {
     const envModePath = path.join(process.resourcesPath, 'app.asar', 'dist', '.env-mode')
     if (fs.existsSync(envModePath)) {
       const mode = fs.readFileSync(envModePath, 'utf-8').trim()
-      return mode === 'development'
+      if (mode === 'development') {
+        return 'development'
+      } else if (mode === 'beta') {
+        return 'beta'
+      }
     }
   } catch (error) {
+    // ignore error
   }
 
-  return false
+  return 'production'
+}
+
+/**
+ * 获取图标名称（根据环境不同）
+ * @returns {string} 图标文件名
+ */
+const getIconName = () => {
+  const envMode = getAppEnvMode()
+  if (envMode === 'development') {
+    return 'app-dev.png'
+  } else if (envMode === 'beta') {
+    return 'app-beta.png'
+  }
+  return 'app.png'
 }
 
 class WindowManager {
@@ -34,22 +49,32 @@ class WindowManager {
   }
 
   /**
-   * 获取窗口图标路径
+   * 获取窗口图标路径（根据环境不同）
    * @returns {string|null} - 图标路径或null
    */
   getIconPath() {
+    const iconName = getIconName()
     let iconPath
-    const { app } = require('electron')
 
     if (app.isPackaged) {
       // 生产环境
-      iconPath = path.join(process.resourcesPath, 'app.asar', 'public', 'app.png')
+      iconPath = path.join(process.resourcesPath, 'app.asar', 'public', iconName)
       if (!fs.existsSync(iconPath)) {
-        iconPath = path.join(process.resourcesPath, 'public', 'app.png')
+        iconPath = path.join(process.resourcesPath, 'public', iconName)
+      }
+      // 如果环境图标不存在，使用默认图标
+      if (!fs.existsSync(iconPath)) {
+        iconPath = path.join(process.resourcesPath, 'app.asar', 'public', 'app.png')
+        if (!fs.existsSync(iconPath)) {
+          iconPath = path.join(process.resourcesPath, 'public', 'app.png')
+        }
       }
     } else {
       // 开发环境
-      iconPath = path.join(__dirname, '../../../../public', 'app.png')
+      iconPath = path.join(__dirname, '../../../../public', iconName)
+      if (!fs.existsSync(iconPath)) {
+        iconPath = path.join(__dirname, '../../../../public', 'app.png')
+      }
     }
 
     return fs.existsSync(iconPath) ? iconPath : null
@@ -57,33 +82,34 @@ class WindowManager {
 
   /**
    * 创建主窗口
+   * @param {string} windowTitle - 窗口标题（根据环境不同）
    * @returns {BrowserWindow} - 主窗口实例
    */
-  createWindow() {
+  createWindow(windowTitle = '海豚') {
     // 获取图标路径
     const iconPath = this.getIconPath()
     const windowOptions = {
       width: 1000,
       height: 700,
-      title: '海豚',
+      title: windowTitle,
       webPreferences: {
         preload: path.join(app.getAppPath(), 'preload.js'),
         devTools: true,
         webSecurity: false
       },
       show: true,
-      alwaysOnTop: true, // 确保窗口在最前面
-      transparent: false, // 确保窗口不透明
-      frame: true, // 确保窗口有边框
-      autoHideMenuBar: true // 自动隐藏菜单栏
+      alwaysOnTop: true,
+      transparent: false,
+      frame: true,
+      autoHideMenuBar: true
     }
 
     // 如果图标存在，设置窗口图标
     if (iconPath) {
       try {
-        // Windows 上直接使用路径字符串更可靠
         windowOptions.icon = iconPath
       } catch (error) {
+        // ignore error
       }
     }
 

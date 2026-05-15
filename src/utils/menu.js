@@ -1,7 +1,11 @@
 const { Menu, app } = require('electron');
 
-// 创建中文菜单栏
-function createMenu(isDev = false) {
+/**
+ * 创建中文菜单栏
+ * @param {boolean} isDev - 是否为开发/测试环境
+ * @param {string} envMode - 环境模式 ('development'|'beta'|'production')
+ */
+function createMenu(isDev = false, envMode = 'production') {
   // 视图菜单的子菜单
   const viewSubmenu = [
     {
@@ -24,7 +28,7 @@ function createMenu(isDev = false) {
     }
   ];
 
-  // 开发环境显示开发者工具
+  // 开发/测试环境显示开发者工具
   if (isDev) {
     viewSubmenu.push({
       label: '开发者工具',
@@ -114,13 +118,7 @@ function createMenu(isDev = false) {
             // 可以添加关于对话框
           }
         }
-      ].concat(isDev ? [
-        { type: 'separator' },
-        {
-          label: '【开发者模式】',
-          enabled: false
-        }
-      ] : [])
+      ]
     }
   ];
 

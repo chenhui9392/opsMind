@@ -9,8 +9,6 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import chatView from '../views/chatView.vue'
 import floatingBall from '../views/floatingBall.vue'
 import LoginPage from '../views/LoginPage.vue'
-import A2uiTest from '../views/A2uiTest.vue'
-import PowerShellTest from '../views/PowerShellTest.vue'
 import { checkEnvironmentChange, clearAllAuthState } from '../composables/useAuth'
 
 const routes = [
@@ -31,19 +29,7 @@ const routes = [
     name: 'floatingBall',
     component: floatingBall,
     meta: { public: true }
-  },
-  {
-    path: '/a2ui-test',
-    name: 'a2uiTest',
-    component: A2uiTest,
-    meta: { public: true }
-  },
-  {
-    path: '/powershellTest',
-    name: 'powershellTest',
-    component: PowerShellTest,
-    meta: { public: true }
-  },
+  }
 ]
 
 const router = createRouter({

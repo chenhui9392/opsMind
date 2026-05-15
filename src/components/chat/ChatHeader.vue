@@ -32,8 +32,10 @@
 
       <!-- 右侧：环境标识 + 下载按钮 -->
       <div class="header-right">
-        <!-- 测试环境标识 -->
-        <span v-if="isDev" class="env-badge">Beta版</span>
+        <!-- Dev 环境标识（绿色） -->
+        <span v-if="isDevEnv" class="env-badge env-badge-dev">DEV版</span>
+        <!-- Beta 环境标识（橙色） -->
+        <span v-if="isBetaEnv" class="env-badge env-badge-beta">Beta版</span>
 <!--        <button class="download-btn" @click="handleDownload" title="下载会话">-->
 <!--          <SvgIcon name="download" width="18" height="18" />-->
 <!--        </button>-->
@@ -45,7 +47,7 @@
 <script setup>
 import { computed } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
-import { isDev } from '../../config/env.js'
+import { isDevEnv, isBetaEnv } from '../../config/env.js'
 import menuImg from '../../assets/menu.png'
 import chatAddImg from '../../assets/chat_add2.png'
 
@@ -197,13 +199,24 @@ const handleDownload = () => {
 /* 环境标识 */
 .env-badge {
   padding: 4px 10px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #fff;
   font-size: 12px;
   font-weight: 600;
   border-radius: 4px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Beta 版环境标识（橙色） */
+.env-badge-beta {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #fff;
   box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+/* Dev 版环境标识（绿色） */
+.env-badge-dev {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
 }
 
 /* 新建会话按钮 */

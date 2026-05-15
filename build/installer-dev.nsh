@@ -1,8 +1,8 @@
-!define INSTALL_PATH "D:\dolphinApp"
+!define INSTALL_PATH "D:\dolphinAppDev"
 
 !ifdef BUILD_UNINSTALLER
   Function un.AddAppData
-    RMDir /r "$APPDATA\海豚"
+    RMDir /r "$APPDATA\海豚Dev"
   FunctionEnd
 
   !define MUI_FINISHPAGE_SHOWREADME
@@ -21,12 +21,12 @@
     WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "${INSTALL_PATH}"
 !macroend
 
-; 正式版卸载时清理注册表信息
+; Dev 版卸载时清理注册表信息
 !macro customUnInstall
     SetRegView 64
-    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\海豚"
-    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\海豚"
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\海豚Dev"
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\海豚Dev"
     SetRegView 32
-    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\海豚"
-    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\海豚"
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\海豚Dev"
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\海豚Dev"
 !macroend
