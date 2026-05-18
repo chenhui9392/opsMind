@@ -235,6 +235,11 @@ class ChatMessageService {
   saveConversationId(conversationId) {
     if (conversationId) {
       this.currentConversationId = conversationId
+      // 按会话持久化，方便切换后恢复
+      if (!this.sessionConfigStore[this.currentChatSession]) {
+        this.sessionConfigStore[this.currentChatSession] = {}
+      }
+      this.sessionConfigStore[this.currentChatSession].conversationId = conversationId
     }
   }
 

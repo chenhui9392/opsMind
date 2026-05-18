@@ -4,20 +4,18 @@
       ref="messageList"
       :messages="messages"
       :conversation-id="conversationId"
+      :all-forms-disabled="allFormsDisabled"
       @file-click="downloadFile"
+      @form-submit="handleFormSubmit"
       @submit-success="handleSubmitSuccess"
-      @resolved="handleResolved"
-      @unresolved="handleUnresolved"
     />
 
-    <!-- 满意度评价 -->
+    <!-- 满意度评价卡片 -->
     <SatisfactionCard
-      v-if="showInput && historyFeedbackRecord !== 'UNRESOLVED' && (showSatisfaction || !!historyCustomerSatisfaction || historyFeedbackRecord === 'RESOLVED')"
-      class="satisfaction-wrapper"
+      v-if="shouldShowSatisfaction"
       :conversation-id="conversationId"
-      :disabled="!!historyCustomerSatisfaction"
-      :customer-satisfaction="historyCustomerSatisfaction || undefined"
-      @change="handleSatisfactionChange"
+      :disabled="satisfactionDisabled"
+      :customer-satisfaction="satisfactionValue"
     />
 
     <!-- 消息发送区 -->
@@ -44,23 +42,6 @@ import ChatInput from './ChatInput.vue'
 import MessageList from './MessageList.vue'
 import SatisfactionCard from '../common/SatisfactionCard.vue'
 import chatMessageService from '../../services/chatMessageService'
-import messageService from '../../services/messageService'
-
-// 从消息列表中提取历史满意度评价
-const useHistorySatisfaction = (messages) => {
-  return computed(() => {
-    const msg = messages.value?.find(msg => msg.sender === 'satisfaction-status')
-    return msg?.customerSatisfaction || null
-  })
-}
-
-// 从消息列表中提取历史解决状态
-const useHistoryFeedbackRecord = (messages) => {
-  return computed(() => {
-    const msg = messages.value?.find(msg => msg.sender === 'resolve-status')
-    return msg?.feedbackRecord || null
-  })
-}
 
 // Props
 const props = defineProps({
@@ -91,30 +72,54 @@ const props = defineProps({
   moduleName: {
     type: String,
     default: ''
+  },
+  allFormsDisabled: {
+    type: Boolean,
+    default: false
+  },
+  orderFeedbackRecord: {
+    type: String,
+    default: ''
+  },
+  orderCustomerSatisfaction: {
+    type: String,
+    default: ''
   }
 })
 
 // Emits
-const emit = defineEmits(['update:messages', 'update:isSending', 'stop', 'submit-success', 'refresh-orders'])
+const emit = defineEmits(['update:messages', 'update:isSending', 'stop', 'form-submit', 'submit-success', 'refresh-orders'])
 
 // 响应式数据
 const isLoading = ref(false)
 const loadingMessageId = ref(null)
 const isSendingLocal = ref(false)
-const showSatisfaction = ref(false)
-
-// 历史会话满意度评价（从消息列表中提取）
-const historyCustomerSatisfaction = useHistorySatisfaction(computed(() => props.messages))
-
-// 历史会话解决状态（从消息列表中提取）
-const historyFeedbackRecord = useHistoryFeedbackRecord(computed(() => props.messages))
-
 // 当前会话ID
 const conversationId = ref('')
 
 watch(() => props.messages, () => {
   conversationId.value = chatMessageService.getCurrentOrderId() || ''
 }, { immediate: true })
+
+// 是否显示满意度评价卡片（优先使用订单对象的值，其次检查消息）
+const shouldShowSatisfaction = computed(() => {
+  if (props.orderFeedbackRecord === 'RESOLVED') return true
+  return props.messages.some(msg => msg.feedbackRecord === 'RESOLVED')
+})
+
+// 满意度是否已提交（不可编辑）（优先使用订单对象的值，其次检查消息）
+const satisfactionDisabled = computed(() => {
+  if (props.orderCustomerSatisfaction) return true
+  const msg = props.messages.find(msg => msg.feedbackRecord === 'RESOLVED')
+  return !!msg?.customerSatisfaction
+})
+
+// 满意度值（优先使用订单对象的值，其次检查消息）
+const satisfactionValue = computed(() => {
+  if (props.orderCustomerSatisfaction) return props.orderCustomerSatisfaction
+  const msg = props.messages.find(msg => msg.feedbackRecord === 'RESOLVED')
+  return msg?.customerSatisfaction || ''
+})
 
 // 监听会话ID变化，切换会话时清除输入框内容
 watch(conversationId, (newVal, oldVal) => {
@@ -126,43 +131,6 @@ watch(conversationId, (newVal, oldVal) => {
 // 模板引用
 const messageList = ref(null)
 const chatInputRef = ref(null)
-
-/**
- * 处理已解决点击
- */
-const handleResolved = () => {
-  showSatisfaction.value = true
-  // 给 resolve-status 消息添加 resolved 标记和 feedbackRecord
-  const updatedMessages = props.messages.map(msg => {
-    if (msg.sender === 'resolve-status') {
-      return { ...msg, resolved: true, feedbackRecord: 'RESOLVED' }
-    }
-    return msg
-  })
-  emit('update:messages', updatedMessages)
-  // 缓存反馈状态到 messageService，防止切换会话后状态回退
-  messageService.cacheFeedbackRecord(conversationId.value, 'RESOLVED')
-}
-
-/**
- * 处理未解决点击
- */
-const handleUnresolved = () => {
-  // 用户选择未解决时隐藏满意度评价
-  showSatisfaction.value = false
-  // 给 resolve-status 消息添加 resolved 标记和 feedbackRecord
-  const updatedMessages = props.messages.map(msg => {
-    if (msg.sender === 'resolve-status') {
-      return { ...msg, resolved: true, feedbackRecord: 'UNRESOLVED' }
-    }
-    return msg
-  })
-  emit('update:messages', updatedMessages)
-  // 缓存反馈状态到 messageService，防止切换会话后状态回退
-  messageService.cacheFeedbackRecord(conversationId.value, 'UNRESOLVED')
-  // 通知父组件解除输入框禁用，允许用户继续提问
-  emit('unresolved')
-}
 
 /**
  * 处理显示错误提示
@@ -281,10 +249,6 @@ const downloadFile = (file) => {
 // 监听消息变化
 watch(() => props.messages, () => {
   scrollToBottom()
-  // 如果没有 resolve-status 消息，重置满意度显示
-  if (!props.messages.some(msg => msg.sender === 'resolve-status')) {
-    showSatisfaction.value = false
-  }
 })
 
 // 生命周期钩子
@@ -302,49 +266,11 @@ const resetCascader = () => {
 }
 
 /**
- * 满意度数值与字符串映射
+ * 处理表单提交事件
+ * @param {string} eventName - 事件名称
  */
-const satisfactionMap = {
-  1: 'VERY_DISSATISFIED',
-  2: 'DISSATISFIED',
-  3: 'NEUTRAL',
-  4: 'SATISFIED',
-  5: 'VERY_SATISFIED'
-}
-
-/**
- * 处理满意度评价
- * @param {number} value - 评分值 1-5
- */
-const handleSatisfactionChange = (value) => {
-  const satisfactionStr = satisfactionMap[value]
-  if (!satisfactionStr || !conversationId.value) return
-
-  // 更新消息列表中的 satisfaction-status 消息
-  const existingIndex = props.messages.findIndex(msg => msg.sender === 'satisfaction-status')
-  let updatedMessages
-  if (existingIndex !== -1) {
-    updatedMessages = props.messages.map((msg, index) => {
-      if (index === existingIndex) {
-        return { ...msg, customerSatisfaction: satisfactionStr }
-      }
-      return msg
-    })
-  } else {
-    updatedMessages = [
-      ...props.messages,
-      {
-        sender: 'satisfaction-status',
-        text: '',
-        time: '',
-        images: [],
-        customerSatisfaction: satisfactionStr
-      }
-    ]
-  }
-  emit('update:messages', updatedMessages)
-  // 缓存满意度到 messageService，防止切换会话后状态回退
-  messageService.cacheCustomerSatisfaction(conversationId.value, satisfactionStr)
+const handleFormSubmit = (eventName) => {
+  emit('form-submit', eventName)
 }
 
 /**
@@ -371,8 +297,5 @@ defineExpose({
   position: relative;
 }
 
-.satisfaction-wrapper {
-  margin: 0 16px;
-  flex-shrink: 0;
-}
+
 </style>

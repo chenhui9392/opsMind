@@ -16,12 +16,11 @@
         :key="index"
         :message="message"
         :conversation-id="conversationId"
-        :is-last-a2-u-i-form="lastA2UIFormIndex === index"
+        :all-forms-disabled="allFormsDisabled"
         @image-click="handleImageClick"
         @file-click="handleFileClick"
+        @form-submit="handleFormSubmit"
         @submit-success="handleSubmitSuccess"
-        @resolved="emit('resolved')"
-        @unresolved="emit('unresolved')"
       />
     </div>
 
@@ -37,7 +36,7 @@
 </template>
 
 <script setup>
-import { reactive, computed } from 'vue'
+import { reactive } from 'vue'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import MessageItem from './MessageItem.vue'
 
@@ -50,23 +49,15 @@ const props = defineProps({
   conversationId: {
     type: String,
     default: ''
+  },
+  allFormsDisabled: {
+    type: Boolean,
+    default: false
   }
 })
 
 // Emits
-const emit = defineEmits(['file-click', 'submit-success', 'resolved', 'unresolved'])
-
-/**
- * 计算最后一条包含 a2ui 表单的消息索引
- */
-const lastA2UIFormIndex = computed(() => {
-  for (let i = props.messages.length - 1; i >= 0; i--) {
-    if (props.messages[i].hasFull && props.messages[i].formInfo) {
-      return i
-    }
-  }
-  return -1
-})
+const emit = defineEmits(['file-click', 'form-submit', 'submit-success'])
 
 // 响应式数据
 const imagePreview = reactive({
@@ -108,6 +99,14 @@ const handleNavigateImage = (index) => {
  */
 const handleFileClick = (file) => {
   emit('file-click', file)
+}
+
+/**
+ * 处理表单提交事件
+ * @param {string} eventName - 事件名称
+ */
+const handleFormSubmit = (eventName) => {
+  emit('form-submit', eventName)
 }
 
 /**

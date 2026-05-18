@@ -109,22 +109,19 @@ export function createMessageObject(text, sender = 'bot', images = []) {
 /**
  * 将历史记录转换为消息格式
  * @param {Array} historyData - 历史记录数据
- * @param {Object} options - 可选参数
- * @param {string} options.orderStatus - 工单状态
  * @returns {Array} - 消息数组
  */
-export function convertHistoryToMessages(historyData, options = {}) {
+export function convertHistoryToMessages(historyData) {
   if (!Array.isArray(historyData)) {
     return []
   }
-
-  const { orderStatus, orderType, orderTypeActual, feedbackRecord, customerSatisfaction } = options
 
   const messages = historyData.map(item => {
     // 使用统一的解析逻辑处理 content
     const parsedResult = parseMessageContent(item.content)
 
     return {
+      id: item.id,
       sender: item.messageType === 'user' ? 'user' : 'bot',
       text: parsedResult.text,
       time: item.createTime || new Date().toLocaleString('zh-CN'),
@@ -134,44 +131,13 @@ export function convertHistoryToMessages(historyData, options = {}) {
       formInfo: parsedResult.formInfo,
       // 新增：原始 content 字段，用于提交表单时更新数据
       rawContent: parsedResult.rawContent,
-      // 新增：工单状态字段
-      orderStatus: orderStatus,
-      // 新增：工单实际类型字段
-      orderTypeActual: orderTypeActual
+      // 新增：后端返回的禁用状态字段
+      disabledStatus: item.disabledStatus,
+      // 新增：反馈记录和满意度字段
+      feedbackRecord: item.feedbackRecord,
+      customerSatisfaction: item.customerSatisfaction
     }
   })
-
-  // 当存在历史反馈记录时，添加反馈状态展示卡片（仅展示，不可点击）
-  if (feedbackRecord) {
-    messages.push({
-      sender: 'resolve-status',
-      text: '',
-      time: '',
-      images: [],
-      feedbackRecord: feedbackRecord,
-      resolved: true
-    })
-  } else if (orderType === 'CONSULTATION' && orderStatus === 'FINISH') {
-    // 没有历史反馈记录时，根据工单状态添加可交互的解决状态卡片
-    messages.push({
-      sender: 'resolve-status',
-      text: '',
-      time: '',
-      images: [],
-      orderStatus: orderStatus
-    })
-  }
-
-  // 当存在历史满意度评价且用户未选择"未解决"时，添加满意度展示卡片（仅展示，不可点击）
-  if (customerSatisfaction && feedbackRecord !== 'UNRESOLVED') {
-    messages.push({
-      sender: 'satisfaction-status',
-      text: '',
-      time: '',
-      images: [],
-      customerSatisfaction: customerSatisfaction
-    })
-  }
 
   return messages
 }

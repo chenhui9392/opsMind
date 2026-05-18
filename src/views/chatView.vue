@@ -17,6 +17,7 @@
       @check-update="checkForAppUpdates({ force: true, showNoUpdate: true })"
       @toggle-sidebar="handleToggleSidebar"
       @refresh-orders-with-notification="handleRefreshOrdersWithNotification"
+    @order-feedback-info="handleOrderFeedbackInfo"
     />
 
     <!-- 右侧聊天区域 -->
@@ -33,6 +34,8 @@
       :moduleName="currentModuleName"
       :isSidebarCollapsed="isSidebarCollapsed"
       :hasSocketNotification="hasSocketNotification"
+      :orderFeedbackRecord="orderFeedbackRecord"
+      :orderCustomerSatisfaction="orderCustomerSatisfaction"
       @navigate-to-session="handleNavigateToSession"
       @update:isSending="isSending = $event"
       @refresh-orders="handleRefreshOrders"
@@ -83,6 +86,9 @@ const isInputDisabled = ref(false)
 const currentSystemName = ref('')
 const currentModuleName = ref('')
 const isSidebarCollapsed = ref(true)
+// 当前订单反馈信息（用于满意度组件判断）
+const orderFeedbackRecord = ref('')
+const orderCustomerSatisfaction = ref('')
 const showUpdateDialog = ref(false)
 // Socket 通知状态 - 用于显示红点通知
 const hasSocketNotification = ref(false)
@@ -120,6 +126,9 @@ const backToCurrentChat = () => {
   // 恢复系统/模块名称
   currentSystemName.value = result.systemName || ''
   currentModuleName.value = result.moduleName || ''
+  // 重置订单反馈信息
+  orderFeedbackRecord.value = ''
+  orderCustomerSatisfaction.value = ''
 }
 
 /**
@@ -140,13 +149,19 @@ const handleNavigateToSession = async (sessionId) => {
 
   // 更新状态
   const order = historyOrders.find(contact => contact.id === sessionId);
+
   if (order) {
     showInput.value = true;
-    // 非草稿状态禁用输入，但未解决反馈时解除禁用
-    isInputDisabled.value = order.orderStatus !== 'DRAFT' && order.feedbackRecord !== 'UNRESOLVED';
+    // 非草稿状态或已有反馈记录时禁用输入
+    isInputDisabled.value = order.orderStatus !== 'DRAFT' || !!order.feedbackRecord;
+    // 同步订单反馈信息
+    orderFeedbackRecord.value = order.feedbackRecord || '';
+    orderCustomerSatisfaction.value = order.customerSatisfaction || '';
   } else {
     showInput.value = false;
     isInputDisabled.value = false;
+    orderFeedbackRecord.value = '';
+    orderCustomerSatisfaction.value = '';
   }
 
   messages.value = await messageService.handleNavigateToSession(sessionId, historyOrders);
@@ -188,6 +203,15 @@ const handleToggleSidebar = (isFresh) => {
  * 处理带通知状态的切换侧边栏
  * 如果有 socket 通知，点击后清除通知并刷新历史会话列表
  */
+/**
+ * 处理订单反馈信息
+ * @param {Object} info - 反馈信息
+ */
+const handleOrderFeedbackInfo = (info) => {
+  orderFeedbackRecord.value = info.feedbackRecord || ''
+  orderCustomerSatisfaction.value = info.customerSatisfaction || ''
+}
+
 const handleToggleSidebarWithNotification = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
   // 如果有 socket 通知，点击后清除通知并刷新历史会话列表
@@ -277,6 +301,9 @@ const handleNewOrder = () => {
   // 重置系统/模块名称
   currentSystemName.value = ''
   currentModuleName.value = ''
+  // 重置订单反馈信息
+  orderFeedbackRecord.value = ''
+  orderCustomerSatisfaction.value = ''
 
   // 重置级联选择器
   if (chatComponent.value && chatComponent.value.resetCascader) {

@@ -127,7 +127,8 @@ const emit = defineEmits([
   'new-order',
   'check-update',
   'logout',
-  'toggle-sidebar'
+  'toggle-sidebar',
+  'order-feedback-info'
 ])
 
 // 响应式数据
@@ -233,11 +234,16 @@ const handleSearch = (query) => {
 const selectOrder = async (order) => {
   const messages = await messageService.selectOrder(order)
   emit('update:selectedContact', order.id)
-  // 所有状态都显示聊天框，非草稿状态禁用输入（未解决反馈除外）
+  // 所有状态都显示聊天框，非草稿状态或已有反馈记录时禁用输入
   emit('update:showInput', true)
-  const isDisabled = order.orderStatus !== 'DRAFT' && order.feedbackRecord !== 'UNRESOLVED'
+  const isDisabled = order.orderStatus !== 'DRAFT' && order?.feedbackRecord === 'RESOLVED'
   emit('update:isInputDisabled', isDisabled)
   emit('update:messages', messages)
+  // 传递订单反馈信息，供满意度组件判断
+  emit('order-feedback-info', {
+    feedbackRecord: order.feedbackRecord || '',
+    customerSatisfaction: order.customerSatisfaction || ''
+  })
 }
 
 /**

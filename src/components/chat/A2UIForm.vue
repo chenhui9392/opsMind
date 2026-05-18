@@ -21,7 +21,7 @@
 <script setup>
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { A2UIRoot } from 'a2ui-vue-engine'
-import { submitWorkOrder } from '../../api'
+import { submitWorkOrder, updateOrder } from '../../api'
 import chatMessageService from '../../services/chatMessageService'
 
 // ============================================
@@ -61,15 +61,7 @@ const props = defineProps({
     type: String,
     default: ''
   },
-  orderStatus: {
-    type: String,
-    default: ''
-  },
-  orderTypeActual: {
-    type: String,
-    default: ''
-  },
-  isLastA2UIForm: {
+  disabled: {
     type: Boolean,
     default: false
   }
@@ -205,8 +197,12 @@ const disableNodes = (nodeList, disableAll = false) => {
     if (disableAll && INPUT_COMPONENT_TYPES.includes(node.component)) {
       return { ...node, disabled: true }
     }
-    // 禁用按钮组件
+    // 禁用按钮组件（有默认值的按钮除外）
     if (disableAll && node.component === 'Button') {
+      // 如果按钮有默认值（value.default），则正常显示，不禁用
+      if (node.value && node.value.default !== undefined && node.value.default !== null && node.value.default !== '') {
+        return node
+      }
       return { ...node, disabled: true }
     }
     return node
@@ -270,6 +266,11 @@ const handleSubmitResponse = (result) => {
 
   isSubmitted.value = true
 
+  // 保存返回的工单ID，供后续反馈更新使用
+  if (result.data?.id) {
+    chatMessageService.currentOrderId = result.data.id
+  }
+
   // 解析返回的 content
   const responseContent = result.data?.message?.content
   let parsedContent = null
@@ -311,6 +312,68 @@ const executeSubmitWorkOrder = async () => {
   handleSubmitResponse(result)
 }
 
+/**
+ * 执行反馈更新
+ * 1. 在被点击的按钮节点上添加 value 属性
+ * 2. 删除对侧反馈按钮节点
+ * 3. 调用 updateOrder 接口
+ * @param {string} eventName - 事件名称 feedbackResolved 或 feedbackUnresolved
+ */
+const executeFeedbackUpdate = async (eventName) => {
+  const extracted = extractNodeListFromRawContent(props.rawContent)
+  if (!extracted) return
+
+  const { nodeList, parsedData } = extracted
+  const feedbackValue = eventName === 'feedbackResolved' ? 'RESOLVED' : 'UNRESOLVED'
+
+  // 1. 找到被点击的按钮节点，添加 value 属性
+  const targetNode = nodeList.find(node => node.action?.event?.name === eventName)
+  if (targetNode) {
+    targetNode.value = {
+      path: '/form/feedback',
+      default: feedbackValue
+    }
+  }
+
+  // 2. 保留所有节点，仅更新被点击按钮的 value
+
+  // 3. 构建更新后的 JSON
+  const isSolvedJson = buildUpdatedSubmitJson(parsedData, nodeList)
+
+  // 4. 调用 updateOrder 接口
+  try {
+    debugger
+    const result = await updateOrder({
+      id: chatMessageService.getCurrentOrderId(),
+      conversationId: chatMessageService.getCurrentConversationId(),
+      feedbackRecord: feedbackValue,
+      isSolvedJson
+    })
+
+    if (result && result.code === 200) {
+      // 更新成功，处理反馈按钮状态
+      nodeList.forEach(node => {
+        const nodeEventName = node.action?.event?.name
+        const isFeedbackBtn = nodeEventName === 'feedbackResolved' || nodeEventName === 'feedbackUnresolved'
+        if (isFeedbackBtn) {
+          // 移除 action，防止再次触发点击事件
+          delete node.action
+          // 没有默认值的按钮显示禁用状态（灰色）
+          if (!node.value?.default) {
+            node.disabled = true
+          }
+        }
+      })
+      // 刷新表单显示
+      renderForm(nodeList)
+      // 通知父组件 feedbackRecord 已更新，触发满意度卡片显示
+      emit('feedback-updated', { feedbackRecord: feedbackValue })
+    }
+  } catch (error) {
+    console.error('反馈提交失败:', error)
+  }
+}
+
 // ============================================
 // 事件处理方法
 // ============================================
@@ -323,6 +386,12 @@ const handleA2UIMessage = async (payload) => {
 
   const eventName = payload.payload.eventName
   emit('form-submit', eventName)
+
+  // 处理 feedbackResolved 和 feedbackUnresolved 事件
+  if (eventName === 'feedbackResolved' || eventName === 'feedbackUnresolved') {
+    await executeFeedbackUpdate(eventName)
+    return
+  }
 
   if (eventName !== 'submitWorkOrder' || isSubmitted.value) return
 
@@ -352,13 +421,16 @@ const processFormInfo = () => {
   const nodeList = parseNodeList(props.formInfo)
   if (!nodeList) return
 
-  // 判断是否可编辑：
-  // 1. 必须是最后一条 a2ui 表单
-  // 2. orderStatus = 'DRAFT' 或无 orderStatus（新表单）→ 可编辑
-  // 3. 其他情况（非最后一条、或已提交）→ 禁用
-  const isEditable = props.isLastA2UIForm && (props.orderStatus === 'DRAFT' || !props.orderStatus)
-  const shouldDisable = !isEditable
-  renderForm(shouldDisable ? disableNodes(nodeList, true) : nodeList)
+  // 处理反馈按钮：如果 JSON 中已有默认值，移除 action 使其不可点击，但保持正常样式
+  nodeList.forEach(node => {
+    const nodeEventName = node.action?.event?.name
+    const isFeedbackBtn = nodeEventName === 'feedbackResolved' || nodeEventName === 'feedbackUnresolved'
+    if (isFeedbackBtn && node.value?.default) {
+      delete node.action
+    }
+  })
+
+  renderForm(props.disabled ? disableNodes(nodeList, true) : nodeList)
 }
 
 // ============================================
@@ -371,7 +443,7 @@ watch(() => props.formInfo, (newVal, oldVal) => {
   }
 })
 
-watch(() => props.isLastA2UIForm, () => {
+watch(() => props.disabled, () => {
   nextTick(() => processFormInfo())
 })
 

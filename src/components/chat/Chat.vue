@@ -27,11 +27,14 @@
         :isInputDisabled="isInputDisabled"
         :systemName="systemName"
         :moduleName="moduleName"
+        :allFormsDisabled="allFormsDisabled"
+        :orderFeedbackRecord="orderFeedbackRecord"
+        :orderCustomerSatisfaction="orderCustomerSatisfaction"
         @update:messages="$emit('update:messages', $event)"
         @update:isSending="$emit('update:isSending', $event)"
         @stop="handleStop"
+        @form-submit="handleFormSubmit"
         @submit-success="handleSubmitSuccess"
-        @unresolved="handleUnresolved"
         @refresh-orders="$emit('refresh-orders', $event)"
       />
     </div>
@@ -39,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import ChatHeader from './ChatHeader.vue'
 import ChatContent from './ChatContent.vue'
 import { getSystemUsername } from '../../utils/system'
@@ -96,6 +99,14 @@ const props = defineProps({
   isInputDisabled: {
     type: Boolean,
     default: false
+  },
+  orderFeedbackRecord: {
+    type: String,
+    default: ''
+  },
+  orderCustomerSatisfaction: {
+    type: String,
+    default: ''
   }
 })
 
@@ -113,6 +124,7 @@ const emit = defineEmits([
   'download-session',
   'new-session',
   'submit-success',
+    'form-submit',
   'update:isInputDisabled'
 ])
 
@@ -120,6 +132,12 @@ const emit = defineEmits([
 const userName = ref('')
 const isLoading = ref(false)
 const loadingMessageId = ref(null)
+const allFormsDisabled = ref(false)
+
+// 监听会话切换，重置表单禁用状态
+watch(() => props.selectedContact, () => {
+  allFormsDisabled.value = false
+})
 
 // 模板引用
 const chatContent = ref(null)
@@ -150,6 +168,9 @@ const createNewSession = () => {
   emit('update:currentChatSession', result.selectedContact)
   // 重置输入框禁用状态
   emit('update:isInputDisabled', false)
+
+  // 重置所有表单禁用状态
+  allFormsDisabled.value = false
 
   // 重置级联选择器
   resetCascader()
@@ -241,10 +262,20 @@ const handleDownloadSession = () => {
 
 /**
  * 处理提交成功事件
- * 禁用发送按钮，不隐藏输入框
+ * 禁用发送按钮，不隐藏输入框，并禁用所有 A2UI 表单
  * @param {Object} payload - 提交结果数据，可能包含 tip
  */
+const handleFormSubmit = (eventName) => {
+  if (eventName === 'submitWorkOrder') {
+    // 点击提交时立即禁用所有 A2UI 表单
+    allFormsDisabled.value = true
+  }
+}
+
 const handleSubmitSuccess = (payload) => {
+  // 确保所有 A2UI 表单处于禁用状态（兜底）
+  allFormsDisabled.value = true
+
   // 禁用发送按钮，不隐藏输入框
   emit('update:isInputDisabled', true)
 
@@ -262,14 +293,6 @@ const handleSubmitSuccess = (payload) => {
 
   // 同时触发 submit-success 事件，供父组件做其他处理
   emit('submit-success')
-}
-
-/**
- * 处理未解决反馈点击
- * 解除输入框禁用状态，允许用户继续提问
- */
-const handleUnresolved = () => {
-  emit('update:isInputDisabled', false)
 }
 
 // 生命周期钩子

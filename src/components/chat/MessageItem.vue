@@ -1,10 +1,10 @@
 <template>
   <div
     class="message"
-    :class="{ 'message-user': message.sender === 'user', 'message-bot': message.sender === 'bot' || message.sender === 'resolve-status' }"
+    :class="{ 'message-user': message.sender === 'user', 'message-bot': message.sender === 'bot' }"
   >
     <!-- 机器人头像 -->
-    <div class="message-avatar" v-if="message.sender === 'bot' || message.sender === 'resolve-status'">
+    <div class="message-avatar" v-if="message.sender === 'bot'">
       <div class="avatar-icon bot-avatar">
         <img :src="dolphinImg" alt="AI助手" class="bot-avatar-img" />
       </div>
@@ -19,14 +19,14 @@
       <!-- 表单信息渲染（当 hasFull=true 时） -->
       <A2UIForm
         v-if="message.hasFull && message.formInfo"
+        :id="message.id"
         :form-info="message.formInfo"
         :has-full="message.hasFull"
         :raw-content="message.rawContent"
-        :order-status="message.orderStatus"
-        :order-type-actual="message.orderTypeActual"
-        :is-last-a2-u-i-form="isLastA2UIForm"
+        :disabled="allFormsDisabled || message.disabledStatus"
         @form-submit="handleFormSubmit"
         @submit-success="handleSubmitSuccess"
+        @feedback-updated="handleFeedbackUpdated"
       />
 
       <!-- 消息内容 -->
@@ -61,19 +61,16 @@
         </div>
       </div>
 
-      <!-- 是否已解决卡片 -->
-      <div v-if="message.sender === 'resolve-status'" class="resolve-status-wrapper">
-        <ResolveStatusCard
-          :disabled="message.resolved"
-          :conversation-id="conversationId"
-          :feedback-record="message.feedbackRecord"
-          @resolved="handleResolved"
-          @unresolved="handleUnresolved"
-        />
-      </div>
+      <!-- 满意度评价卡片 -->
+<!--      <SatisfactionCard-->
+<!--        v-if="message.feedbackRecord === 'RESOLVED'"-->
+<!--        :conversation-id="conversationId"-->
+<!--        :disabled="!!message.customerSatisfaction"-->
+<!--        :customer-satisfaction="message.customerSatisfaction"-->
+<!--      />-->
 
       <!-- 消息底部：时间和复制按钮 -->
-      <div class="message-footer" v-if="message.sender !== 'resolve-status'">
+      <div class="message-footer">
         <span class="message-time">{{ formattedTime }}</span>
         <!-- 复制按钮 -->
         <button
@@ -99,7 +96,7 @@ import { CopyDocument } from '@element-plus/icons-vue'
 import A2UIForm from './A2UIForm.vue'
 import dolphinImg from '../../assets/dolphin.png'
 import userAvatarImg from '../../assets/user_avatar.png'
-import ResolveStatusCard from '../common/ResolveStatusCard.vue'
+
 
 // Props
 const props = defineProps({
@@ -111,18 +108,28 @@ const props = defineProps({
     type: String,
     default: ''
   },
-  isLastA2UIForm: {
+  allFormsDisabled: {
     type: Boolean,
     default: false
   }
 })
 
 // Emits
-const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-success', 'resolved', 'unresolved'])
+const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-success'])
 
 // 响应式数据
 const copySuccess = ref(false)
 const copyTimer = ref(null)
+
+/**
+ * 处理反馈更新事件
+ * @param {Object} payload - 反馈数据
+ */
+const handleFeedbackUpdated = (payload) => {
+  if (props.message && payload.feedbackRecord) {
+    props.message.feedbackRecord = payload.feedbackRecord
+  }
+}
 
 
 
@@ -170,20 +177,6 @@ const handleFormSubmit = (eventName) => {
  */
 const handleSubmitSuccess = (payload) => {
   emit('submit-success', payload)
-}
-
-/**
- * 处理已解决点击
- */
-const handleResolved = () => {
-  emit('resolved')
-}
-
-/**
- * 处理未解决点击
- */
-const handleUnresolved = () => {
-  emit('unresolved')
 }
 
 const getFileIcon = (fileName) => {

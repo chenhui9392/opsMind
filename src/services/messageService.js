@@ -57,18 +57,19 @@ class MessageService {
     this.chatService.currentConversationId = order.conversationId
     this.chatService.currentOrderId = order.id
 
+    // 保存到 sessionConfigStore，方便 backToCurrentChat 恢复
+    if (!this.chatService.sessionConfigStore[0]) {
+      this.chatService.sessionConfigStore[0] = {}
+    }
+    this.chatService.sessionConfigStore[0].conversationId = order.conversationId
+    this.chatService.sessionConfigStore[0].orderId = order.id
+
     // 获取工单详情
     try {
       const response = await getHistoryOrderDetail(order.conversationId)
       if (response) {
-        // 将详情数据转换为消息格式，传递工单状态
-        const messages = convertHistoryToMessages(response, {
-          orderStatus: order.orderStatus,
-          orderType: order.orderType,
-          orderTypeActual: order.orderTypeActual,
-          feedbackRecord: this.feedbackRecordCache[order.id] || order.feedbackRecord,
-          customerSatisfaction: this.customerSatisfactionCache[order.id] || order.customerSatisfaction
-        })
+        // 将详情数据转换为消息格式
+        const messages = convertHistoryToMessages(response)
         // 保存到消息存储
         this.chatService.messageStore[order.id] = [...messages]
         return messages
@@ -118,6 +119,9 @@ class MessageService {
       this.chatService.currentBusinessType = config.businessType || ''
       this.chatService.currentSystemName = config.systemName || ''
       this.chatService.currentModuleName = config.moduleName || ''
+      // 恢复 conversationId 和 orderId
+      this.chatService.currentConversationId = config.conversationId || null
+      this.chatService.currentOrderId = config.orderId || null
       return {
         messages: [...this.chatService.messageStore[targetSessionId]],
         selectedContact: targetSessionId,
@@ -125,7 +129,9 @@ class MessageService {
         isNewSession: this.chatService.messageStore[targetSessionId].length === 1,
         businessType: this.chatService.currentBusinessType,
         systemName: this.chatService.currentSystemName,
-        moduleName: this.chatService.currentModuleName
+        moduleName: this.chatService.currentModuleName,
+        conversationId: this.chatService.currentConversationId,
+        orderId: this.chatService.currentOrderId
       }
     } else {
       // 如果没有当前聊天会话，使用默认会话 (ID 为 0)
@@ -136,12 +142,25 @@ class MessageService {
 
       this.chatService.currentChatSession = 0
       this.chatService.activeChatSession = 0
+      // 恢复会话 0 的配置
+      const config = this.chatService.sessionConfigStore[0] || {}
+      this.chatService.currentBusinessType = config.businessType || ''
+      this.chatService.currentSystemName = config.systemName || ''
+      this.chatService.currentModuleName = config.moduleName || ''
+      // 恢复 conversationId 和 orderId
+      this.chatService.currentConversationId = config.conversationId || null
+      this.chatService.currentOrderId = config.orderId || null
 
       return {
         messages: this.chatService.messageStore[0],
         selectedContact: 0,
         showInput: true,
-        isNewSession: this.chatService.isNewSession
+        isNewSession: this.chatService.isNewSession,
+        businessType: this.chatService.currentBusinessType,
+        systemName: this.chatService.currentSystemName,
+        moduleName: this.chatService.currentModuleName,
+        conversationId: this.chatService.currentConversationId,
+        orderId: this.chatService.currentOrderId
       }
     }
   }
