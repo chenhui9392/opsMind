@@ -36,6 +36,8 @@
       :hasSocketNotification="hasSocketNotification"
       :orderFeedbackRecord="orderFeedbackRecord"
       :orderCustomerSatisfaction="orderCustomerSatisfaction"
+      :conversationId="currentConversationId"
+      :orderId="currentOrderId"
       @navigate-to-session="handleNavigateToSession"
       @update:isSending="isSending = $event"
       @refresh-orders="handleRefreshOrders"
@@ -89,6 +91,8 @@ const isSidebarCollapsed = ref(true)
 // 当前订单反馈信息（用于满意度组件判断）
 const orderFeedbackRecord = ref('')
 const orderCustomerSatisfaction = ref('')
+const currentConversationId = ref('')
+const currentOrderId = ref('')
 const showUpdateDialog = ref(false)
 // Socket 通知状态 - 用于显示红点通知
 const hasSocketNotification = ref(false)
@@ -129,6 +133,9 @@ const backToCurrentChat = () => {
   // 重置订单反馈信息
   orderFeedbackRecord.value = ''
   orderCustomerSatisfaction.value = ''
+  // 重置会话ID和工单ID
+  currentConversationId.value = ''
+  currentOrderId.value = ''
 }
 
 /**
@@ -141,27 +148,34 @@ const handleNavigateToSession = async (sessionId) => {
     return
   }
 
-  // 从 Contacts 组件获取历史工单列表
+  // 从 Contacts 组件获取历史工单列表（defineExpose 暴露的是 ref 对象，需要 .value 解包）
   let historyOrders = [];
   if (contactsComponent.value && contactsComponent.value.$refs && contactsComponent.value.$refs.orderItemList && contactsComponent.value.$refs.orderItemList.historyOrders) {
-    historyOrders = contactsComponent.value.$refs.orderItemList.historyOrders;
+    const exposed = contactsComponent.value.$refs.orderItemList.historyOrders;
+    historyOrders = Array.isArray(exposed) ? exposed : (exposed.value || []);
   }
 
   // 更新状态
   const order = historyOrders.find(contact => contact.id === sessionId);
+  debugger
 
   if (order) {
     showInput.value = true;
     // 非草稿状态或已有反馈记录时禁用输入
-    isInputDisabled.value = order.orderStatus !== 'DRAFT' || !!order.feedbackRecord;
+    isInputDisabled.value = order.orderStatus !== 'DRAFT' && order?.feedbackRecord === 'RESOLVED';
     // 同步订单反馈信息
     orderFeedbackRecord.value = order.feedbackRecord || '';
     orderCustomerSatisfaction.value = order.customerSatisfaction || '';
+    // 同步会话ID和工单ID（直接取自历史会话数据，不依赖 chatMessageService 单例状态）
+    currentConversationId.value = order.conversationId || '';
+    currentOrderId.value = order.id || '';
   } else {
     showInput.value = false;
     isInputDisabled.value = false;
     orderFeedbackRecord.value = '';
     orderCustomerSatisfaction.value = '';
+    currentConversationId.value = '';
+    currentOrderId.value = '';
   }
 
   messages.value = await messageService.handleNavigateToSession(sessionId, historyOrders);
@@ -210,6 +224,8 @@ const handleToggleSidebar = (isFresh) => {
 const handleOrderFeedbackInfo = (info) => {
   orderFeedbackRecord.value = info.feedbackRecord || ''
   orderCustomerSatisfaction.value = info.customerSatisfaction || ''
+  currentOrderId.value = info.orderId || ''
+  currentConversationId.value = info.conversationId || ''
 }
 
 const handleToggleSidebarWithNotification = () => {
@@ -304,6 +320,9 @@ const handleNewOrder = () => {
   // 重置订单反馈信息
   orderFeedbackRecord.value = ''
   orderCustomerSatisfaction.value = ''
+  // 重置会话ID和工单ID
+  currentConversationId.value = ''
+  currentOrderId.value = ''
 
   // 重置级联选择器
   if (chatComponent.value && chatComponent.value.resetCascader) {

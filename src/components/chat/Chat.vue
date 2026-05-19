@@ -30,6 +30,8 @@
         :allFormsDisabled="allFormsDisabled"
         :orderFeedbackRecord="orderFeedbackRecord"
         :orderCustomerSatisfaction="orderCustomerSatisfaction"
+        :conversationId="conversationId"
+        :orderId="orderId"
         @update:messages="$emit('update:messages', $event)"
         @update:isSending="$emit('update:isSending', $event)"
         @stop="handleStop"
@@ -105,6 +107,14 @@ const props = defineProps({
     default: ''
   },
   orderCustomerSatisfaction: {
+    type: String,
+    default: ''
+  },
+  conversationId: {
+    type: String,
+    default: ''
+  },
+  orderId: {
     type: String,
     default: ''
   }

@@ -242,7 +242,9 @@ const selectOrder = async (order) => {
   // 传递订单反馈信息，供满意度组件判断
   emit('order-feedback-info', {
     feedbackRecord: order.feedbackRecord || '',
-    customerSatisfaction: order.customerSatisfaction || ''
+    customerSatisfaction: order.customerSatisfaction || '',
+    orderId: order.id || '',
+    conversationId: order.conversationId || ''
   })
 }
 

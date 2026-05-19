@@ -8,14 +8,17 @@
       @file-click="downloadFile"
       @form-submit="handleFormSubmit"
       @submit-success="handleSubmitSuccess"
+      @refresh-order="handleSatisfactionSuccess"
     />
 
     <!-- 满意度评价卡片 -->
     <SatisfactionCard
       v-if="shouldShowSatisfaction"
+      :order-id="orderId"
       :conversation-id="conversationId"
       :disabled="satisfactionDisabled"
       :customer-satisfaction="satisfactionValue"
+      @submit-success="handleSatisfactionSuccess"
     />
 
     <!-- 消息发送区 -->
@@ -84,6 +87,14 @@ const props = defineProps({
   orderCustomerSatisfaction: {
     type: String,
     default: ''
+  },
+  conversationId: {
+    type: String,
+    default: ''
+  },
+  orderId: {
+    type: String,
+    default: ''
   }
 })
 
@@ -94,12 +105,7 @@ const emit = defineEmits(['update:messages', 'update:isSending', 'stop', 'form-s
 const isLoading = ref(false)
 const loadingMessageId = ref(null)
 const isSendingLocal = ref(false)
-// 当前会话ID
-const conversationId = ref('')
 
-watch(() => props.messages, () => {
-  conversationId.value = chatMessageService.getCurrentOrderId() || ''
-}, { immediate: true })
 
 // 是否显示满意度评价卡片（优先使用订单对象的值，其次检查消息）
 const shouldShowSatisfaction = computed(() => {
@@ -122,7 +128,7 @@ const satisfactionValue = computed(() => {
 })
 
 // 监听会话ID变化，切换会话时清除输入框内容
-watch(conversationId, (newVal, oldVal) => {
+watch(() => props.conversationId, (newVal, oldVal) => {
   if (newVal && newVal !== oldVal && chatInputRef.value?.clearInput) {
     chatInputRef.value.clearInput()
   }
@@ -279,6 +285,14 @@ const handleFormSubmit = (eventName) => {
  */
 const handleSubmitSuccess = (payload) => {
   emit('submit-success', payload)
+}
+
+/**
+ * 处理满意度提交成功
+ * 刷新历史会话列表以同步最新评价状态
+ */
+const handleSatisfactionSuccess = () => {
+  emit('refresh-orders')
 }
 
 // 暴露方法给父组件

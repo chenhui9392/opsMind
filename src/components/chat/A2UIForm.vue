@@ -67,7 +67,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['form-submit', 'submit-success'])
+const emit = defineEmits(['form-submit', 'submit-success', 'refresh-order'])
 
 // ============================================
 // 响应式数据
@@ -268,7 +268,7 @@ const handleSubmitResponse = (result) => {
 
   // 保存返回的工单ID，供后续反馈更新使用
   if (result.data?.id) {
-    chatMessageService.currentOrderId = result.data.id
+    chatMessageService.saveOrderId(result.data.id)
   }
 
   // 解析返回的 content
@@ -342,7 +342,6 @@ const executeFeedbackUpdate = async (eventName) => {
 
   // 4. 调用 updateOrder 接口
   try {
-    debugger
     const result = await updateOrder({
       id: chatMessageService.getCurrentOrderId(),
       conversationId: chatMessageService.getCurrentConversationId(),
@@ -351,6 +350,8 @@ const executeFeedbackUpdate = async (eventName) => {
     })
 
     if (result && result.code === 200) {
+      // 通知父组件更新历史会话
+      emit('refresh-order')
       // 更新成功，处理反馈按钮状态
       nodeList.forEach(node => {
         const nodeEventName = node.action?.event?.name

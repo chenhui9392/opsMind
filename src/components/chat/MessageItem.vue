@@ -27,6 +27,7 @@
         @form-submit="handleFormSubmit"
         @submit-success="handleSubmitSuccess"
         @feedback-updated="handleFeedbackUpdated"
+        @refresh-order="handleRefreshOrder"
       />
 
       <!-- 消息内容 -->
@@ -115,7 +116,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-success'])
+const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-success', 'refresh-order'])
 
 // 响应式数据
 const copySuccess = ref(false)
@@ -177,6 +178,10 @@ const handleFormSubmit = (eventName) => {
  */
 const handleSubmitSuccess = (payload) => {
   emit('submit-success', payload)
+}
+
+const handleRefreshOrder=()=> {
+  emit('refresh-order')
 }
 
 const getFileIcon = (fileName) => {

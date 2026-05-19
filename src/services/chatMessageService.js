@@ -244,6 +244,21 @@ class ChatMessageService {
   }
 
   /**
+   * 保存 orderId
+   * @param {string} orderId - 工单ID
+   */
+  saveOrderId(orderId) {
+    if (orderId) {
+      this.currentOrderId = orderId
+      // 按会话持久化，方便切换后恢复
+      if (!this.sessionConfigStore[this.currentChatSession]) {
+        this.sessionConfigStore[this.currentChatSession] = {}
+      }
+      this.sessionConfigStore[this.currentChatSession].orderId = orderId
+    }
+  }
+
+  /**
    * 解析 content 内容，返回解析结果对象
    * @param {string} content - 原始 content 字符串
    * @returns {Object} - 包含 type、content、formInfo、installId 的对象

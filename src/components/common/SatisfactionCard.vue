@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description:
  * @Date: 2026-04-27 16:12:24
- * @LastEditTime: 2026-04-27 16:12:51
+ * @LastEditTime: 2026-05-19 09:57:53
  * @LastEditors: hui.chenn
 -->
 <template>
@@ -41,6 +41,10 @@ import icon05Active from '../../assets/evaluation/evaluation_05_active.png'
 import { updateOrder } from '../../api'
 
 const props = defineProps({
+  orderId: {
+    type: String,
+    default: ''
+  },
   conversationId: {
     type: String,
     default: ''
@@ -55,15 +59,20 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['change'])
+const emit = defineEmits(['change', 'submit-success'])
 
 const selectedValue = ref(null)
 const hasSubmitted = ref(props.disabled || !!props.customerSatisfaction)
 
-// 监听会话ID变化，切换会话时重置本地状态，防止不同会话间状态污染
-watch(() => props.conversationId, () => {
-  selectedValue.value = null
-  hasSubmitted.value = props.disabled || !!props.customerSatisfaction
+// 监听工单ID变化，切换会话时根据当前满意度值重置状态，防止不同会话间状态污染
+watch(() => props.orderId, () => {
+  if (props.customerSatisfaction && satisfactionReverseMap[props.customerSatisfaction]) {
+    selectedValue.value = satisfactionReverseMap[props.customerSatisfaction]
+    hasSubmitted.value = true
+  } else {
+    selectedValue.value = null
+    hasSubmitted.value = props.disabled
+  }
 })
 
 // 满意度字符串与数值的反向映射
@@ -112,13 +121,17 @@ watch(() => props.customerSatisfaction, (newVal) => {
  */
 const submitSatisfaction = async (value) => {
   const satisfaction = satisfactionMap[value]
-  if (!satisfaction || !props.conversationId) return
+  if (!satisfaction || !props.orderId) return
   try {
-    await updateOrder({
-      id: props.conversationId,
+    const result = await updateOrder({
+      id: props.orderId,
+      conversationId: props.conversationId,
       customerSatisfaction: satisfaction
     })
-    hasSubmitted.value = true
+    if (result && result.code === 200) {
+      hasSubmitted.value = true
+      emit('submit-success')
+    }
   } catch (error) {
     // 提交失败，不设置 hasSubmitted，允许用户重新选择
   }

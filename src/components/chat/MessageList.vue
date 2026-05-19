@@ -21,6 +21,7 @@
         @file-click="handleFileClick"
         @form-submit="handleFormSubmit"
         @submit-success="handleSubmitSuccess"
+        @refresh-order="handleRefreshOrder"
       />
     </div>
 
@@ -57,7 +58,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['file-click', 'form-submit', 'submit-success'])
+const emit = defineEmits(['file-click', 'form-submit', 'submit-success', 'refresh-order'])
 
 // 响应式数据
 const imagePreview = reactive({
@@ -115,6 +116,10 @@ const handleFormSubmit = (eventName) => {
  */
 const handleSubmitSuccess = (payload) => {
   emit('submit-success', payload)
+}
+
+const handleRefreshOrder=()=> {
+  emit('refresh-order')
 }
 </script>
 
