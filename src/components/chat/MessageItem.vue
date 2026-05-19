@@ -116,7 +116,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-success', 'refresh-order'])
+const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-success', 'refresh-order', 'feedback-updated'])
 
 // 响应式数据
 const copySuccess = ref(false)
@@ -130,6 +130,8 @@ const handleFeedbackUpdated = (payload) => {
   if (props.message && payload.feedbackRecord) {
     props.message.feedbackRecord = payload.feedbackRecord
   }
+  // 向上传递事件给父组件
+  emit('feedback-updated', payload)
 }
 
 

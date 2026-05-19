@@ -67,7 +67,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['form-submit', 'submit-success', 'refresh-order'])
+const emit = defineEmits(['form-submit', 'submit-success', 'refresh-order', 'feedback-updated'])
 
 // ============================================
 // 响应式数据

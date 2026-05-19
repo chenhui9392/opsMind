@@ -45,6 +45,7 @@
       @submit-success="handleRefreshOrders"
       @toggle-sidebar="handleToggleSidebarWithNotification"
       @download-session="handleDownloadSession"
+      @feedback-updated="handleFeedbackUpdated"
     />
 
     <!-- 版本更新对话框 -->
@@ -237,6 +238,18 @@ const handleOrderFeedbackInfo = (info) => {
   orderCustomerSatisfaction.value = info.customerSatisfaction || ''
   currentOrderId.value = info.orderId || ''
   currentConversationId.value = info.conversationId || ''
+}
+
+/**
+ * 处理反馈更新事件
+ * 当用户选择已解决时，禁用输入框
+ * @param {Object} payload - 反馈数据
+ */
+const handleFeedbackUpdated = (payload) => {
+  if (payload && payload.feedbackRecord === 'RESOLVED') {
+    orderFeedbackRecord.value = payload.feedbackRecord
+    isInputDisabled.value = true
+  }
 }
 
 const handleToggleSidebarWithNotification = () => {

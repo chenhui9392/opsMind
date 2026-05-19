@@ -37,6 +37,7 @@
         @stop="handleStop"
         @form-submit="handleFormSubmit"
         @submit-success="handleSubmitSuccess"
+        @feedback-updated="handleFeedbackUpdated"
         @refresh-orders="$emit('refresh-orders', $event)"
       />
     </div>
@@ -134,8 +135,9 @@ const emit = defineEmits([
   'download-session',
   'new-session',
   'submit-success',
-    'form-submit',
-  'update:isInputDisabled'
+  'form-submit',
+  'update:isInputDisabled',
+  'feedback-updated'
 ])
 
 // 响应式数据
@@ -310,6 +312,20 @@ const handleSubmitSuccess = (payload) => {
 
   // 同时触发 submit-success 事件，供父组件做其他处理
   emit('submit-success')
+}
+
+/**
+ * 处理反馈更新事件
+ * 当用户选择已解决时，禁用输入框
+ * @param {Object} payload - 反馈数据
+ */
+const handleFeedbackUpdated = (payload) => {
+  // 如果反馈是 RESOLVED（已解决），禁用输入框
+  if (payload && payload.feedbackRecord === 'RESOLVED') {
+    emit('update:isInputDisabled', true)
+  }
+  // 同时传递 feedback-updated 事件给父组件
+  emit('feedback-updated', payload)
 }
 
 // 生命周期钩子

@@ -8,6 +8,7 @@
       @file-click="downloadFile"
       @form-submit="handleFormSubmit"
       @submit-success="handleSubmitSuccess"
+      @feedback-updated="handleFeedbackUpdated"
       @refresh-order="handleSatisfactionSuccess"
     />
 
@@ -99,7 +100,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['update:messages', 'update:isSending', 'stop', 'form-submit', 'submit-success', 'refresh-orders'])
+const emit = defineEmits(['update:messages', 'update:isSending', 'stop', 'form-submit', 'submit-success', 'refresh-orders', 'feedback-updated'])
 
 // 响应式数据
 const isLoading = ref(false)
@@ -293,6 +294,15 @@ const handleSubmitSuccess = (payload) => {
  */
 const handleSatisfactionSuccess = () => {
   emit('refresh-orders')
+}
+
+/**
+ * 处理反馈更新事件
+ * 当用户选择已解决时，禁用输入框
+ * @param {Object} payload - 反馈数据
+ */
+const handleFeedbackUpdated = (payload) => {
+  emit('feedback-updated', payload)
 }
 
 // 暴露方法给父组件
