@@ -128,7 +128,8 @@ const emit = defineEmits([
   'check-update',
   'logout',
   'toggle-sidebar',
-  'order-feedback-info'
+  'order-feedback-info',
+    'select-order'
 ])
 
 // 响应式数据
@@ -246,6 +247,7 @@ const selectOrder = async (order) => {
     orderId: order.id || '',
     conversationId: order.conversationId || ''
   })
+  emit('select-order')
 }
 
 /**

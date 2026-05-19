@@ -233,14 +233,12 @@ class ChatMessageService {
    * @param {string} conversationId - 会话ID
    */
   saveConversationId(conversationId) {
-    if (conversationId) {
-      this.currentConversationId = conversationId
-      // 按会话持久化，方便切换后恢复
-      if (!this.sessionConfigStore[this.currentChatSession]) {
-        this.sessionConfigStore[this.currentChatSession] = {}
-      }
-      this.sessionConfigStore[this.currentChatSession].conversationId = conversationId
+    this.currentConversationId = conversationId || null
+    // 按会话持久化，方便切换后恢复
+    if (!this.sessionConfigStore[this.currentChatSession]) {
+      this.sessionConfigStore[this.currentChatSession] = {}
     }
+    this.sessionConfigStore[this.currentChatSession].conversationId = conversationId || null
   }
 
   /**
@@ -248,14 +246,12 @@ class ChatMessageService {
    * @param {string} orderId - 工单ID
    */
   saveOrderId(orderId) {
-    if (orderId) {
-      this.currentOrderId = orderId
-      // 按会话持久化，方便切换后恢复
-      if (!this.sessionConfigStore[this.currentChatSession]) {
-        this.sessionConfigStore[this.currentChatSession] = {}
-      }
-      this.sessionConfigStore[this.currentChatSession].orderId = orderId
+    this.currentOrderId = orderId || null
+    // 按会话持久化，方便切换后恢复
+    if (!this.sessionConfigStore[this.currentChatSession]) {
+      this.sessionConfigStore[this.currentChatSession] = {}
     }
+    this.sessionConfigStore[this.currentChatSession].orderId = orderId || null
   }
 
   /**

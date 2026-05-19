@@ -149,6 +149,13 @@ watch(() => props.selectedContact, () => {
   allFormsDisabled.value = false
 })
 
+/**
+ * 重置表单禁用状态（用于点击会话卡片时）
+ */
+const resetFormDisabledState = () => {
+  allFormsDisabled.value = false
+}
+
 // 模板引用
 const chatContent = ref(null)
 
@@ -313,7 +320,8 @@ onMounted(() => {
 // 暴露方法给父组件
 defineExpose({
   resetCascader,
-  scrollToBottom
+  scrollToBottom,
+  resetFormDisabledState
 })
 </script>
 

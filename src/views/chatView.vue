@@ -17,7 +17,8 @@
       @check-update="checkForAppUpdates({ force: true, showNoUpdate: true })"
       @toggle-sidebar="handleToggleSidebar"
       @refresh-orders-with-notification="handleRefreshOrdersWithNotification"
-    @order-feedback-info="handleOrderFeedbackInfo"
+      @order-feedback-info="handleOrderFeedbackInfo"
+      @select-order="handleSelectOrder"
     />
 
     <!-- 右侧聊天区域 -->
@@ -148,6 +149,11 @@ const handleNavigateToSession = async (sessionId) => {
     return
   }
 
+  // 重置 Chat 组件中的表单禁用状态
+  if (chatComponent.value && chatComponent.value.resetFormDisabledState) {
+    chatComponent.value.resetFormDisabledState()
+  }
+
   // 从 Contacts 组件获取历史工单列表（defineExpose 暴露的是 ref 对象，需要 .value 解包）
   let historyOrders = [];
   if (contactsComponent.value && contactsComponent.value.$refs && contactsComponent.value.$refs.orderItemList && contactsComponent.value.$refs.orderItemList.historyOrders) {
@@ -157,7 +163,6 @@ const handleNavigateToSession = async (sessionId) => {
 
   // 更新状态
   const order = historyOrders.find(contact => contact.id === sessionId);
-  debugger
 
   if (order) {
     showInput.value = true;
@@ -169,6 +174,9 @@ const handleNavigateToSession = async (sessionId) => {
     // 同步会话ID和工单ID（直接取自历史会话数据，不依赖 chatMessageService 单例状态）
     currentConversationId.value = order.conversationId || '';
     currentOrderId.value = order.id || '';
+    // 同步更新 chatMessageService 中的会话ID和工单ID，供 A2UIForm 等组件使用
+    chatMessageService.saveConversationId(order.conversationId || '');
+    chatMessageService.saveOrderId(order.id || '');
   } else {
     showInput.value = false;
     isInputDisabled.value = false;
@@ -176,6 +184,9 @@ const handleNavigateToSession = async (sessionId) => {
     orderCustomerSatisfaction.value = '';
     currentConversationId.value = '';
     currentOrderId.value = '';
+    // 重置 chatMessageService 中的会话ID和工单ID
+    chatMessageService.saveConversationId('');
+    chatMessageService.saveOrderId('');
   }
 
   messages.value = await messageService.handleNavigateToSession(sessionId, historyOrders);
@@ -390,6 +401,14 @@ const handleUpdateConfirm = async (data) => {
  */
 const handleUpdateCancel = () => {
   // 可以记录用户选择，下次不再提示或延迟提示
+}
+
+const handleSelectOrder=()=>{
+  debugger
+  // 重置 Chat 组件中的表单禁用状态
+  if (chatComponent.value && chatComponent.value.resetFormDisabledState) {
+    chatComponent.value.resetFormDisabledState()
+  }
 }
 
 // 监听消息变化，同步新会话状态

@@ -444,8 +444,11 @@ watch(() => props.formInfo, (newVal, oldVal) => {
   }
 })
 
-watch(() => props.disabled, () => {
+watch(() => props.disabled, (newVal) => {
   nextTick(() => processFormInfo())
+  if (!newVal) {
+    isSubmitted.value = false
+  }
 })
 
 onMounted(() => {
