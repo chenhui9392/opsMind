@@ -439,8 +439,9 @@ onMounted(() => {
   // 同步新会话状态
   isNewSession.value = messageService.getIsNewSession()
 
-  // 初始化 Socket 连接
-  initSocketConnection()
+  // 获取用户名后初始化 Socket 连接
+  const userName = localStorage.getItem('userName')
+  initSocketConnection(userName)
 
   // 监听 Socket 广播消息
   window.addEventListener('socket:broadcast', handleSocketBroadcast)

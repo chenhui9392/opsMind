@@ -111,9 +111,15 @@ class SocketConnection {
 
   /**
    * 连接到 WebSocket 服务
+   * @param {Object} [options] - 连接选项，可以更新查询参数
    * @returns {Promise<void>}
    */
-  connect() {
+  connect(options = {}) {
+    // 如果有新的查询参数，更新它们
+    if (options.queryParams) {
+      this.queryParams = { ...this.queryParams, ...options.queryParams }
+    }
+    
     // 默认允许重连
     this.shouldReconnect = true
 
@@ -254,6 +260,9 @@ class SocketConnection {
     this.isConnecting = false
     this.reconnectAttempts = 0
     this.messageQueue = []
+    
+    // 关键修复！断开连接时清理 queryParams，确保下次连接是全新的状态
+    this.queryParams = {}
   }
 
   /**
@@ -584,7 +593,7 @@ class SocketManager {
   /**
    * 连接到指定的 WebSocket 服务
    * @param {string} connectionId - 连接 ID
-   * @param {Object} options - 连接配置（如果是新连接）
+   * @param {Object} options - 连接配置
    * @returns {Promise<void>}
    */
   connect(connectionId, options = {}) {
@@ -594,7 +603,7 @@ class SocketManager {
       connection = this.createConnection(connectionId, options)
     }
 
-    return connection.connect()
+    return connection.connect(options)
   }
 
   /**
@@ -780,11 +789,12 @@ class SocketService {
 
   /**
    * 连接到 WebSocket 服务（向后兼容）
+   * @param {Object} [options] - 连接选项
    * @returns {Promise<void>}
    */
-  connect() {
+  connect(options = {}) {
     this._ensureDefaultConnection()
-    return this.manager.connect(this.defaultConnectionId)
+    return this.manager.connect(this.defaultConnectionId, options)
   }
 
   /**
@@ -824,9 +834,14 @@ class SocketService {
    * @param {Function} callback - 回调函数
    */
   off(event, callback) {
-    const connection = this.manager.getConnection(this.defaultConnectionId)
-    if (connection) {
-      connection.off(event, callback)
+    try {
+      const connection = this.manager.getConnection(this.defaultConnectionId)
+      if (connection) {
+        connection.off(event, callback)
+      }
+    } catch (error) {
+      // 忽略清理错误，避免影响正常流程
+      console.warn('清理 socket 监听器时出错:', error)
     }
   }
 

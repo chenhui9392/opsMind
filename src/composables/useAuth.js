@@ -16,6 +16,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login as loginApi } from '../api'
 import { isDev } from '../config/env.js'
+import { initSocketConnection, disconnectSocket } from '../utils/socket/index.js'
 
 // 认证状态（全局共享）
 const isAuthenticated = ref(false)
@@ -38,11 +39,12 @@ export function useAuth() {
    */
   const login = async (username, password) => {
     try {
+      const trimmedUsername = username.trim()
       const response = await loginApi({
         appId:"PORTAL",
         clientId:"Tineco",
         code:true,
-        uid: username.trim(),
+        uid: trimmedUsername,
         password: password.trim()
       })
 
@@ -53,9 +55,9 @@ export function useAuth() {
         userInfo.value = response.data
         isAuthenticated.value = true
 
-        // 保存到 localStorage
+        // 保存到 localStorage（先保存，确保后续 socket 连接能获取到）
         localStorage.setItem('token', response.data.access_token)
-        localStorage.setItem('userName', username.trim())
+        localStorage.setItem('userName', trimmedUsername)
         localStorage.setItem('userInfo', JSON.stringify(response.data))
         localStorage.setItem('app_environment', isDev ? 'development' : 'production')
 
@@ -82,6 +84,13 @@ export function useAuth() {
    * @param {boolean} redirect - 是否重定向到登录页
    */
   const logout = (redirect = true) => {
+    // 断开 socket 连接（这是关键修复点！）
+    try {
+      disconnectSocket()
+    } catch (error) {
+      console.error('断开 socket 连接时出错:', error)
+    }
+
     // 清除状态
     isAuthenticated.value = false
     userInfo.value = null

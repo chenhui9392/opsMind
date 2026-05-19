@@ -22,16 +22,28 @@ const CONNECTION_CONFIG = {
 /**
  * 初始化 Socket 连接
  * 在应用首页加载时调用
+ * @param {string} [userName] - 可选的用户名参数
  */
-export function initSocketConnection() {
+export function initSocketConnection(userName) {
+  // 先确保之前的监听器已清理，避免重复注册
+  try {
+    socketService.off('message', handleSocketMessage)
+    socketService.off('error', handleSocketError)
+    socketService.off('close', handleSocketClose)
+    socketService.off('open', handleSocketOpen)
+  } catch (error) {
+    // 忽略清理错误
+  }
+  
   // 注册消息处理器
   socketService.on('message', handleSocketMessage)
   socketService.on('error', handleSocketError)
   socketService.on('close', handleSocketClose)
   socketService.on('open', handleSocketOpen)
 
-  // 建立连接
-  socketService.connect().then(() => {
+  // 建立连接，传递用户名参数
+  const options = userName ? { queryParams: { userName } } : {}
+  socketService.connect(options).then(() => {
   }).catch(error => {
   })
 }
