@@ -213,8 +213,8 @@ html, body {
 
 <style scoped>
 .floating-ball-box {
-  width: 60px;
-  height: 60px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -225,7 +225,6 @@ html, body {
 .floating-ball {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
   cursor: move;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: visible;

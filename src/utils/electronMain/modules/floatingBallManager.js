@@ -39,8 +39,8 @@ class FloatingBallManager {
       const devPort = this.getDevServerPort()
       // 创建悬浮球窗口
       this.floatingBallWindow = new BrowserWindow({
-        width: 60,
-        height: 60,
+        width: 40,
+        height: 40,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
@@ -55,6 +55,9 @@ class FloatingBallManager {
           webSecurity: false
         }
       })
+      this.floatingBallWindow.setShape([
+        { x: 0, y: 0, width: 40, height: 40 }
+      ])
 
       // 加载悬浮球页面（Vue路由）
       const floatingBallUrl = isDev
