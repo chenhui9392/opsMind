@@ -28,7 +28,7 @@
     "defaultArch": "x64",
     "icon": "public/app.png",
     "win": {
-      "target": "nsis",
+      "target": "msi",
       "electronLanguages": [
         "en-US",
         "zh-CN",
@@ -91,6 +91,7 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "a2ui-vue-engine": "^1.0.13",
+    "adm-zip": "^0.5.17",
     "crypto-js": "^4.2.0",
     "element-plus": "^2.13.7",
     "markdown-it": "^14.1.0",
