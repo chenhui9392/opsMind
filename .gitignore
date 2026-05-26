@@ -3,6 +3,7 @@
 /dist/
 /release/
 /releasePro/
+/release-beta/
 
 # Auto-generated type definitions
 auto-imports.d.ts
