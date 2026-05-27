@@ -221,8 +221,8 @@ app.whenReady().then(() => {
     appName
   )
 
-  // 创建悬浮球
-  floatingBallManager.createFloatingBall(isDev)
+  // 创建悬浮球（使用 app.isPackaged 判断是否为开发模式，避免 beta 环境误用 localhost）
+  floatingBallManager.createFloatingBall(!app.isPackaged)
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) {
