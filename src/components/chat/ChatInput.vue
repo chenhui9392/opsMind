@@ -1,34 +1,42 @@
 <template>
   <div class="chat-input-container">
-    <!-- 图片预览区域 -->
-    <div v-if="uploadedImages.length > 0" class="image-preview-container">
-      <div v-for="(image, index) in uploadedImages" :key="index" class="preview-item">
-        <img :src="image" class="preview-image" />
-        <button class="delete-button" @click="deleteImage(index)">
-          ×
-        </button>
-      </div>
-    </div>
-
-    <!-- 文件预览区域（非图片文件） -->
-    <div v-if="uploadedFiles.length > 0" class="file-preview-container">
-      <div v-for="(file, index) in uploadedFiles" :key="index" class="file-preview-item">
-        <div class="file-icon">📄</div>
-        <div class="file-name">{{ file.name }}</div>
-        <button class="delete-button file-delete" @click="deleteFile(index)">
-          ×
-        </button>
+    <!-- 预览区域（图片和文件在同一排显示） -->
+    <div v-if="uploadedImages.length > 0 || uploadedFiles.length > 0" class="preview-container">
+      <div class="preview-content">
+        <!-- 图片预览 -->
+        <div v-for="(image, index) in uploadedImages" :key="'img-' + index" class="preview-item">
+          <img :src="image" class="preview-image" />
+          <button class="delete-button" @click="deleteImage(index)">
+            ×
+          </button>
+        </div>
+        <!-- 文件预览（非图片文件） -->
+        <div v-for="(file, index) in uploadedFiles" :key="'file-' + index" class="file-preview-item">
+          <div class="file-icon">📄</div>
+          <div class="file-name">{{ file.name }}</div>
+          <button class="delete-button file-delete" @click="deleteFile(index)">
+            ×
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- 输入区域 -->
-    <div class="chat-input-wrapper">
+    <div
+      class="chat-input-wrapper"
+      :class="{ 'drag-over': isDragging }"
+      @dragenter.prevent="handleDragEnter"
+      @dragover.prevent="handleDragOver"
+      @dragleave="handleDragLeave"
+      @drop.prevent="handleDrop"
+    >
       <textarea
         v-model.trim="inputMessage"
         class="chat-input"
         :placeholder="placeholderText"
         @keydown.enter.prevent="handleEnterKey"
         @input="autoResize"
+        @paste="handlePaste"
         rows="1"
         :disabled="props.isInputDisabled"
         :style="{ maxHeight: '500px' }"
@@ -131,6 +139,7 @@ const isUploading = ref(false)
 const uploaderDisabled = ref(false)
 const isInCodeBlock = ref(false)
 const cascaderValue = ref({ businessType: '', systemName: '', moduleName: '' })
+const isDragging = ref(false)
 
 // 级联选择组件引用
 const cascaderRef = ref(null)
@@ -193,6 +202,19 @@ const handleFileChange = async (uploadFile) => {
   isUploading.value = true
   uploaderDisabled.value = true
 
+  await uploadAndPreviewFile(file)
+
+  isUploading.value = false
+  uploaderDisabled.value = false
+}
+
+/**
+ * 上传文件并预览
+ * @param {File} file - 文件对象
+ */
+const uploadAndPreviewFile = async (file) => {
+  if (!file) return
+
   const isImage = file.type.startsWith('image/')
 
   try {
@@ -217,10 +239,90 @@ const handleFileChange = async (uploadFile) => {
     }
   } catch (error) {
     emit('show-error', '文件上传失败')
-  } finally {
-    isUploading.value = false
-    uploaderDisabled.value = false
   }
+}
+
+/**
+ * 处理粘贴事件（支持截图粘贴）
+ * @param {ClipboardEvent} event - 粘贴事件
+ */
+const handlePaste = async (event) => {
+  if (props.isInputDisabled) return
+
+  const items = event.clipboardData?.items
+  if (!items || items.length === 0) return
+
+  isUploading.value = true
+  uploaderDisabled.value = true
+
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) {
+        await uploadAndPreviewFile(file)
+      }
+    }
+  }
+
+  isUploading.value = false
+  uploaderDisabled.value = false
+}
+
+/**
+ * 处理拖拽进入事件
+ * @param {DragEvent} event - 拖拽事件
+ */
+const handleDragEnter = (event) => {
+  if (props.isInputDisabled) return
+  isDragging.value = true
+}
+
+/**
+ * 处理拖拽悬停事件
+ * @param {DragEvent} event - 拖拽事件
+ */
+const handleDragOver = (event) => {
+  if (props.isInputDisabled) return
+  event.dataTransfer.dropEffect = 'copy'
+}
+
+/**
+ * 处理拖拽离开事件
+ * @param {DragEvent} event - 拖拽事件
+ */
+const handleDragLeave = (event) => {
+  const rect = event.currentTarget.getBoundingClientRect()
+  if (
+    event.clientX <= rect.left ||
+    event.clientX >= rect.right ||
+    event.clientY <= rect.top ||
+    event.clientY >= rect.bottom
+  ) {
+    isDragging.value = false
+  }
+}
+
+/**
+ * 处理放置事件
+ * @param {DragEvent} event - 放置事件
+ */
+const handleDrop = async (event) => {
+  if (props.isInputDisabled) return
+
+  isDragging.value = false
+
+  const files = event.dataTransfer?.files
+  if (!files || files.length === 0) return
+
+  isUploading.value = true
+  uploaderDisabled.value = true
+
+  for (let i = 0; i < files.length; i++) {
+    await uploadAndPreviewFile(files[i])
+  }
+
+  isUploading.value = false
+  uploaderDisabled.value = false
 }
 
 /**
@@ -348,18 +450,22 @@ defineExpose({
   background-color: #F8F8FB; */
 }
 
-/* 图片预览区域 */
-.image-preview-container {
+/* 预览区域（图片和文件在同一排显示） */
+.preview-container {
   padding: 12px 16px 0;
+}
+
+.preview-content {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .preview-item {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   border-radius: 8px;
   overflow: hidden;
   background-color: #ffffff;
@@ -372,24 +478,16 @@ defineExpose({
   object-fit: cover;
 }
 
-/* 文件预览区域 */
-.file-preview-container {
-  padding: 12px 16px 0;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .file-preview-item {
   position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 32px 8px 12px;
+  padding: 6px 28px 6px 10px;
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
+  max-width: 300px;
 }
 
 .file-icon {
@@ -464,6 +562,13 @@ defineExpose({
   flex-direction: column;
   gap: 0;
   overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.chat-input-wrapper.drag-over {
+  border-color: #2260FA;
+  background-color: #f0f5ff;
+  box-shadow: 0 0 12px rgba(34, 96, 250, 0.2);
 }
 
 .chat-input {
