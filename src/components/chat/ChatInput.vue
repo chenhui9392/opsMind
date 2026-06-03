@@ -446,8 +446,6 @@ defineExpose({
 .chat-input-container {
   display: flex;
   flex-direction: column;
-  /* border-top: 1px solid #e0e0e0;
-  background-color: #F8F8FB; */
 }
 
 /* 预览区域（图片和文件在同一排显示） */
@@ -526,8 +524,8 @@ defineExpose({
 
 .delete-button {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: 0;
+  right: 0;
   width: 24px;
   height: 24px;
   border: 2px solid #ffffff;
