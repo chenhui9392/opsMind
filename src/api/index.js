@@ -86,7 +86,7 @@ export const login = (params) => {
  * @returns {Promise<Object>}
  */
 export const getSystemConfigTree = () => {
-  return get(`${API_BASE_URL}/hinton-agent-mario-server/ops/systemConfig/getTreeList`)
+  return post(`${API_BASE_URL}/hinton-agent-mario-server/ops/systemConfig/getTreeList`)
 }
 
 /**

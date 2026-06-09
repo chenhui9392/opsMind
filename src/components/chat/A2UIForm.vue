@@ -302,9 +302,12 @@ const executeSubmitWorkOrder = async () => {
     return
   }
 
+  const currentConversationId = chatMessageService.getCurrentConversationId()
+  console.log('[DEBUG] A2UIForm executeSubmitWorkOrder - conversationId:', currentConversationId)
+
   const result = await submitWorkOrder({
     submitJson,
-    conversationId: chatMessageService.getCurrentConversationId(),
+    conversationId: currentConversationId,
     systemName: chatMessageService.getCurrentSystemName(),
     userName: chatMessageService.getCurrentUserName()
   })
@@ -375,6 +378,96 @@ const executeFeedbackUpdate = async (eventName) => {
   }
 }
 
+/**
+ * 安装软件
+ * 从表单数据中获取选中的软件下载地址并发起安装请求
+ * @param {string} eventName - 事件名称
+ */
+const installSoftHandler = async (eventName) => {
+  try {
+    // 获取当前表单数据
+    const formData = getCurrentFormData()
+    if (!formData) {
+      console.warn('表单数据为空')
+      return
+    }
+
+    // 从 rawContent 解析节点列表，查找 ChoicePicker 的路径
+    const extracted = extractNodeListFromRawContent(props.rawContent)
+    if (!extracted) return
+
+    let choicePath = null
+    const findChoicePickerPath = (nodes) => {
+      for (const node of nodes) {
+        if (node.component === 'ChoicePicker' && node.value && node.value.path) {
+          choicePath = node.value.path
+          return
+        }
+        if (node.children && node.children.length) {
+          findChoicePickerPath(node.children)
+        }
+      }
+    }
+    findChoicePickerPath(extracted.nodeList)
+
+    if (!choicePath) {
+      console.warn('未找到软件选择组件')
+      return
+    }
+
+    // 根据 path 获取选中的下载地址
+    const downloadUrl = getFormDataValueByPath(formData, choicePath)
+    if (!downloadUrl) {
+      console.warn('未选择需要安装的软件')
+      return
+    }
+
+    // 发起安装请求
+    const token = localStorage.getItem('token')
+    const response = await fetch(downloadUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    })
+
+    if (response.status === 403) {
+      throw new Error('Token expired')
+    }
+
+    const result = await response.json()
+
+    // 判断安装是否成功（支持 code=200 或 success=true）
+    const isSuccess = result.code === 200 || result.success === true
+    if (isSuccess) {
+      const resultData = result.data || {}
+
+      // 调用提交工单接口（先提交，成功后再触发 submit-success 刷新历史工单）
+      await executeSubmitWorkOrder()
+
+      if (resultData.is_unmanaged === true) {
+        // 非管软件：调用 openexp 命令安装
+        const installCommand = resultData.install_command
+        if (installCommand) {
+          window.open(installCommand, '_self')
+        }
+        // 显示提示消息
+        const installMessage = result.message || '请在弹出的窗口中安装'
+        emit('submit-success', { tip: installMessage })
+      } else {
+        // 管软件：保持原样
+        const installMessage = result.message ? result.message : '安装任务已提交，正在后台执行...'
+        emit('submit-success', { tip: installMessage })
+      }
+    } else {
+      console.error('安装请求失败:', result.msg || result.message || '未知错误')
+    }
+  } catch (error) {
+    console.error('安装软件失败:', error)
+  }
+}
+
 // ============================================
 // 事件处理方法
 // ============================================
@@ -391,6 +484,12 @@ const handleA2UIMessage = async (payload) => {
   // 处理 feedbackResolved 和 feedbackUnresolved 事件
   if (eventName === 'feedbackResolved' || eventName === 'feedbackUnresolved') {
     await executeFeedbackUpdate(eventName)
+    return
+  }
+
+  // 处理安装事件
+  if (eventName === 'installHandler') {
+    await installSoftHandler(eventName)
     return
   }
 

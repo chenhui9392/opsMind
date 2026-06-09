@@ -8,7 +8,6 @@
       <!-- 用户信息区域 -->
       <div class="user-info-section">
         <div class="user-avatar" @click="handleAvatarClick" title="点击头像">
-<!--          <SvgIcon name="user" width="20" height="20" />-->
           <img :src="userAvatarImg" class="bot-avatar-img"/>
         </div>
         <span class="user-name">{{ userName }}</span>
@@ -52,21 +51,6 @@
       ></div>
     </div>
 
-    <!-- 侧边栏展开/收起按钮 -->
-<!--    <button-->
-<!--      class="sidebar-toggle-btn"-->
-<!--      :class="{ 'collapsed': isCollapsed, 'has-notification': hasSocketNotification && isCollapsed }"-->
-<!--      @click="handleToggleSidebarWithNotification"-->
-<!--      :title="isCollapsed ? '展开侧边栏' : '收起侧边栏'"-->
-<!--    >-->
-<!--      <SvgIcon-->
-<!--        :name="isCollapsed ? 'chevronRight' : 'chevronLeft'"-->
-<!--        width="18"-->
-<!--        height="18"-->
-<!--      />-->
-<!--      &lt;!&ndash; 红点通知 - 只在侧边栏收起时显示 &ndash;&gt;-->
-<!--      <span v-if="hasSocketNotification && isCollapsed" class="notification-dot"></span>-->
-<!--    </button>-->
   </div>
 </template>
 
@@ -129,7 +113,7 @@ const emit = defineEmits([
   'logout',
   'toggle-sidebar',
   'order-feedback-info',
-    'select-order'
+  'select-order'
 ])
 
 // 响应式数据
@@ -175,10 +159,6 @@ const { logout } = useAuth()
 // 模板引用
 const orderItemList = ref(null)
 
-// 计算属性
-const isCurrentChatSelected = computed(() => {
-  return props.selectedContact === props.currentChatSession
-})
 
 /**
  * 获取用户名
@@ -211,24 +191,6 @@ const handleSelectOrder = async (order) => {
 }
 
 /**
- * 处理回到当前聊天（禁用状态）
- */
-const handleBackToCurrent = () => {
-  if (props.isSending) {
-    return
-  }
-  emit('back-to-current')
-}
-
-/**
- * 处理搜索
- * @param {string} query - 搜索关键词
- */
-const handleSearch = (query) => {
-  searchQuery.value = query
-}
-
-/**
  * 选择工单
  * @param {Object} order - 工单对象
  */
@@ -237,7 +199,9 @@ const selectOrder = async (order) => {
   emit('update:selectedContact', order.id)
   // 所有状态都显示聊天框，非草稿状态或已有反馈记录时禁用输入
   emit('update:showInput', true)
-  const isDisabled = order.orderStatus !== 'DRAFT' && order?.feedbackRecord === 'RESOLVED'
+  // 订单状态不是「草稿」且反馈记录为「已解决」时，禁用输入框
+  const isDisabled = (order.orderStatus !== 'DRAFT' && order?.feedbackRecord === 'RESOLVED') ||
+      (order?.orderTypeActual !== 'CONSULTATION' && order.orderStatus !== 'DRAFT')
   emit('update:isInputDisabled', isDisabled)
   emit('update:messages', messages)
   // 传递订单反馈信息，供满意度组件判断
@@ -248,13 +212,6 @@ const selectOrder = async (order) => {
     conversationId: order.conversationId || ''
   })
   emit('select-order')
-}
-
-/**
- * 回到当前聊天会话
- */
-const backToCurrentChat = () => {
-  emit('back-to-current')
 }
 
 /**
@@ -303,25 +260,6 @@ const handleCheckUpdate = () => {
  */
 const handleLogout = () => {
   logout(true)
-}
-
-/**
- * 处理切换侧边栏展开/收起
- */
-const handleToggleSidebar = () => {
-  emit('toggle-sidebar')
-}
-
-/**
- * 处理带通知状态的切换侧边栏
- * 如果有 socket 通知，点击后通知父组件处理
- */
-const handleToggleSidebarWithNotification = () => {
-  emit('toggle-sidebar')
-  // 如果有 socket 通知，通知父组件处理（清除通知并刷新列表）
-  if (props.hasSocketNotification) {
-    emit('refresh-orders-with-notification')
-  }
 }
 
 // 初始化调整大小方法

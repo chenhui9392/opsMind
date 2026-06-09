@@ -417,7 +417,6 @@ const handleUpdateCancel = () => {
 }
 
 const handleSelectOrder=()=>{
-  debugger
   // 重置 Chat 组件中的表单禁用状态
   if (chatComponent.value && chatComponent.value.resetFormDisabledState) {
     chatComponent.value.resetFormDisabledState()

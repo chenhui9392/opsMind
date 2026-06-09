@@ -191,6 +191,8 @@ class ChatMessageService {
     }
 
     // 保存 conversationId
+    console.log('[DEBUG] handleServerResponse - response.data:', response.data)
+    console.log('[DEBUG] handleServerResponse - response.data.conversationId:', response.data?.conversationId)
     this.saveConversationId(response.data.conversationId)
 
     // 解析 content 并确定消息类型
@@ -233,12 +235,14 @@ class ChatMessageService {
    * @param {string} conversationId - 会话ID
    */
   saveConversationId(conversationId) {
+    console.log('[DEBUG] saveConversationId - 传入值:', conversationId, '当前session:', this.currentChatSession)
     this.currentConversationId = conversationId || null
     // 按会话持久化，方便切换后恢复
     if (!this.sessionConfigStore[this.currentChatSession]) {
       this.sessionConfigStore[this.currentChatSession] = {}
     }
     this.sessionConfigStore[this.currentChatSession].conversationId = conversationId || null
+    console.log('[DEBUG] saveConversationId - 保存后 currentConversationId:', this.currentConversationId)
   }
 
   /**
@@ -470,6 +474,7 @@ class ChatMessageService {
    * @returns {string|null} - 当前 conversationId
    */
   getCurrentConversationId() {
+    console.log('[DEBUG] getCurrentConversationId - 返回值:', this.currentConversationId, '当前session:', this.currentChatSession)
     return this.currentConversationId
   }
 
