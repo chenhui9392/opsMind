@@ -1,6 +1,6 @@
 /*
  * @Author: hui.chenn
- * @Description: 
+ * @Description:
  * @Date: 2026-04-13 10:25:53
  * @LastEditTime: 2026-04-15 15:52:08
  * @LastEditors: hui.chenn
@@ -14,7 +14,7 @@
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { login as loginApi } from '../api'
+import { login as loginApi, getCollectTimeConfig } from '../api'
 import { isDev } from '../config/env.js'
 import { initSocketConnection, disconnectSocket } from '../utils/socket/index.js'
 
@@ -140,9 +140,16 @@ export function useAuth() {
   /**
    * 启动定时任务
    */
-  const startScheduledTask = () => {
+  const startScheduledTask = async () => {
     if (typeof window !== 'undefined' && window.scheduledTaskAPI) {
-      window.scheduledTaskAPI.start().catch((error) => {
+      let intervalHours
+      try {
+        const response = await getCollectTimeConfig()
+        intervalHours = response?.data?.OPS_COLLECT_TIME?.[0]?.value
+      } catch (error) {
+        console.error('[ScheduledTask] 获取采集时间配置失败:', error)
+      }
+      window.scheduledTaskAPI.start(intervalHours).catch((error) => {
       })
     }
   }

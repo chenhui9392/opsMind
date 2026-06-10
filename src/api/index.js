@@ -2,7 +2,7 @@
  * @Author: hui.chenn
  * @Description: API接口服务 - 路径内置，仅接收参数
  * @Date: 2026-03-18 08:38:24
- * @LastEditTime: 2026-04-03 17:30:37
+ * @LastEditTime: 2026-06-10 10:55:50
  * @LastEditors: hui.chenn
  */
 import { upload, post, get } from '../utils/request'
@@ -105,4 +105,12 @@ export const submitWorkOrder = (params) => {
  */
 export const updateOrder = (params) => {
   return post(`${API_BASE_URL}/hinton-agent-mario-server/api/agentOrder/updateUserFeedback`, params)
+}
+
+/**
+ * 获取硬件采集时间配置
+ * @returns {Promise<Object>}
+ */
+export const getCollectTimeConfig = () => {
+  return post(`${API_LOGIN_URL}/basic/dictionary/data/all`, ['OPS_COLLECT_TIME'])
 }

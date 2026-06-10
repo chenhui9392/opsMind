@@ -144,8 +144,8 @@ class IpcHandler {
     })
 
     // 处理定时任务相关 IPC 事件
-    ipcMain.handle('startScheduledTask', async () => {
-      return await this.handleStartScheduledTask()
+    ipcMain.handle('startScheduledTask', async (event, intervalHours) => {
+      return await this.handleStartScheduledTask(intervalHours)
     })
 
     ipcMain.handle('stopScheduledTask', async () => {
@@ -417,12 +417,13 @@ class IpcHandler {
 
   /**
    * 启动定时任务
+   * @param {number} intervalHours - 执行间隔（小时）
    * @returns {Promise<Object>} - { success: boolean, message: string }
    */
-  async handleStartScheduledTask() {
-    console.log('[IPC] 启动定时任务')
+  async handleStartScheduledTask(intervalHours) {
+    console.log('[IPC] 启动定时任务, 间隔:', intervalHours, '小时')
     try {
-      scheduledTaskManager.start()
+      scheduledTaskManager.start(intervalHours)
       return { success: true, message: '定时任务已启动' }
     } catch (error) {
       console.error('[IPC] 启动定时任务失败:', error)

@@ -170,11 +170,12 @@ contextBridge.exposeInMainWorld('mainWindowAPI', {
 contextBridge.exposeInMainWorld('scheduledTaskAPI', {
   /**
    * 启动定时任务
+   * @param {number} intervalHours - 执行间隔（小时）
    * @returns {Promise<Object>} - { success: boolean, message: string }
    */
-  start: async () => {
+  start: async (intervalHours) => {
     try {
-      const result = await ipcRenderer.invoke('startScheduledTask')
+      const result = await ipcRenderer.invoke('startScheduledTask', intervalHours)
       console.log('[ScheduledTask API] 启动结果:', result)
       return result
     } catch (error) {

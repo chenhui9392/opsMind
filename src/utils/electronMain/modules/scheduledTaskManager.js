@@ -15,7 +15,7 @@ const powerShellExecutor = require('./powerShellExecutor')
 const windowManager = require('./windowManager')
 
 // 常量配置
-const INTERVAL_MS = 60 * 60 * 1000 // 1小时
+const DEFAULT_INTERVAL_HOURS = 1 // 默认1小时
 const RETRY_DELAY_MS = 5 * 60 * 1000 // 5分钟
 const MAX_RETRIES = 3
 
@@ -28,6 +28,7 @@ class ScheduledTaskManager {
     this.isRetrying = false
     this.lastExecuteTime = null
     this.powerMonitorSetup = false
+    this.intervalMs = DEFAULT_INTERVAL_HOURS * 60 * 60 * 1000
   }
 
   /**
@@ -47,7 +48,7 @@ class ScheduledTaskManager {
         console.log('[ScheduledTask] 系统从休眠唤醒')
         if (this.isRunning && this.lastExecuteTime) {
           const elapsed = Date.now() - this.lastExecuteTime
-          if (elapsed >= INTERVAL_MS) {
+          if (elapsed >= this.intervalMs) {
             console.log('[ScheduledTask] 唤醒后已超过执行间隔，立即执行')
             this.executeImmediately()
           }
@@ -63,14 +64,18 @@ class ScheduledTaskManager {
   /**
    * 启动定时任务
    * 立即执行一次，然后按间隔周期执行
+   * @param {number} intervalHours - 执行间隔（小时），默认1小时
    */
-  start() {
+  start(intervalHours) {
     if (this.isRunning) {
       console.log('[ScheduledTask] 定时任务已在运行，跳过重复启动')
       return
     }
 
-    console.log('[ScheduledTask] 启动定时任务')
+    // 解析并设置执行间隔
+    const hours = parseFloat(intervalHours)
+    this.intervalMs = (!isNaN(hours) && hours > 0 ? hours : DEFAULT_INTERVAL_HOURS) * 60 * 60 * 1000
+    console.log(`[ScheduledTask] 启动定时任务，执行间隔: ${this.intervalMs / 1000}秒`)
     this.isRunning = true
     this.retryCount = 0
     this.isRetrying = false
@@ -227,10 +232,10 @@ class ScheduledTaskManager {
   scheduleNext() {
     if (!this.isRunning) return
 
-    console.log(`[ScheduledTask] 安排下次执行: ${INTERVAL_MS / 1000}秒后`)
+    console.log(`[ScheduledTask] 安排下次执行: ${this.intervalMs / 1000}秒后`)
     this.timerId = setTimeout(() => {
       this.executeTask()
-    }, INTERVAL_MS)
+    }, this.intervalMs)
   }
 }
 
