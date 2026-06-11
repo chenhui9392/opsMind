@@ -388,9 +388,11 @@ npm run electron:build:prod
 
 ### 10.3 发布流程
 
-1. **更新版本号**: 修改 `package.json` 中的 `version` 字段
-2. **构建打包**: 执行 `npm run electron:build:prod`
-3. **分发安装包**: 将 `release/AIT Claw Setup x.x.x.exe` 分发给用户
+1. **更新版本号**:
+   - Beta 版本: 修改 `.env.beta` 中的 `VITE_APP_VERSION`
+   - 生产版本: 修改 `.env.production` 中的 `VITE_APP_VERSION`
+2. **构建打包**: 执行 `npm run electron:build:prod` 或 `npm run electron:build:beta`
+3. **分发安装包**: 将 `release/海豚.exe` 或 `release-beta/海豚Beta.exe` 分发给用户
 4. **配置自动更新**: 确保 `updateConfig.js` 中的更新服务器地址正确
 
 ### 10.4 自动更新配置

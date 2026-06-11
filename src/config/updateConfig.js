@@ -2,16 +2,19 @@
  * @Author: hui.chenn
  * @Description: 应用版本更新配置
  * @Date: 2026-03-27 17:10:00
- * @LastEditTime: 2026-03-30 15:54:24
+ * @LastEditTime: 2026-06-11 13:49:38
  * @LastEditors: hui.chenn
  */
 
 import { md5 } from '../utils/md5'
 import { UPDATE_API_BASE_URL } from './env'
 
-// 从 package.json 读取应用版本号
-import packageJson from '../../package.json'
-export const APP_VERSION = packageJson.version || '1.0.0'
+// 从环境变量读取应用版本号
+// Beta 版本和 Production 版本各自独立管理版本号
+// .env.beta 中定义 VITE_APP_VERSION 用于 Beta 版本
+// .env.production 中定义 VITE_APP_VERSION 用于生产版本
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0'
+console.info('import.meta.env.VITE_APP_VERSION:',import.meta.env.VITE_APP_VERSION)
 
 // 判断是否为开发环境
 const isDev = import.meta.env?.DEV || false
