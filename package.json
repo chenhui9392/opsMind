@@ -1,6 +1,6 @@
 {
   "name": "opsmind",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "main": "main.js",
   "scripts": {
     "dev": "vite",
@@ -99,7 +99,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "a2ui-vue-engine": "^1.0.16",
+    "a2ui-vue-engine": "^1.0.17",
     "crypto-js": "^4.2.0",
     "element-plus": "^2.13.7",
     "markdown-it": "^14.1.0",
