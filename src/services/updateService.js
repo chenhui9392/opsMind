@@ -126,10 +126,9 @@ class UpdateService {
     return {
       version: data.v || data.version || data.latestVersion || '',
       downloadUrl: data.u || data.downloadUrl || data.url || '',
-      releaseNotes: data.t || data.releaseNotes || data.notes || '有新版本可用，建议立即更新。',
+      releaseNotes: data.c || data.releaseNotes || data.notes || '有新版本可用，建议立即更新。',
       releaseDate: data.ut || data.releaseDate || data.date || '',
-      forceUpdate: data.c === 1 || data.forceUpdate || data.force || false,
-      fileSize: data.img || data.fileSize || data.size || 0,
+      forceUpdate: data.r === 2 || data.c === 1 || data.forceUpdate || data.force || false,
       checksum: data.checksum || data.md5 || '',
       updateCode: data.r // 更新代码
     }

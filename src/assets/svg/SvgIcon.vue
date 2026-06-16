@@ -10,6 +10,7 @@
       v-for="(path, index) in paths"
       :key="index"
       :d="path"
+      :fill="filled ? color : 'none'"
     />
   </svg>
 </template>
@@ -39,6 +40,10 @@ const props = defineProps({
   color: {
     type: String,
     default: 'currentColor'
+  },
+  filled: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -56,6 +61,11 @@ const viewBox = computed(() => {
 })
 
 const iconStyle = computed(() => {
+  if (props.filled) {
+    return {
+      fill: 'none'
+    }
+  }
   return {
     fill: 'none',
     stroke: props.color,

@@ -13,15 +13,11 @@
           <!-- 对话框头部 -->
           <div class="dialog-header">
             <div class="header-icon">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
-              </svg>
+              <SvgIcon name="checkCircle" :width="24" :height="24" filled />
             </div>
             <h3 class="header-title">发现新版本</h3>
             <button v-if="!forceUpdate" class="close-btn" @click="handleCancel">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
-              </svg>
+              <SvgIcon name="close" :width="18" :height="18" filled />
             </button>
           </div>
 
@@ -44,11 +40,6 @@
               <div class="notes-content">{{ releaseNotes }}</div>
             </div>
 
-            <!-- 文件大小信息 -->
-            <div v-if="fileSize" class="file-size-info">
-              <span>文件大小：{{ formatFileSize(fileSize) }}</span>
-            </div>
-
             <!-- 强制更新提示 -->
             <div v-if="forceUpdate" class="force-update-tip">
               <span class="tip-icon">!</span>
@@ -58,16 +49,16 @@
 
           <!-- 对话框底部 -->
           <div class="dialog-footer">
-            <button 
-              v-if="!forceUpdate" 
-              class="btn btn-cancel" 
+            <button
+              v-if="!forceUpdate"
+              class="btn btn-cancel"
               @click="handleCancel"
               :disabled="downloading"
             >
               取消
             </button>
-            <button 
-              class="btn btn-confirm" 
+            <button
+              class="btn btn-confirm"
               @click="handleConfirm"
               :disabled="downloading"
             >
@@ -86,6 +77,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import SvgIcon from '../../assets/svg/SvgIcon.vue'
 
 // Props
 const props = defineProps({
@@ -169,11 +161,10 @@ const handleCancel = () => {
 
 /**
  * 处理遮罩层点击
+ * 点击阴影处不执行任何操作
  */
 const handleOverlayClick = () => {
-  if (!props.forceUpdate) {
-    handleCancel()
-  }
+  // 禁止通过点击阴影关闭对话框
 }
 
 /**
@@ -183,16 +174,16 @@ const handleOverlayClick = () => {
  */
 const formatFileSize = (bytes) => {
   if (!bytes || bytes === 0) return '未知'
-  
+
   const units = ['B', 'KB', 'MB', 'GB']
   let size = bytes
   let unitIndex = 0
-  
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024
     unitIndex++
   }
-  
+
   return `${size.toFixed(2)} ${units[unitIndex]}`
 }
 </script>
