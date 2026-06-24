@@ -39,6 +39,7 @@
 
 <script setup>
 import { reactive } from 'vue'
+import { ElImageViewer } from 'element-plus'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import MessageItem from './MessageItem.vue'
 
@@ -59,7 +60,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['file-click', 'form-submit', 'submit-success', 'refresh-order', 'feedback-updated'])
+const emit = defineEmits(['image-click', 'file-click', 'form-submit', 'submit-success', 'refresh-order', 'feedback-updated'])
 
 // 响应式数据
 const imagePreview = reactive({

@@ -5,21 +5,41 @@
       <div class="preview-content">
         <!-- 图片预览 -->
         <div v-for="(image, index) in uploadedImages" :key="'img-' + index" class="preview-item">
-          <img :src="image" class="preview-image" />
-          <button class="delete-button" @click="deleteImage(index)">
+          <img
+            :src="image"
+            class="preview-image"
+            @click="openImagePreview(index)"
+          />
+          <button class="delete-button" @click.stop="deleteImage(index)">
             ×
           </button>
         </div>
         <!-- 文件预览（非图片文件） -->
-        <div v-for="(file, index) in uploadedFiles" :key="'file-' + index" class="file-preview-item">
+        <div
+          v-for="(file, index) in uploadedFiles"
+          :key="'file-' + index"
+          class="file-preview-item"
+          :title="`点击下载：${file.name}`"
+          @click="downloadFile(file)"
+        >
           <div class="file-icon">📄</div>
           <div class="file-name">{{ file.name }}</div>
-          <button class="delete-button file-delete" @click="deleteFile(index)">
+          <div class="file-download-icon">⬇</div>
+          <button class="delete-button file-delete" @click.stop="deleteFile(index)">
             ×
           </button>
         </div>
       </div>
     </div>
+
+    <!-- 待发送图片预览（点击放大查看） -->
+    <el-image-viewer
+      v-if="imageViewer.show"
+      :url-list="uploadedImages"
+      :initial-index="imageViewer.index"
+      @close="imageViewer.show = false"
+      @switch="(idx) => (imageViewer.index = idx)"
+    />
 
     <!-- 输入区域 -->
     <div
@@ -108,8 +128,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { ElUpload, ElTooltip } from 'element-plus'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ElUpload, ElTooltip, ElImageViewer } from 'element-plus'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import SystemModuleCascader from '../common/SystemModuleCascader.vue'
 import { uploadImage } from '../../api'
@@ -155,6 +175,21 @@ const uploaderDisabled = ref(false)
 const isInCodeBlock = ref(false)
 const cascaderValue = ref({ businessType: '', systemName: '', moduleName: '' })
 const isDragging = ref(false)
+
+// 待发送图片预览查看器状态
+const imageViewer = reactive({
+  show: false,
+  index: 0
+})
+
+/**
+ * 打开待发送图片预览
+ * @param {number} index - 图片索引
+ */
+const openImagePreview = (index) => {
+  imageViewer.index = index
+  imageViewer.show = true
+}
 
 // 级联选择组件引用
 const cascaderRef = ref(null)
@@ -381,6 +416,25 @@ const deleteFile = (index) => {
 }
 
 /**
+ * 下载待发送的文件
+ * @param {Object} file - 文件对象 { name, url, type }
+ */
+const downloadFile = (file) => {
+  if (!file || !file.url) return
+  try {
+    const link = document.createElement('a')
+    link.href = file.url
+    link.download = file.name || 'download'
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    emit('show-error', '文件下载失败')
+  }
+}
+
+/**
  * 重置textarea高度
  */
 const resetResize = () => {
@@ -567,6 +621,12 @@ defineExpose({
   width: 100%;
   height: 100%;
   object-fit: cover;
+  cursor: zoom-in;
+  transition: transform 0.2s;
+}
+
+.preview-image:hover {
+  transform: scale(1.05);
 }
 
 .file-preview-item {
@@ -579,6 +639,27 @@ defineExpose({
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   max-width: 300px;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.file-preview-item:hover {
+  background-color: #f5f7ff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.file-preview-item .file-download-icon {
+  font-size: 14px;
+  color: #2260FA;
+  opacity: 0;
+  margin-left: 2px;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+
+.file-preview-item:hover .file-download-icon {
+  opacity: 1;
 }
 
 .file-icon {
