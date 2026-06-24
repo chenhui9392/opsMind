@@ -78,6 +78,21 @@
               </button>
             </template>
           </el-upload>
+          <!-- 截图按钮 -->
+          <el-tooltip
+            content="截图(Alt + A)"
+            placement="top"
+            :show-after="100"
+          >
+            <button
+              class="attachment-btn screenshot-btn"
+              :disabled="uploaderDisabled || isSending || props.isInputDisabled"
+              @click="handleScreenshot"
+            >
+              <SvgIcon name="scissors" :width="16" :height="16" color="#666" class="scissors-icon" />
+              <span class="attachment-text">截图</span>
+            </button>
+          </el-tooltip>
           <button v-if="!isSending" class="send-button" @click="sendMessage" :disabled="isUploading || isSending || props.isInputDisabled" title="发送">
             <img src="../../assets/sent.png" alt="发送" class="send-icon" />
             <span class="send-text">发送</span>
@@ -93,8 +108,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { ElUpload } from 'element-plus'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ElUpload, ElTooltip } from 'element-plus'
 import SvgIcon from '../../assets/svg/SvgIcon.vue'
 import SystemModuleCascader from '../common/SystemModuleCascader.vue'
 import { uploadImage } from '../../api'
@@ -394,6 +409,72 @@ const handleStop = () => {
   emit('stop')
 }
 
+/**
+ * 处理截图按钮点击，触发主进程开启截图流程
+ */
+const handleScreenshot = async () => {
+  if (props.isInputDisabled || props.isSending) return
+  if (!window.screenshotAPI || typeof window.screenshotAPI.start !== 'function') {
+    emit('show-error', '截图功能不可用，请重启应用后重试')
+    console.warn('[Screenshot] window.screenshotAPI 不存在，需重启 Electron 以加载新的 preload.js')
+    return
+  }
+  try {
+    const result = await window.screenshotAPI.start()
+    if (result && result.success === false) {
+      emit('show-error', result.message || '启动截图失败')
+    }
+  } catch (error) {
+    console.error('[Screenshot] 启动截图异常:', error)
+    emit('show-error', '启动截图失败')
+  }
+}
+
+/**
+ * 全局键盘监听：捕获 Alt+A 触发截图
+ * 注意：主进程已通过 globalShortcut 和 before-input-event 监听 Alt+A，
+ * 此处作为兜底，仅当 screenshotAPI 可用时主动调用，避免误报错误
+ * @param {KeyboardEvent} event
+ */
+const handleGlobalKeydown = (event) => {
+  // 仅响应 Alt+A（不含 Ctrl/Shift/Meta），key 为 'a' 或 'A'
+  const isAltA = event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey
+    && (event.key === 'a' || event.key === 'A' || event.code === 'KeyA')
+  if (!isAltA) return
+  // 如果 screenshotAPI 不存在，交由主进程处理（before-input-event），不做任何处理避免误报
+  if (!window.screenshotAPI || typeof window.screenshotAPI.start !== 'function') {
+    return
+  }
+  event.preventDefault()
+  event.stopPropagation()
+  handleScreenshot()
+}
+
+/**
+ * 截图结果回调，将截图作为图片上传并预览
+ * @param {Object} data - { success, dataUrl?, cancelled? }
+ */
+const handleScreenshotResult = async (data) => {
+  if (!data || !data.success || !data.dataUrl) return
+
+  try {
+    // 将 dataUrl 转换为 File 对象
+    const res = await fetch(data.dataUrl)
+    const blob = await res.blob()
+    const fileName = `screenshot_${Date.now()}.png`
+    const file = new File([blob], fileName, { type: 'image/png' })
+
+    isUploading.value = true
+    uploaderDisabled.value = true
+    await uploadAndPreviewFile(file)
+  } catch (error) {
+    emit('show-error', '截图上传失败')
+  } finally {
+    isUploading.value = false
+    uploaderDisabled.value = false
+  }
+}
+
 // 监听 isNewSession 变化，新建会话时自动重置级联选择器
 watch(() => props.isNewSession, (newVal) => {
   if (newVal) {
@@ -411,6 +492,18 @@ watch(() => props.isInputDisabled, (newVal) => {
 // 生命周期钩子
 onMounted(() => {
   autoResize()
+  if (window.screenshotAPI && typeof window.screenshotAPI.onScreenshotResult === 'function') {
+    window.screenshotAPI.onScreenshotResult(handleScreenshotResult)
+  }
+  // 渲染端额外监听 Alt+A 快捷键（作为主进程快捷键的兜底，避免被输入框拦截）
+  window.addEventListener('keydown', handleGlobalKeydown, true)
+})
+
+onUnmounted(() => {
+  if (window.screenshotAPI && typeof window.screenshotAPI.offScreenshotResult === 'function') {
+    window.screenshotAPI.offScreenshotResult(handleScreenshotResult)
+  }
+  window.removeEventListener('keydown', handleGlobalKeydown, true)
 })
 
 /**
@@ -652,6 +745,11 @@ defineExpose({
   width: 16px;
   height: 16px;
   opacity: 0.7;
+}
+
+/* 剪刀图标旋转 90 度，竖向展示 */
+.scissors-icon {
+  transform: rotate(-90deg);
 }
 
 .attachment-text {

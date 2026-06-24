@@ -318,6 +318,40 @@ contextBridge.exposeInMainWorld('devToolsAPI', {
   }
 })
 
+// 暴露截图接口给渲染进程
+contextBridge.exposeInMainWorld('screenshotAPI', {
+  /**
+   * 启动截图流程
+   * @returns {Promise<Object>} - { success: boolean, message?: string }
+   */
+  start: async () => {
+    try {
+      const result = await ipcRenderer.invoke('startScreenshot')
+      return result
+    } catch (error) {
+      return { success: false, message: error.message }
+    }
+  },
+
+  /**
+   * 监听截图结果
+   * @param {Function} callback - 回调函数 (data) => void，data: { success, dataUrl?, cancelled? }
+   */
+  onScreenshotResult: (callback) => {
+    ipcRenderer.on('screenshot-result', (event, data) => {
+      callback(data)
+    })
+  },
+
+  /**
+   * 移除截图结果监听
+   * @param {Function} callback - 回调函数
+   */
+  offScreenshotResult: (callback) => {
+    ipcRenderer.removeListener('screenshot-result', callback)
+  }
+})
+
 window.addEventListener('DOMContentLoaded', () => {
   const replaceText = (selector, text) => {
     const element = document.getElementById(selector)

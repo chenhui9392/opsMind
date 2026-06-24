@@ -1,4 +1,4 @@
-const { app, BrowserWindow, session, protocol, net } = require('electron')
+const { app, BrowserWindow, session, protocol, net, globalShortcut } = require('electron')
 const path = require('path')
 const fs = require('fs')
 
@@ -117,6 +117,7 @@ const trayManager = require('./modules/trayManager')
 const floatingBallManager = require('./modules/floatingBallManager')
 const ipcHandler = require('./modules/ipcHandler')
 const scheduledTaskManager = require('./modules/scheduledTaskManager')
+const screenshotManager = require('./modules/screenshotManager')
 
 // 构建正确的menu模块路径
 const menuPath = path.join(__dirname, '..', 'menu.js')
@@ -224,6 +225,44 @@ app.whenReady().then(() => {
   // 创建悬浮球（使用 app.isPackaged 判断是否为开发模式，避免 beta 环境误用 localhost）
   floatingBallManager.createFloatingBall(!app.isPackaged)
 
+  // 将主窗口引用传递给截图管理器
+  screenshotManager.setMainWindow(windowManager.getMainWindow())
+
+  // 注册全局快捷键 Alt+A 触发截图（应用未聚焦时也能触发）
+  try {
+    const registered = globalShortcut.register('Alt+A', () => {
+      console.log('[GlobalShortcut] Alt+A 触发截图')
+      screenshotManager.startCapture().catch((err) => {
+        console.error('[GlobalShortcut] 截图失败:', err)
+      })
+    })
+    if (!registered) {
+      console.warn('[GlobalShortcut] Alt+A 注册失败，可能被其他应用占用')
+    } else {
+      console.log('[GlobalShortcut] Alt+A 已注册')
+    }
+  } catch (err) {
+    console.error('[GlobalShortcut] 注册异常:', err)
+  }
+
+  // 在主窗口内监听键盘事件作为备选（防止 globalShortcut 注册失败或被屏蔽时无法使用）
+  const mainWindow = windowManager.getMainWindow()
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      // input.type === 'keyDown'，alt 按下且键为 a
+      if (input.type === 'keyDown' && input.alt && !input.control && !input.shift && !input.meta) {
+        const key = (input.key || '').toLowerCase()
+        if (key === 'a') {
+          event.preventDefault()
+          console.log('[BeforeInputEvent] Alt+A 触发截图')
+          screenshotManager.startCapture().catch((err) => {
+            console.error('[BeforeInputEvent] 截图失败:', err)
+          })
+        }
+      }
+    })
+  }
+
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) {
       windowManager.createWindow()
@@ -238,6 +277,12 @@ app.on('window-all-closed', function () {
 // 防止应用完全退出
 app.on('before-quit', () => {
   app.quitting = true
+  // 注销全局快捷键
+  try {
+    globalShortcut.unregisterAll()
+  } catch (err) {
+    // ignore
+  }
   // 关闭开发者工具
   windowManager.closeDevTools()
   // 停止定时任务
